@@ -1,0 +1,12 @@
+{
+    "success": true,
+    "data": {
+        "accessToken": "jwt_token",
+        "user": {
+            "id": "usr_123",
+            "name": "Juan Perez",
+            "email": "juan@mail.com"
+        }
+    },
+    "error": null
+}

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "tertiary": "#0060a8",
+            "outline": "#827562",
+            "on-primary-container": "#453000",
+            "surface-container-lowest": "#ffffff",
+            "surface-bright": "#fcf9f8",
+            "secondary-fixed": "#ffdea6",
+            "background": "#fcf9f8",
+            "on-surface": "#1c1b1b",
+            "error": "#ba1a1a",
+            "secondary-fixed-dim": "#fbbc36",
+            "primary-container": "#c9920a",
+            "inverse-on-surface": "#f3f0ef",
+            "error-container": "#ffdad6",
+            "on-error": "#ffffff",
+            "on-primary-fixed": "#271900",
+            "secondary": "#7c5800",
+            "primary-fixed": "#ffdea6",
+            "on-error-container": "#93000a",
+            "inverse-primary": "#f9bc3d",
+            "secondary-container": "#febf39",
+            "on-secondary": "#ffffff",
+            "on-primary-fixed-variant": "#5e4200",
+            "on-tertiary-fixed-variant": "#004880",
+            "surface": "#fcf9f8",
+            "on-secondary-fixed": "#271900",
+            "tertiary-container": "#5a9fed",
+            "surface-variant": "#e5e2e1",
+            "tertiary-fixed-dim": "#a1c9ff",
+            "tertiary-fixed": "#d2e4ff",
+            "inverse-surface": "#313030",
+            "surface-container-high": "#eae7e7",
+            "on-secondary-container": "#6f4f00",
+            "on-tertiary": "#ffffff",
+            "surface-container-low": "#f6f3f2",
+            "primary-fixed-dim": "#f9bc3d",
+            "on-tertiary-fixed": "#001c38",
+            "on-background": "#1c1b1b",
+            "surface-container": "#f0eded",
+            "on-tertiary-container": "#003560",
+            "surface-dim": "#dcd9d9",
+            "outline-variant": "#d4c4ae",
+            "on-secondary-fixed-variant": "#5e4200",
+            "surface-container-highest": "#e5e2e1",
+            "on-surface-variant": "#504534",
+            "surface-tint": "#7c5800",
+            "primary": "#7c5800",
+            "on-primary": "#ffffff",
+            "stt-accent": "#3B82F6"
+          },
+          fontFamily: {
+            "headline": ["Sora", "sans-serif"],
+            "body": ["Plus Jakarta Sans", "sans-serif"],
+            "label": ["Plus Jakarta Sans", "sans-serif"]
+          },
+          borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .editorial-shadow {
+      box-shadow: 0 16px 32px -12px rgba(201, 146, 10, 0.08);
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(20px);
+    }
+    .node-overlap {
+      margin-top: -1.5rem;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex items-center justify-between px-6 h-16 bg-[#fcf9f8] dark:bg-slate-950 transition-colors duration-300">
+<div class="flex items-center gap-4">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-primary" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline font-bold text-xl tracking-tight text-primary">Speech to Text</h1>
+</div>
+<div class="flex items-center justify-center w-10 h-10 rounded-xl bg-stt-accent/10">
+<span class="material-symbols-outlined text-stt-accent" data-icon="mic">mic</span>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-5xl mx-auto space-y-10">
+<!-- Hero Section: Editorial Sophistication -->
+<section class="relative overflow-hidden rounded-lg bg-gradient-to-br from-stt-accent to-[#1d4ed8] p-8 md:p-12 text-white editorial-shadow">
+<div class="relative z-10 max-w-lg">
+<span class="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-[10px] font-bold tracking-widest uppercase mb-4">Módulo de Voz</span>
+<h2 class="font-headline text-4xl md:text-5xl font-extrabold leading-tight mb-4">Convierte voz en texto</h2>
+<p class="text-white/80 text-lg leading-relaxed max-w-md">
+          Potencia tu productividad con transcripciones automáticas impulsadas por inteligencia artificial de alta precisión.
+        </p>
+</div>
+<!-- Abstract Graphic Element -->
+<div class="absolute -right-12 -bottom-12 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+<div class="absolute right-12 top-12 opacity-20">
+<span class="material-symbols-outlined text-[120px]" data-icon="settings_voice">settings_voice</span>
+</div>
+</section>
+<!-- Content Selection Area -->
+<div class="space-y-6">
+<div class="flex items-center justify-between">
+<h3 class="font-headline text-sm font-bold tracking-widest uppercase text-outline">Elige una funcionalidad</h3>
+<span class="w-12 h-[2px] bg-outline-variant/30 flex-grow ml-4"></span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Card 1: Grabación en Vivo -->
+<div class="group relative flex flex-col bg-surface-container-lowest rounded-lg p-6 border border-outline-variant/15 transition-all hover:scale-[1.02] editorial-shadow">
+<button class="absolute top-4 right-4 text-outline-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="help">help</span>
+</button>
+<div class="w-12 h-12 rounded-2xl bg-stt-accent/10 flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-stt-accent" data-icon="radio">radio</span>
+</div>
+<div class="flex items-center gap-2 mb-2">
+<h4 class="font-headline text-lg font-bold text-on-surface">Grabación en vivo</h4>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-error-container text-on-error-container">Límite 3h</span>
+</div>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6">
+            Captura conferencias, reuniones o clases en tiempo real con detección de hablantes.
+          </p>
+<div class="flex flex-wrap gap-2 mb-8">
+<span class="px-3 py-1 rounded-full bg-surface-container-low text-[11px] font-semibold text-outline uppercase tracking-wider">Transcripción</span>
+<span class="px-3 py-1 rounded-full bg-surface-container-low text-[11px] font-semibold text-outline uppercase tracking-wider">Resumen</span>
+</div>
+<button class="mt-auto w-full py-4 rounded-xl text-white font-headline font-bold text-sm tracking-wide transition-all hover:shadow-lg active:scale-95 flex items-center justify-center gap-2 bg-stt-accent">
+<span class="material-symbols-outlined text-sm" data-icon="fiber_manual_record" style="font-variation-settings: 'FILL' 1;">fiber_manual_record</span>
+            Iniciar grabación
+          </button>
+</div>
+<!-- Card 2: Desde un archivo -->
+<div class="group relative flex flex-col bg-surface-container-lowest rounded-lg p-6 border border-outline-variant/15 transition-all hover:scale-[1.02] editorial-shadow">
+<button class="absolute top-4 right-4 text-outline-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="help">help</span>
+</button>
+<div class="w-12 h-12 rounded-2xl bg-stt-accent/10 flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-stt-accent" data-icon="upload_file">upload_file</span>
+</div>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-1">Desde un archivo</h4>
+<span class="block text-[10px] font-bold text-outline-variant uppercase tracking-widest mb-4">MP3, WAV, M4A, MP4</span>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6">
+            Sube grabaciones existentes para procesar transcripciones masivas en segundos.
+          </p>
+<div class="flex flex-wrap gap-2 mb-8">
+<span class="px-3 py-1 rounded-full bg-surface-container-low text-[11px] font-semibold text-outline uppercase tracking-wider">SRT / VTT</span>
+<span class="px-3 py-1 rounded-full bg-surface-container-low text-[11px] font-semibold text-outline uppercase tracking-wider">PDF</span>
+</div>
+<button class="mt-auto w-full py-4 rounded-xl bg-stt-accent text-white font-headline font-bold text-sm tracking-wide transition-all hover:bg-blue-600 active:scale-95 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+            Subir archivo
+          </button>
+</div>
+<!-- Card 3: Traducción de Audio -->
+<div class="group relative flex flex-col bg-surface-container-lowest rounded-lg p-6 border border-outline-variant/15 transition-all hover:scale-[1.02] editorial-shadow">
+<button class="absolute top-4 right-4 text-outline-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="help">help</span>
+</button>
+<div class="w-12 h-12 rounded-2xl bg-primary-container/10 flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-primary" data-icon="translate">translate</span>
+</div>
+<h4 class="font-headline text-lg font-bold text-on-surface mb-2">Traducción de audio</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6">
+            Traduce automáticamente cualquier fuente de audio a más de 30 idiomas distintos.
+          </p>
+<div class="grid grid-cols-2 gap-3 mb-8">
+<div class="bg-surface-container-low rounded-xl p-3 border border-outline-variant/10">
+<span class="block text-[9px] font-bold text-outline uppercase mb-1">Desde</span>
+<div class="flex items-center gap-2">
+<span class="text-xs font-bold text-on-surface">Spanish</span>
+<span class="material-symbols-outlined text-xs text-outline" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-xl p-3 border border-outline-variant/10">
+<span class="block text-[9px] font-bold text-outline uppercase mb-1">Hacia</span>
+<div class="flex items-center gap-2">
+<span class="text-xs font-bold text-on-surface">English</span>
+<span class="material-symbols-outlined text-xs text-outline" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+</div>
+<button class="mt-auto w-full py-4 rounded-xl bg-stt-accent text-white font-headline font-bold text-sm tracking-wide transition-all hover:shadow-lg active:scale-95">Traducir audio</button>
+</div>
+</div>
+</div>
+<!-- Recent Activity / Scholarly Architecture Knowledge Nodes -->
+<section class="mt-16 space-y-4">
+<h3 class="font-headline text-sm font-bold tracking-widest uppercase text-outline">Recientes</h3>
+<div class="space-y-[-1px]">
+<!-- Node 1 -->
+<div class="relative bg-surface-container-lowest p-5 rounded-t-xl border-x border-t border-outline-variant/15 flex items-center justify-between group cursor-pointer hover:bg-surface-bright transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-outline" data-icon="description">description</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Clase de Historia_Final.mp3</p>
+<p class="text-[11px] text-outline">Procesado hace 2 horas • 45:12 min</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors" data-icon="chevron_right">chevron_right</span>
+</div>
+<!-- Node 2 -->
+<div class="relative bg-surface-container-lowest p-5 border-x border-t border-outline-variant/15 flex items-center justify-between group cursor-pointer hover:bg-surface-bright transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-outline" data-icon="settings_voice">settings_voice</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Entrevista_Trabajo_Juan.wav</p>
+<p class="text-[11px] text-outline">Procesado ayer • 12:05 min</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors" data-icon="chevron_right">chevron_right</span>
+</div>
+<!-- Node 3 -->
+<div class="relative bg-surface-container-lowest p-5 rounded-b-xl border border-outline-variant/15 flex items-center justify-between group cursor-pointer hover:bg-surface-bright transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-outline" data-icon="translate">translate</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">TED_Talk_Spanish_Translation.mp4</p>
+<p class="text-[11px] text-outline">Traducción completada • 18:30 min</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</section>
+</main>
+<!-- FAB AI Robot -->
+<!-- Background Layering Elements -->
+<div class="fixed top-0 left-0 w-full h-full -z-10 pointer-events-none opacity-40">
+<div class="absolute top-1/4 -left-20 w-96 h-96 bg-primary-fixed-dim/20 rounded-full blur-[120px]"></div>
+<div class="absolute bottom-1/4 -right-20 w-96 h-96 bg-stt-accent/10 rounded-full blur-[120px]"></div>
+</div>
+</body></html>

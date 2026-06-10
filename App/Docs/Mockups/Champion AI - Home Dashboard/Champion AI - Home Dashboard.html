@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Champion AI - Dashboard</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Sora & Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&amp;family=Plus_Jakarta_Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary-container": "#c9920a",
+              "surface-container-high": "#eae7e7",
+              "surface": "#fcf9f8",
+              "on-surface-variant": "#504534",
+              "outline-variant": "#d4c4ae",
+              "on-secondary-fixed": "#271900",
+              "error-container": "#ffdad6",
+              "on-primary": "#ffffff",
+              "on-error-container": "#93000a",
+              "on-primary-fixed-variant": "#5e4200",
+              "secondary": "#7c5800",
+              "tertiary": "#0060a8",
+              "tertiary-container": "#5a9fed",
+              "surface-container-highest": "#e5e2e1",
+              "on-tertiary-fixed": "#001c38",
+              "secondary-fixed": "#ffdea6",
+              "inverse-primary": "#f9bc3d",
+              "on-tertiary-container": "#003560",
+              "on-background": "#1c1b1b",
+              "outline": "#827562",
+              "surface-bright": "#fcf9f8",
+              "primary-fixed-dim": "#f9bc3d",
+              "inverse-surface": "#313030",
+              "primary": "#7c5800",
+              "on-secondary-fixed-variant": "#5e4200",
+              "surface-container-low": "#f6f3f2",
+              "inverse-on-surface": "#f3f0ef",
+              "secondary-container": "#febf39",
+              "error": "#ba1a1a",
+              "on-secondary": "#ffffff",
+              "primary-fixed": "#ffdea6",
+              "on-primary-container": "#453000",
+              "surface-tint": "#7c5800",
+              "secondary-fixed-dim": "#fbbc36",
+              "on-secondary-container": "#6f4f00",
+              "on-error": "#ffffff",
+              "on-tertiary": "#ffffff",
+              "background": "#fcf9f8",
+              "surface-dim": "#dcd9d9",
+              "tertiary-fixed": "#d2e4ff",
+              "on-surface": "#1c1b1b",
+              "surface-variant": "#e5e2e1",
+              "surface-container-lowest": "#ffffff",
+              "on-tertiary-fixed-variant": "#004880",
+              "on-primary-fixed": "#271900",
+              "tertiary-fixed-dim": "#a1c9ff",
+              "surface-container": "#f0eded"
+            },
+            fontFamily: {
+              "headline": ["Sora", "sans-serif"],
+              "body": ["Plus Jakarta Sans", "sans-serif"],
+              "label": ["Plus Jakarta Sans", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .fill-icon {
+            font-variation-settings: 'FILL' 1 !important;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #fcf9f8;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .glass-header {
+            background: rgba(252, 249, 248, 0.8);
+            backdrop-filter: blur(12px);
+        }
+        .gold-gradient {
+            background: linear-gradient(135deg, #7c5800 0%, #c9920a 100%);
+        }
+        .shadow-gold {
+            box-shadow: 0 16px 32px -4px rgba(201, 146, 10, 0.2);
+        }
+        /* Custom Scrollbar suppression */
+        ::-webkit-scrollbar { display: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface antialiased overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full h-16 flex items-center justify-between px-4 pt-safe z-50 glass-header">
+<div class="flex items-center gap-3">
+<button class="w-10 h-10 flex items-center justify-center active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-on-background" data-icon="menu">menu</span>
+</button>
+<h1 class="font-headline font-bold tracking-tight text-xl">
+<span class="text-on-background">Champion</span><span class="text-primary-container ml-0.5">AI</span>
+</h1>
+</div>
+<div class="flex items-center">
+<div class="w-9 h-9 rounded-full bg-secondary-fixed border border-primary-fixed-dim flex items-center justify-center shadow-sm">
+<span class="font-headline font-bold text-xs text-on-secondary-fixed">SC</span>
+</div>
+</div>
+</header>
+<!-- Main Content Layout -->
+<main class="pt-20 pb-24 px-4 max-w-md mx-auto min-h-screen flex flex-col gap-8">
+<!-- Greeting Area -->
+<section class="flex justify-between items-start">
+<div class="flex flex-col gap-1">
+<h2 class="font-headline font-bold text-2xl tracking-tight text-on-surface">¡Hola, Sebastián! 👋</h2>
+<p class="text-on-surface-variant font-medium opacity-80">¿Qué aprenderemos hoy?</p>
+</div>
+<div class="bg-primary-fixed/30 border border-outline-variant/30 px-3 py-1.5 rounded-full flex items-center gap-2">
+<span class="font-headline font-semibold text-[11px] text-on-primary-fixed">Jue 19 Mar</span>
+</div>
+</section>
+<!-- Info Slider (Carousel) -->
+<section class="relative">
+<div class="w-full h-44 gold-gradient rounded-xl p-6 flex flex-col justify-between overflow-hidden relative shadow-lg">
+<!-- Decorative Circle -->
+<div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+<div class="relative z-10 flex flex-col gap-1">
+<h3 class="font-headline font-bold text-lg text-white leading-tight">Sube tus apuntes y yo los organizo</h3>
+<p class="text-white/80 text-sm">Carga PDFs o fotos de tus notas</p>
+</div>
+<div class="relative z-10">
+<button class="bg-white text-primary font-bold px-5 py-2 rounded-lg text-sm active:scale-95 transition-transform shadow-sm">
+                        Empezar
+                    </button>
+</div>
+</div>
+<!-- Indicators -->
+<div class="flex justify-center gap-1.5 mt-4">
+<div class="w-5 h-1.5 bg-primary-container rounded-full"></div>
+<div class="w-1.5 h-1.5 bg-outline-variant/40 rounded-full"></div>
+<div class="w-1.5 h-1.5 bg-outline-variant/40 rounded-full"></div>
+</div>
+</section>
+<!-- Recent Activity Section -->
+<section class="flex flex-col gap-4">
+<div class="flex justify-between items-center">
+<h3 class="font-headline font-bold text-lg text-on-surface">Actividad reciente</h3>
+<button class="text-primary-container font-semibold text-sm">Ver todo →</button>
+</div>
+<!-- Activity Cards -->
+<div class="flex flex-col gap-3">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest p-4 rounded-xl flex items-center justify-between shadow-sm border border-outline-variant/10 active:bg-surface-bright transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-primary-fixed/20 rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined text-primary-container" data-icon="book_open">file_open</span>
+</div>
+<div class="flex flex-col">
+<h4 class="font-headline font-bold text-sm text-on-surface">Resumen de Cálculo II</h4>
+<p class="text-xs text-on-surface-variant font-medium">Derivadas e integrales</p>
+<span class="text-[10px] text-outline mt-1 uppercase tracking-wider font-bold">hace 2h</span>
+</div>
+</div>
+<div class="bg-primary-fixed/30 px-2 py-1 rounded-md">
+<span class="text-[10px] font-bold text-on-primary-fixed">Apunte</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest p-4 rounded-xl flex items-center justify-between shadow-sm border border-outline-variant/10 active:bg-surface-bright transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-secondary-fixed/30 rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary" data-icon="forum">forum</span>
+</div>
+<div class="flex flex-col">
+<h4 class="font-headline font-bold text-sm text-on-surface">Consulta sobre Historia</h4>
+<p class="text-xs text-on-surface-variant font-medium">Revolución Francesa</p>
+<span class="text-[10px] text-outline mt-1 uppercase tracking-wider font-bold">ayer</span>
+</div>
+</div>
+<div class="bg-secondary-fixed/40 px-2 py-1 rounded-md">
+<span class="text-[10px] font-bold text-on-secondary-fixed">Chat</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest p-4 rounded-xl flex items-center justify-between shadow-sm border border-outline-variant/10 active:bg-surface-bright transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-container-high rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="description">description</span>
+</div>
+<div class="flex flex-col">
+<h4 class="font-headline font-bold text-sm text-on-surface">PDF subido: Álgebra</h4>
+<p class="text-xs text-on-surface-variant font-medium">Capítulo 3 – Matrices</p>
+<span class="text-[10px] text-outline mt-1 uppercase tracking-wider font-bold">hace 3d</span>
+</div>
+</div>
+<div class="bg-surface-container-high/60 px-2 py-1 rounded-md">
+<span class="text-[10px] font-bold text-on-surface-variant">Archivo</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Stats/Nodes (Bento-ish) -->
+<section class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-low p-5 rounded-xl flex flex-col gap-3">
+<span class="material-symbols-outlined text-primary-container text-3xl" data-icon="bolt">bolt</span>
+<div>
+<p class="text-2xl font-headline font-extrabold text-on-surface">12</p>
+<p class="text-[11px] font-bold text-outline uppercase tracking-tight">Racha de días</p>
+</div>
+</div>
+<div class="bg-surface-container-low p-5 rounded-xl flex flex-col gap-3">
+<span class="material-symbols-outlined text-tertiary-container text-3xl" data-icon="school">school</span>
+<div>
+<p class="text-2xl font-headline font-extrabold text-on-surface">84%</p>
+<p class="text-[11px] font-bold text-outline uppercase tracking-tight">Progreso total</p>
+</div>
+</div>
+</section>
+<!-- Footer -->
+<footer class="mt-8 mb-4 flex flex-col items-center gap-3">
+<div class="flex gap-4">
+<span class="text-[11px] font-bold text-primary-container">Términos</span>
+<span class="text-[11px] font-bold text-primary-container">Privacidad</span>
+</div>
+<div class="flex flex-col items-center opacity-40">
+<p class="text-[10px] font-medium text-on-surface-variant">Champion AI © 2025</p>
+<p class="text-[9px] font-medium text-on-surface-variant uppercase tracking-widest">v1.0.0</p>
+</div>
+</footer>
+</main>
+<!-- Floating Action Button -->
+<div class="fixed bottom-8 right-6 z-50 flex items-center justify-center w-14 h-14 bg-gradient-to-br from-[#7c5800] to-[#c9920a] rounded-full shadow-gold active:scale-90 transition-all cursor-pointer">
+<span class="material-symbols-outlined text-white text-2xl" data-icon="smart_toy">smart_toy</span>
+<!-- Notification Badge -->
+<div class="absolute -top-1 -right-1 w-5 h-5 bg-error border-2 border-surface rounded-full flex items-center justify-center">
+<span class="text-[10px] text-white font-bold">1</span>
+</div>
+</div>
+<!-- Navigation Drawer (Conceptual Mockup Overlay) -->
+<div class="fixed inset-0 bg-on-background/20 backdrop-blur-sm z-[60] opacity-0 pointer-events-none transition-opacity">
+<div class="fixed left-0 top-0 h-full w-[260px] bg-white shadow-2xl flex flex-col p-6 gap-8 transform -translate-x-full transition-transform">
+<!-- Drawer Header -->
+<div class="flex items-center gap-4 pt-4">
+<div class="w-12 h-12 rounded-xl bg-primary-fixed/20 border border-primary-fixed-dim flex items-center justify-center overflow-hidden">
+<img alt="Sebastián" class="w-full h-full object-cover" data-alt="User profile avatar icon with initials" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCddzs0SSAVqjPDtnbxs6dufjKmvLEi0xE9vOQi_wkQHor8iPYFO2ZtAla36mySiWkZViEBrzfvYgU2qgChcIDx8pHN2ALHSZJH42_TC1JhmGGy6JOakCb4X4nb5V2w9qN-Je32MRHxrzDnZQEh5cx7-A2cG99AA1PrS9ilh4BaXFIwLqsAvsx4O8ZkgFJlq7gx1n0LUxU6M-hl_BMR4TZ-xKdBwsDqF1tcTbkr7vM17dnr5M_fNdsQ8EYRVPRsOax5pWn13Q2amrOc"/>
+</div>
+<div class="flex flex-col">
+<h3 class="font-headline font-bold text-base text-on-surface">Sebastián</h3>
+<p class="text-xs text-on-surface-variant">Student Architect</p>
+</div>
+</div>
+<!-- Nav Items -->
+<nav class="flex flex-col gap-2">
+<div class="bg-primary-fixed/40 text-on-primary-fixed font-bold rounded-xl flex items-center gap-3 px-4 py-3 border-l-4 border-primary">
+<span class="material-symbols-outlined fill-icon text-xl" data-icon="home">home</span>
+<span class="text-sm">Home</span>
+</div>
+<div class="text-on-surface-variant font-medium rounded-xl flex items-center gap-3 px-4 py-3 active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-xl" data-icon="category">category</span>
+<span class="text-sm">Servicios</span>
+</div>
+<div class="text-on-surface-variant font-medium rounded-xl flex items-center gap-3 px-4 py-3 active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-xl" data-icon="edit_note">edit_note</span>
+<span class="text-sm">Mis Apuntes</span>
+</div>
+<div class="text-on-surface-variant font-medium rounded-xl flex items-center gap-3 px-4 py-3 active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-xl" data-icon="settings">settings</span>
+<span class="text-sm">Configuración</span>
+</div>
+<div class="text-on-surface-variant font-medium rounded-xl flex items-center gap-3 px-4 py-3 active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-xl" data-icon="person">person</span>
+<span class="text-sm">Mi Perfil</span>
+</div>
+</nav>
+<!-- Logout -->
+<div class="mt-auto">
+<button class="w-full bg-error/5 text-error font-bold rounded-xl flex items-center justify-center gap-2 py-3 active:bg-error/10 transition-colors">
+<span class="material-symbols-outlined text-xl" data-icon="logout">logout</span>
+<span class="text-sm">Cerrar Sesión</span>
+</button>
+</div>
+</div>
+</div>
+</body></html>

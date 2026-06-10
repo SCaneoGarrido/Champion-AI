@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mi Perfil - Aureate Scholar</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&amp;family=Plus+Jakarta+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container-low": "#f6f3f2",
+                        "secondary-fixed": "#ffdea6",
+                        "outline-variant": "#d4c4ae",
+                        "outline": "#827562",
+                        "tertiary-fixed": "#d2e4ff",
+                        "surface": "#fcf9f8",
+                        "primary-fixed": "#ffdea6",
+                        "surface-bright": "#fcf9f8",
+                        "secondary-container": "#febf39",
+                        "primary-fixed-dim": "#f9bc3d",
+                        "on-tertiary-fixed-variant": "#004880",
+                        "on-secondary-fixed-variant": "#5e4200",
+                        "on-background": "#1c1b1b",
+                        "inverse-on-surface": "#f3f0ef",
+                        "on-tertiary-container": "#003560",
+                        "error": "#ba1a1a",
+                        "on-secondary": "#ffffff",
+                        "surface-dim": "#dcd9d9",
+                        "surface-container-high": "#eae7e7",
+                        "on-primary-fixed-variant": "#5e4200",
+                        "on-error": "#ffffff",
+                        "secondary": "#7c5800",
+                        "error-container": "#ffdad6",
+                        "inverse-surface": "#313030",
+                        "primary": "#7c5800",
+                        "on-primary-container": "#453000",
+                        "secondary-fixed-dim": "#fbbc36",
+                        "surface-tint": "#7c5800",
+                        "on-primary-fixed": "#271900",
+                        "on-error-container": "#93000a",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#a1c9ff",
+                        "on-secondary-container": "#6f4f00",
+                        "primary-container": "#c9920a",
+                        "inverse-primary": "#f9bc3d",
+                        "surface-container-highest": "#e5e2e1",
+                        "surface-variant": "#e5e2e1",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed": "#001c38",
+                        "tertiary-container": "#5a9fed",
+                        "surface-container": "#f0eded",
+                        "on-secondary-fixed": "#271900",
+                        "on-tertiary": "#ffffff",
+                        "on-surface": "#1c1b1b",
+                        "tertiary": "#0060a8",
+                        "background": "#fcf9f8",
+                        "on-surface-variant": "#504534"
+                    },
+                    fontFamily: {
+                        "headline": ["Sora", "sans-serif"],
+                        "body": ["Plus Jakarta Sans", "sans-serif"],
+                        "label": ["Plus Jakarta Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .glass-nav {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-40 bg-[#fcf9f8]/80 dark:bg-slate-950/80 backdrop-blur-md shadow-sm shadow-[#c9920a]/10">
+<div class="flex justify-between items-center px-6 py-4 w-full max-w-7xl mx-auto">
+<div class="flex items-center gap-4">
+<button class="p-2 text-[#7c5800] hover:bg-[#f6f3f2] rounded-xl transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="font-headline font-bold tracking-tight text-xl text-[#7c5800]">Champion AI</h1>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-container flex items-center justify-center text-white font-headline font-bold text-sm shadow-lg shadow-primary/20" title="User profile avatar">
+                    SC
+                </div>
+</div>
+</div>
+</header>
+<!-- Sidebar (Hidden by default, semantic structure preserved) -->
+<aside class="h-full w-80 fixed left-0 top-0 z-50 rounded-r-3xl bg-[#ffffff]/90 dark:bg-slate-900/90 backdrop-blur-xl border-r border-[#d4c4ae]/15 shadow-2xl shadow-[#c9920a]/5 -translate-x-full transition-transform duration-300">
+<div class="flex flex-col gap-2 p-4 h-full">
+<div class="flex items-center gap-4 p-4 mb-6">
+<div class="w-12 h-12 rounded-2xl bg-surface-container-high flex items-center justify-center overflow-hidden">
+<img alt="User profile avatar" class="w-full h-full object-cover" data-alt="Ilustración minimalista de perfil de estudiante" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSpnRpNTfJSmxdLrfOIV6P2d7_9XIwgeFwJyAgLNOULJOhTEjZ_AdIQukhtYYXux-A8oxUZqMI1SIR59xJEOJDKJilyoPjRnIqRj_KZPhmTNok5yaMlM8Mvr8YFF1bVonPh1Gf-DnIL4rrPk7ljobJCNJ9lkR8ayIKWTUzn5pErN38oAbso1vIDwblSRECM6ZKJ0IWre3NnDqOWTt54iN9qzm77uXBYNymgJbKtt5Yj9HmS4YXCmkkBObIDiTm_GX67JIhT20rVIxz"/>
+</div>
+<div>
+<p class="font-headline font-bold text-[#7c5800]">Estudiante Erudito</p>
+<p class="text-xs text-on-surface-variant font-medium">Nivel 12 Arquitecto</p>
+</div>
+</div>
+<nav class="space-y-1">
+<a class="bg-gradient-to-r from-[#7c5800] to-[#c9920a] text-white rounded-xl mx-2 px-4 py-3 shadow-lg shadow-[#c9920a]/20 flex items-center gap-3 font-medium" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span>Mi Perfil</span>
+</a>
+<a class="text-slate-600 dark:text-slate-300 mx-2 px-4 py-3 hover:bg-[#f6f3f2] dark:hover:bg-slate-800 rounded-xl transition-all flex items-center gap-3 font-medium hover:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="auto_stories">auto_stories</span>
+<span>Rutas de Estudio</span>
+</a>
+<a class="text-slate-600 dark:text-slate-300 mx-2 px-4 py-3 hover:bg-[#f6f3f2] dark:hover:bg-slate-800 rounded-xl transition-all flex items-center gap-3 font-medium hover:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="local_library">local_library</span>
+<span>Biblioteca</span>
+</a>
+<a class="text-slate-600 dark:text-slate-300 mx-2 px-4 py-3 hover:bg-[#f6f3f2] dark:hover:bg-slate-800 rounded-xl transition-all flex items-center gap-3 font-medium hover:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="military_tech">military_tech</span>
+<span>Logros</span>
+</a>
+<a class="text-slate-600 dark:text-slate-300 mx-2 px-4 py-3 hover:bg-[#f6f3f2] dark:hover:bg-slate-800 rounded-xl transition-all flex items-center gap-3 font-medium hover:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Configuración</span>
+</a>
+</nav>
+</div>
+</aside>
+<main class="pt-24 pb-20 px-6 max-w-3xl mx-auto min-h-screen">
+<!-- Section Header Capsule -->
+<div class="flex justify-center mb-10">
+<div class="bg-surface-container-low px-6 py-2 rounded-full border border-outline-variant/10 shadow-sm inline-flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+<span class="text-xs font-bold tracking-widest text-primary uppercase font-headline">Tu Información</span>
+</div>
+</div>
+<!-- Profile Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-2xl shadow-primary/5 p-8 relative overflow-hidden">
+<!-- Decorative Subtle Gradient -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+<div class="flex flex-col items-center">
+<!-- Avatar Section -->
+<div class="relative mb-6">
+<div class="w-[88px] h-[88px] rounded-full p-1 bg-gradient-to-tr from-primary to-secondary-container">
+<div class="w-full h-full rounded-full bg-white p-0.5 overflow-hidden">
+<img alt="Sebastián Caneo Avatar" class="w-full h-full object-cover rounded-full" data-alt="Retrato de perfil del usuario Sebastián Caneo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSpnRpNTfJSmxdLrfOIV6P2d7_9XIwgeFwJyAgLNOULJOhTEjZ_AdIQukhtYYXux-A8oxUZqMI1SIR59xJEOJDKJilyoPjRnIqRj_KZPhmTNok5yaMlM8Mvr8YFF1bVonPh1Gf-DnIL4rrPk7ljobJCNJ9lkR8ayIKWTUzn5pErN38oAbso1vIDwblSRECM6ZKJ0IWre3NnDqOWTt54iN9qzm77uXBYNymgJbKtt5Yj9HmS4YXCmkkBObIDiTm_GX67JIhT20rVIxz"/>
+</div>
+</div>
+<button class="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white border-4 border-surface-container-lowest hover:bg-primary-container transition-colors shadow-lg">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+</button>
+</div>
+<h2 class="font-headline font-bold text-2xl text-on-background mb-8">Sebastián Caneo</h2>
+<!-- Fields Grid -->
+<div class="w-full space-y-4 mb-10">
+<!-- Field: Correo -->
+<div class="group">
+<label class="text-[10px] uppercase tracking-wider text-outline font-bold mb-1.5 block ml-1">Correo electrónico</label>
+<div class="flex items-center gap-4 p-4 bg-surface-container-high/40 rounded-xl border border-transparent group-hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-primary" data-icon="mail">mail</span>
+<p class="text-on-surface font-medium">sebastian@gmail.com</p>
+</div>
+</div>
+<!-- Field: Número -->
+<div class="group">
+<label class="text-[10px] uppercase tracking-wider text-outline font-bold mb-1.5 block ml-1">Número de contacto</label>
+<div class="flex items-center gap-4 p-4 bg-surface-container-high/40 rounded-xl border border-transparent group-hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-primary" data-icon="phone">phone</span>
+<p class="text-on-surface font-medium">+56 9 1234 5678</p>
+</div>
+</div>
+<!-- Field: Localidad -->
+<div class="group">
+<label class="text-[10px] uppercase tracking-wider text-outline font-bold mb-1.5 block ml-1">Localidad</label>
+<div class="flex items-center gap-4 p-4 bg-surface-container-high/40 rounded-xl border border-transparent group-hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-primary" data-icon="location_on">location_on</span>
+<p class="text-on-surface font-medium">Santiago, Chile</p>
+</div>
+</div>
+<!-- Field: Ocupación -->
+<div class="group">
+<label class="text-[10px] uppercase tracking-wider text-outline font-bold mb-1.5 block ml-1">Ocupación</label>
+<div class="flex items-center gap-4 p-4 bg-surface-container-high/40 rounded-xl border border-transparent group-hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-primary" data-icon="work">work</span>
+<p class="text-on-surface font-medium">Universitario</p>
+</div>
+</div>
+</div>
+<!-- Action Button -->
+<button class="w-full py-4 rounded-xl bg-gradient-to-r from-primary to-primary-container text-white font-headline font-bold text-sm shadow-xl shadow-primary/20 hover:shadow-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]" data-icon="settings_suggest">settings_suggest</span>
+                    Editar perfil
+                </button>
+</div>
+</div>
+<!-- Extra Content: Asymmetric Bento Style Stats -->
+</main>
+<!-- Footer -->
+<footer class="w-full py-12 px-6 mt-auto border-t border-outline-variant/10 bg-surface-container-low">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+<div class="flex flex-col items-center md:items-start">
+<p class="text-sm font-headline font-bold text-primary">Champion AI © 2025 · v1.0.0</p>
+<p class="text-xs text-outline mt-1 font-medium">La forja del conocimiento moderno.</p>
+</div>
+<div class="flex gap-8">
+<a class="text-xs font-bold text-on-surface-variant hover:text-primary transition-colors" href="#">Términos</a>
+<a class="text-xs font-bold text-on-surface-variant hover:text-primary transition-colors" href="#">Privacidad</a>
+<a class="text-xs font-bold text-on-surface-variant hover:text-primary transition-colors" href="#">Soporte</a>
+</div>
+</div>
+</footer>
+<!-- FAB Chatbot -->
+<button class="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-br from-primary to-primary-container rounded-full shadow-2xl shadow-primary/30 flex items-center justify-center text-white active:scale-90 transition-transform z-50 group">
+<span class="material-symbols-outlined text-3xl group-hover:scale-110 transition-transform" data-icon="smart_toy" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</button>
+</body></html>
