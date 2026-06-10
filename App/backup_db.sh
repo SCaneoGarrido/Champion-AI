@@ -38,8 +38,8 @@ if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
 fi
 echo "  Contenedor activo."
 
-# --- [2/4] Generar dump ---
-echo -e "\n${YELLOW}[2/4] Generando pg_dump de '$DB_NAME'...${NC}"
+# --- [2/4] Generar dump (solo schema, sin datos) ---
+echo -e "\n${YELLOW}[2/4] Generando pg_dump de '$DB_NAME' (schema sin datos)...${NC}"
 mkdir -p "$BACKUP_DIR"
 
 docker exec "$CONTAINER_NAME" pg_dump \
@@ -48,6 +48,7 @@ docker exec "$CONTAINER_NAME" pg_dump \
     --clean \
     --if-exists \
     --no-acl \
+    --schema-only \
     > "$BACKUP_FILE"
 
 echo "  Backup guardado en: $BACKUP_FILE"
