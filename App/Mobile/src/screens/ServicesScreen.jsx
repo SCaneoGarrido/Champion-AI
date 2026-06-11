@@ -14,8 +14,11 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { clearSession } from '../utils/session';
-import styles from './ServicesScreen.styles';
+import baseStyles from './ServicesScreen.styles';
+import { useThemedScreenStyles } from '../hooks/useThemedScreenStyles';
+import { mergeServicesTheme } from '../theme/screenThemeMerges';
+import SpeechToTextModal from '../components/SpeechToTextModal';
+import { useTopBarStyle } from '../hooks/useTopBarStyle';
 
 const USER_KEY = '@champion_user';
 
@@ -29,7 +32,7 @@ const SERVICE_ROWS = [
       title: 'Speech to Text',
       description: 'Dicta tus ideas de diseño rápidamente.',
       icon: 'mic',
-      navigateTo: 'SpeechToText',
+      modal: 'stt',
     },
     {
       id: 'vision',
@@ -58,8 +61,10 @@ const SERVICE_ROWS = [
 ];
 
 export default function ServicesScreen({ navigation }) {
+  const styles = useThemedScreenStyles(baseStyles, mergeServicesTheme);
+  const topBarStyle = useTopBarStyle();
   const [user, setUser] = useState(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sttModalVisible, setSttModalVisible] = useState(false);
   const cardWidth = useMemo(() => {
     const w = Dimensions.get('window').width;
     return (w - 16 * 2 - 12) / 2;
@@ -83,30 +88,20 @@ export default function ServicesScreen({ navigation }) {
     return clean.slice(0, 2).toUpperCase();
   }, [user]);
 
-  const handleLogout = async () => {
-    await clearSession();
-    setDrawerOpen(false);
-    navigation.replace('Home');
-  };
-
-  const onUseService = (navigateTo) => {
-    if (navigateTo) {
-      setDrawerOpen(false);
-      navigation.navigate(navigateTo);
+  const onUseService = (item) => {
+    if (item.modal === 'stt') {
+      setSttModalVisible(true);
+      return;
+    }
+    if (item.navigateTo) {
+      navigation.getParent()?.navigate(item.navigateTo);
     }
   };
 
   return (
     <View style={styles.screen}>
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, topBarStyle]}>
         <View style={styles.topLeft}>
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => setDrawerOpen(true)}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons name="menu" size={24} color="#1c1b1b" />
-          </TouchableOpacity>
           <Text style={styles.brand}>
             Champion<Text style={styles.brandAccent}>AI</Text>
           </Text>
@@ -152,14 +147,14 @@ export default function ServicesScreen({ navigation }) {
                   </Text>
                   <TouchableOpacity
                     style={styles.gridUseRow}
-                    onPress={() => onUseService(item.navigateTo)}
-                    activeOpacity={item.navigateTo ? 0.7 : 1}
-                    disabled={!item.navigateTo}
+                    onPress={() => onUseService(item)}
+                    activeOpacity={item.navigateTo || item.modal ? 0.7 : 1}
+                    disabled={!item.navigateTo && !item.modal}
                   >
                     <Text
                       style={[
                         styles.gridUseText,
-                        !item.navigateTo && { opacity: 0.45 },
+                        !item.navigateTo && !item.modal && { opacity: 0.45 },
                       ]}
                     >
                       Usar
@@ -167,7 +162,9 @@ export default function ServicesScreen({ navigation }) {
                     <MaterialIcons
                       name="arrow-forward"
                       size={14}
-                      color={item.navigateTo ? '#c9920a' : 'rgba(201, 146, 10, 0.45)'}
+                      color={
+                        item.navigateTo || item.modal ? '#c9920a' : 'rgba(201, 146, 10, 0.45)'
+                      }
                     />
                   </TouchableOpacity>
                 </View>
@@ -226,89 +223,7 @@ export default function ServicesScreen({ navigation }) {
         </View>
       </Pressable>
 
-      {drawerOpen ? (
-        <View style={styles.drawerOverlay}>
-          <View style={styles.drawerPanel}>
-            <View style={styles.drawerHeader}>
-              <View style={styles.drawerAvatar}>
-                <Text style={styles.drawerAvatarText}>{userInitials}</Text>
-              </View>
-              <View>
-                <Text style={styles.drawerName}>Sebastian</Text>
-                <Text style={styles.drawerRole}>Student Architect</Text>
-              </View>
-            </View>
-
-            <View style={styles.drawerNav}>
-              <TouchableOpacity
-                style={styles.drawerItem}
-                onPress={() => {
-                  setDrawerOpen(false);
-                  navigation.navigate('Dashboard');
-                }}
-                activeOpacity={0.85}
-              >
-                <MaterialIcons name="home" size={20} color="#504534" />
-                <Text style={styles.drawerItemText}>Home</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.drawerItem}
-                onPress={() => {
-                  setDrawerOpen(false);
-                  navigation.navigate('SpeechToText');
-                }}
-                activeOpacity={0.85}
-              >
-                <MaterialIcons name="mic" size={20} color="#504534" />
-                <Text style={styles.drawerItemText}>Speech to Text</Text>
-              </TouchableOpacity>
-              <View style={[styles.drawerItem, styles.drawerItemActive]}>
-                <MaterialIcons name="category" size={20} color="#7c5800" />
-                <Text style={styles.drawerItemActiveText}>Servicios</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.drawerItem}
-                onPress={() => {
-                  setDrawerOpen(false);
-                  navigation.navigate('Notes');
-                }}
-                activeOpacity={0.85}
-              >
-                <MaterialIcons name="edit-note" size={20} color="#504534" />
-                <Text style={styles.drawerItemText}>Mis Apuntes</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.drawerItem}
-                onPress={() => {
-                  setDrawerOpen(false);
-                  navigation.navigate('Settings');
-                }}
-                activeOpacity={0.85}
-              >
-                <MaterialIcons name="settings" size={20} color="#504534" />
-                <Text style={styles.drawerItemText}>Configuracion</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.drawerItem}
-                onPress={() => {
-                  setDrawerOpen(false);
-                  navigation.navigate('Profile');
-                }}
-                activeOpacity={0.85}
-              >
-                <MaterialIcons name="person" size={20} color="#504534" />
-                <Text style={styles.drawerItemText}>Mi Perfil</Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity style={styles.drawerLogout} onPress={handleLogout} activeOpacity={0.9}>
-              <MaterialIcons name="logout" size={20} color="#ba1a1a" />
-              <Text style={styles.drawerLogoutText}>Cerrar sesion</Text>
-            </TouchableOpacity>
-          </View>
-          <Pressable style={styles.drawerBackdrop} onPress={() => setDrawerOpen(false)} />
-        </View>
-      ) : null}
+      <SpeechToTextModal visible={sttModalVisible} onClose={() => setSttModalVisible(false)} />
     </View>
   );
 }

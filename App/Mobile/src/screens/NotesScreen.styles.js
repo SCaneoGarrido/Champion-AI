@@ -26,8 +26,7 @@ const styles = StyleSheet.create({
     zIndex: 0,
   },
   topBar: {
-    height: 78,
-    paddingTop: 18,
+    paddingBottom: 14,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -385,7 +384,7 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 24,
-    bottom: 24,
+    bottom: 88,
     width: 56,
     height: 56,
     borderRadius: 28,

@@ -17,9 +17,11 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
-import { getSession, setSession, clearSession } from '../utils/session';
-import styles from './ProfileScreen.styles';
-import notesStyles from './NotesScreen.styles';
+import { getSession, setSession } from '../utils/session';
+import baseStyles from './ProfileScreen.styles';
+import { useThemedScreenStyles } from '../hooks/useThemedScreenStyles';
+import { mergeProfileTheme } from '../theme/screenThemeMerges';
+import { useTopBarStyle } from '../hooks/useTopBarStyle';
 
 const DEFAULT_AVATAR_URL =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuBSpnRpNTfJSmxdLrfOIV6P2d7_9XIwgeFwJyAgLNOULJOhTEjZ_AdIQukhtYYXux-A8oxUZqMI1SIR59xJEOJDKJilyoPjRnIqRj_KZPhmTNok5yaMlM8Mvr8YFF1bVonPh1Gf-DnIL4rrPk7ljobJCNJ9lkR8ayIKWTUzn5pErN38oAbso1vIDwblSRECM6ZKJ0IWre3NnDqOWTt54iN9qzm77uXBYNymgJbKtt5Yj9HmS4YXCmkkBObIDiTm_GX67JIhT20rVIxz';
@@ -42,7 +44,8 @@ function mergeProfile(session) {
 }
 
 export default function ProfileScreen({ navigation }) {
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const styles = useThemedScreenStyles(baseStyles, mergeProfileTheme);
+  const topBarStyle = useTopBarStyle();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(() => mergeProfile(null));
   const [avatarUri, setAvatarUri] = useState(null);
@@ -107,12 +110,6 @@ export default function ProfileScreen({ navigation }) {
     setEditing(false);
   };
 
-  const handleLogout = async () => {
-    await clearSession();
-    setDrawerOpen(false);
-    navigation.replace('Home');
-  };
-
   const update = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
   const FieldRow = ({ icon, label, value, fieldKey, keyboardType, autoCapitalize }) => (
@@ -144,11 +141,8 @@ export default function ProfileScreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={0}
     >
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, topBarStyle]}>
         <View style={styles.topLeft}>
-          <TouchableOpacity style={styles.menuBtn} onPress={() => setDrawerOpen(true)} activeOpacity={0.85}>
-            <MaterialIcons name="menu" size={26} color="#7c5800" />
-          </TouchableOpacity>
           <Text style={styles.topTitle}>Champion AI</Text>
         </View>
         <TouchableOpacity onPress={pickAvatar} activeOpacity={0.9} accessibilityLabel="Cambiar foto de perfil">
@@ -292,93 +286,6 @@ export default function ProfileScreen({ navigation }) {
         </LinearGradient>
       </Pressable>
 
-      {drawerOpen ? (
-        <View style={notesStyles.drawerOverlay}>
-          <View style={notesStyles.drawerPanel}>
-            <View style={notesStyles.drawerHeader}>
-              <View style={[notesStyles.drawerAvatar, { overflow: 'hidden', padding: 0 }]}>
-                <Image source={imageSource} style={{ width: 48, height: 48 }} resizeMode="cover" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={notesStyles.drawerName} numberOfLines={1}>
-                  {form.name}
-                </Text>
-                <Text style={notesStyles.drawerRole} numberOfLines={1}>
-                  {form.occupation}
-                </Text>
-              </View>
-            </View>
-
-            <View style={notesStyles.drawerNav}>
-              <TouchableOpacity
-                style={notesStyles.drawerItem}
-                onPress={() => {
-                  setDrawerOpen(false);
-                  navigation.navigate('Dashboard');
-                }}
-                activeOpacity={0.85}
-              >
-                <MaterialIcons name="home" size={20} color="#504534" />
-                <Text style={notesStyles.drawerItemText}>Home</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={notesStyles.drawerItem}
-                onPress={() => {
-                  setDrawerOpen(false);
-                  navigation.navigate('SpeechToText');
-                }}
-                activeOpacity={0.85}
-              >
-                <MaterialIcons name="mic" size={20} color="#504534" />
-                <Text style={notesStyles.drawerItemText}>Speech to Text</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={notesStyles.drawerItem}
-                onPress={() => {
-                  setDrawerOpen(false);
-                  navigation.navigate('Services');
-                }}
-                activeOpacity={0.85}
-              >
-                <MaterialIcons name="category" size={20} color="#504534" />
-                <Text style={notesStyles.drawerItemText}>Servicios</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={notesStyles.drawerItem}
-                onPress={() => {
-                  setDrawerOpen(false);
-                  navigation.navigate('Notes');
-                }}
-                activeOpacity={0.85}
-              >
-                <MaterialIcons name="edit-note" size={20} color="#504534" />
-                <Text style={notesStyles.drawerItemText}>Mis Apuntes</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={notesStyles.drawerItem}
-                onPress={() => {
-                  setDrawerOpen(false);
-                  navigation.navigate('Settings');
-                }}
-                activeOpacity={0.85}
-              >
-                <MaterialIcons name="settings" size={20} color="#504534" />
-                <Text style={notesStyles.drawerItemText}>Configuracion</Text>
-              </TouchableOpacity>
-              <View style={[notesStyles.drawerItem, notesStyles.drawerItemActive]}>
-                <MaterialIcons name="person" size={20} color="#7c5800" />
-                <Text style={notesStyles.drawerItemActiveText}>Mi Perfil</Text>
-              </View>
-            </View>
-
-            <TouchableOpacity style={notesStyles.drawerLogout} onPress={handleLogout} activeOpacity={0.9}>
-              <MaterialIcons name="logout" size={20} color="#ba1a1a" />
-              <Text style={notesStyles.drawerLogoutText}>Cerrar sesion</Text>
-            </TouchableOpacity>
-          </View>
-          <Pressable style={notesStyles.drawerBackdrop} onPress={() => setDrawerOpen(false)} />
-        </View>
-      ) : null}
     </KeyboardAvoidingView>
   );
 }

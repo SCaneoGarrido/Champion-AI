@@ -1,17 +1,25 @@
 /**
  * Grabación de audio (Expo) y envío al backend con JWT en cada petición (authenticatedFetch).
- * Sustituye el patrón web MediaRecorder + fetch sin token.
- *
- * Estilos: ./AudioRecorder.styles.js (equivalente a CSS separado en RN).
  */
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Audio } from 'expo-av';
 import { MaterialIcons } from '@expo/vector-icons';
 import { submitRecordingToSpeechPipeline } from '../utils/speechApi';
-import styles from './AudioRecorder.styles';
+import { createAudioRecorderStyles } from './AudioRecorder.styles';
 
-export default function AudioRecorder() {
+export default function AudioRecorder({ accentColor, primaryColor, mutedColor, errorColor }) {
+  const styles = useMemo(
+    () =>
+      createAudioRecorderStyles({
+        sttAccent: accentColor,
+        primary: primaryColor,
+        outline: mutedColor,
+        error: errorColor,
+      }),
+    [accentColor, primaryColor, mutedColor, errorColor]
+  );
+
   const recordingRef = useRef(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -30,7 +38,6 @@ export default function AudioRecorder() {
     };
   }, []);
 
-  /** Solicita permiso de micrófono y arranca la grabación en alta calidad. */
   const startRecording = async () => {
     setError('');
     setLastJob(null);
@@ -59,7 +66,6 @@ export default function AudioRecorder() {
     }
   };
 
-  /** Detiene la grabación, calcula duración y envía el archivo vía speechApi (con Bearer). */
   const stopRecording = async () => {
     setError('');
     const recording = recordingRef.current;
@@ -77,12 +83,9 @@ export default function AudioRecorder() {
       const durationMillis = statusBefore.durationMillis || 0;
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
-      if (!uri) {
-        throw new Error('No se obtuvo archivo de audio.');
-      }
+      if (!uri) throw new Error('No se obtuvo archivo de audio.');
 
       const durationSeconds = Math.max(durationMillis / 1000, 0.5);
-
       const result = await submitRecordingToSpeechPipeline({
         fileUri: uri,
         durationSeconds,

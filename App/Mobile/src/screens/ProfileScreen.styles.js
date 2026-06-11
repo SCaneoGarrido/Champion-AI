@@ -6,7 +6,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fcf9f8',
   },
   topBar: {
-    paddingTop: 18,
     paddingBottom: 14,
     paddingHorizontal: 20,
     flexDirection: 'row',
@@ -293,7 +292,7 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 22,
-    bottom: 26,
+    bottom: 90,
     width: 60,
     height: 60,
     borderRadius: 30,

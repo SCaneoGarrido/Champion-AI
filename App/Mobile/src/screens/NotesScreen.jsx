@@ -11,8 +11,10 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
-import { clearSession } from '../utils/session';
-import styles from './NotesScreen.styles';
+import baseStyles from './NotesScreen.styles';
+import { useThemedScreenStyles } from '../hooks/useThemedScreenStyles';
+import { mergeNotesTheme } from '../theme/screenThemeMerges';
+import { useTopBarStyle } from '../hooks/useTopBarStyle';
 
 const USER_KEY = '@champion_user';
 
@@ -51,42 +53,43 @@ const NOTE_ROWS = [
   },
 ];
 
-function StatusBadge({ status }) {
-  const map = {
-    available: {
-      label: 'Disponible',
-      wrap: styles.badgeAvailable,
-      text: styles.badgeAvailableText,
-    },
-    processing: {
-      label: 'En Proceso',
-      wrap: styles.badgeProcess,
-      text: styles.badgeProcessText,
-    },
-    queued: {
-      label: 'En Cola',
-      wrap: styles.badgeQueued,
-      text: styles.badgeQueuedText,
-    },
-    error: {
-      label: 'Error',
-      wrap: styles.badgeError,
-      text: styles.badgeErrorText,
-    },
-  };
-  const cfg = map[status] || map.available;
-  return (
-    <View style={[styles.badge, cfg.wrap]}>
-      <Text style={[styles.badgeText, cfg.text]} numberOfLines={1}>
-        {cfg.label}
-      </Text>
-    </View>
-  );
-}
+export default function NotesScreen() {
+  const styles = useThemedScreenStyles(baseStyles, mergeNotesTheme);
+  const topBarStyle = useTopBarStyle();
 
-export default function NotesScreen({ navigation }) {
+  function StatusBadge({ status }) {
+    const map = {
+      available: {
+        label: 'Disponible',
+        wrap: styles.badgeAvailable,
+        text: styles.badgeAvailableText,
+      },
+      processing: {
+        label: 'En Proceso',
+        wrap: styles.badgeProcess,
+        text: styles.badgeProcessText,
+      },
+      queued: {
+        label: 'En Cola',
+        wrap: styles.badgeQueued,
+        text: styles.badgeQueuedText,
+      },
+      error: {
+        label: 'Error',
+        wrap: styles.badgeError,
+        text: styles.badgeErrorText,
+      },
+    };
+    const cfg = map[status] || map.available;
+    return (
+      <View style={[styles.badge, cfg.wrap]}>
+        <Text style={[styles.badgeText, cfg.text]} numberOfLines={1}>
+          {cfg.label}
+        </Text>
+      </View>
+    );
+  }
   const [user, setUser] = useState(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [page, setPage] = useState(1);
   const totalPages = 12;
 
@@ -108,26 +111,13 @@ export default function NotesScreen({ navigation }) {
     return clean.slice(0, 2).toUpperCase();
   }, [user]);
 
-  const handleLogout = async () => {
-    await clearSession();
-    setDrawerOpen(false);
-    navigation.replace('Home');
-  };
-
   return (
     <View style={styles.screen}>
       <View style={styles.decorTop} pointerEvents="none" />
       <View style={styles.decorBottom} pointerEvents="none" />
 
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, topBarStyle]}>
         <View style={styles.topLeft}>
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => setDrawerOpen(true)}
-            activeOpacity={0.85}
-          >
-            <MaterialIcons name="menu" size={24} color="#1a1a1a" />
-          </TouchableOpacity>
           <Text style={[styles.brand, { fontStyle: 'italic' }]}>
             Champion
             <Text style={[styles.brandAccent, { fontStyle: 'italic' }]}> AI</Text>
@@ -267,89 +257,6 @@ export default function NotesScreen({ navigation }) {
         <MaterialIcons name="smart-toy" size={28} color="#fff" />
       </Pressable>
 
-      {drawerOpen ? (
-        <View style={styles.drawerOverlay}>
-          <View style={styles.drawerPanel}>
-            <View style={styles.drawerHeader}>
-              <View style={styles.drawerAvatar}>
-                <Text style={styles.drawerAvatarText}>{userInitials}</Text>
-              </View>
-              <View>
-                <Text style={styles.drawerName}>Sebastian</Text>
-                <Text style={styles.drawerRole}>Student Architect</Text>
-              </View>
-            </View>
-
-            <View style={styles.drawerNav}>
-              <TouchableOpacity
-                style={styles.drawerItem}
-                onPress={() => {
-                  setDrawerOpen(false);
-                  navigation.navigate('Dashboard');
-                }}
-                activeOpacity={0.85}
-              >
-                <MaterialIcons name="home" size={20} color="#504534" />
-                <Text style={styles.drawerItemText}>Home</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.drawerItem}
-                onPress={() => {
-                  setDrawerOpen(false);
-                  navigation.navigate('SpeechToText');
-                }}
-                activeOpacity={0.85}
-              >
-                <MaterialIcons name="mic" size={20} color="#504534" />
-                <Text style={styles.drawerItemText}>Speech to Text</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.drawerItem}
-                onPress={() => {
-                  setDrawerOpen(false);
-                  navigation.navigate('Services');
-                }}
-                activeOpacity={0.85}
-              >
-                <MaterialIcons name="category" size={20} color="#504534" />
-                <Text style={styles.drawerItemText}>Servicios</Text>
-              </TouchableOpacity>
-              <View style={[styles.drawerItem, styles.drawerItemActive]}>
-                <MaterialIcons name="edit-note" size={20} color="#7c5800" />
-                <Text style={styles.drawerItemActiveText}>Mis Apuntes</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.drawerItem}
-                onPress={() => {
-                  setDrawerOpen(false);
-                  navigation.navigate('Settings');
-                }}
-                activeOpacity={0.85}
-              >
-                <MaterialIcons name="settings" size={20} color="#504534" />
-                <Text style={styles.drawerItemText}>Configuracion</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.drawerItem}
-                onPress={() => {
-                  setDrawerOpen(false);
-                  navigation.navigate('Profile');
-                }}
-                activeOpacity={0.85}
-              >
-                <MaterialIcons name="person" size={20} color="#504534" />
-                <Text style={styles.drawerItemText}>Mi Perfil</Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity style={styles.drawerLogout} onPress={handleLogout} activeOpacity={0.9}>
-              <MaterialIcons name="logout" size={20} color="#ba1a1a" />
-              <Text style={styles.drawerLogoutText}>Cerrar sesion</Text>
-            </TouchableOpacity>
-          </View>
-          <Pressable style={styles.drawerBackdrop} onPress={() => setDrawerOpen(false)} />
-        </View>
-      ) : null}
     </View>
   );
 }

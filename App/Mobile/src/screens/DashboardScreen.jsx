@@ -3,15 +3,15 @@
  *
  * Implementa el diseño solicitado de HomeDashboard y mantiene:
  * - lectura de sesión desde AsyncStorage para mostrar iniciales del usuario
- * - logout desde el drawer lateral
  * - estructura por secciones para facilitar mantenimiento
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Pressable } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
-import { clearSession } from '../utils/session';
-import styles from './DashboardScreen.styles';
+import { createDashboardStyles } from './DashboardScreen.styles';
+import { useThemedStyles } from '../hooks/useThemedStyles';
+import { useTopBarStyle } from '../hooks/useTopBarStyle';
 
 const USER_KEY = '@champion_user';
 
@@ -45,9 +45,10 @@ const ACTIVITY_ITEMS = [
   },
 ];
 
-export default function DashboardScreen({ navigation }) {
+export default function DashboardScreen() {
+  const styles = useThemedStyles(createDashboardStyles);
+  const topBarStyle = useTopBarStyle();
   const [user, setUser] = useState(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -67,23 +68,10 @@ export default function DashboardScreen({ navigation }) {
     return clean.slice(0, 2).toUpperCase();
   }, [user]);
 
-  const handleLogout = async () => {
-    await clearSession();
-    setDrawerOpen(false);
-    navigation.replace('Home');
-  };
-
   return (
     <View style={styles.screen}>
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, topBarStyle]}>
         <View style={styles.topLeft}>
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => setDrawerOpen(true)}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons name="menu" size={24} color="#1c1b1b" />
-          </TouchableOpacity>
           <Text style={styles.brand}>
             Champion<Text style={styles.brandAccent}>AI</Text>
           </Text>
@@ -201,90 +189,6 @@ export default function DashboardScreen({ navigation }) {
           <Text style={styles.fabBadgeText}>1</Text>
         </View>
       </Pressable>
-
-      {drawerOpen ? (
-        <View style={styles.drawerOverlay}>
-          <View style={styles.drawerPanel}>
-            <View style={styles.drawerHeader}>
-              <View style={styles.drawerAvatar}>
-                <Text style={styles.drawerAvatarText}>{userInitials}</Text>
-              </View>
-              <View>
-                <Text style={styles.drawerName}>Sebastian</Text>
-                <Text style={styles.drawerRole}>Student Architect</Text>
-              </View>
-            </View>
-
-            <View style={styles.drawerNav}>
-              <View style={[styles.drawerItem, styles.drawerItemActive]}>
-                <MaterialIcons name="home" size={20} color="#7c5800" />
-                <Text style={styles.drawerItemActiveText}>Home</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.drawerItem}
-                onPress={() => {
-                  setDrawerOpen(false);
-                  navigation.navigate('SpeechToText');
-                }}
-                activeOpacity={0.85}
-              >
-                <MaterialIcons name="mic" size={20} color="#504534" />
-                <Text style={styles.drawerItemText}>Speech to Text</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.drawerItem}
-                onPress={() => {
-                  setDrawerOpen(false);
-                  navigation.navigate('Services');
-                }}
-                activeOpacity={0.85}
-              >
-                <MaterialIcons name="category" size={20} color="#504534" />
-                <Text style={styles.drawerItemText}>Servicios</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.drawerItem}
-                onPress={() => {
-                  setDrawerOpen(false);
-                  navigation.navigate('Notes');
-                }}
-                activeOpacity={0.85}
-              >
-                <MaterialIcons name="edit-note" size={20} color="#504534" />
-                <Text style={styles.drawerItemText}>Mis Apuntes</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.drawerItem}
-                onPress={() => {
-                  setDrawerOpen(false);
-                  navigation.navigate('Settings');
-                }}
-                activeOpacity={0.85}
-              >
-                <MaterialIcons name="settings" size={20} color="#504534" />
-                <Text style={styles.drawerItemText}>Configuracion</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.drawerItem}
-                onPress={() => {
-                  setDrawerOpen(false);
-                  navigation.navigate('Profile');
-                }}
-                activeOpacity={0.85}
-              >
-                <MaterialIcons name="person" size={20} color="#504534" />
-                <Text style={styles.drawerItemText}>Mi Perfil</Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity style={styles.drawerLogout} onPress={handleLogout} activeOpacity={0.9}>
-              <MaterialIcons name="logout" size={20} color="#ba1a1a" />
-              <Text style={styles.drawerLogoutText}>Cerrar sesion</Text>
-            </TouchableOpacity>
-          </View>
-          <Pressable style={styles.drawerBackdrop} onPress={() => setDrawerOpen(false)} />
-        </View>
-      ) : null}
     </View>
   );
 }

@@ -4,9 +4,9 @@
  * Qué hace:
  * - Valida campos obligatorios, formato de email, contraseña y aceptación de términos.
  * - Usa íconos personalizados (nombre, correo y candado) desde /assets/images.
- * - Mantiene acciones de registro social como placeholder (Microsoft / Apple).
+ * - Mantiene acción de registro social como placeholder (Microsoft).
  */
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -19,13 +19,8 @@ import {
   ScrollView,
   Image,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from '@react-navigation/native';
 import { validarEmail, validarCampos } from '../utils/validation';
 import { register } from '../utils/api';
-
-/** Clave de preferencia de tema compartida con Login */
-const THEME_KEY = '@champion_theme';
 
 export default function SignUpScreen({ navigation }) {
   /** Campos del formulario */
@@ -40,47 +35,8 @@ export default function SignUpScreen({ navigation }) {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  /** Registro no cambia tema: solo refleja el que se eligió en Login */
-  const [isDark, setIsDark] = useState(false);
-
-  useFocusEffect(
-    useCallback(() => {
-      let mounted = true;
-      (async () => {
-        try {
-          const storedTheme = await AsyncStorage.getItem(THEME_KEY);
-          if (!mounted) return;
-          setIsDark(storedTheme === 'dark');
-        } catch (_) {}
-      })();
-      return () => {
-        mounted = false;
-      };
-    }, [])
-  );
-
-  /**
-   * Paleta clara para que quede consistente con el login actual.
-   * La dejamos memorizada para evitar recalcular estilos en cada render.
-   */
-  const theme = useMemo(() => {
-    const primary = '#dcb755';
-    if (isDark) {
-      return {
-        background: '#000000',
-        text: '#e2e8f0',
-        muted: '#94a3b8',
-        inputBg: '#0f172a',
-        inputText: '#e2e8f0',
-        border: '#1f2937',
-        secondaryText: '#cbd5e1',
-        divider: '#1f2937',
-        footer: '#94a3b8',
-        primary,
-        primarySoft: 'rgba(220, 183, 85, 0.25)',
-      };
-    }
-    return {
+  const theme = useMemo(
+    () => ({
       background: '#ffffff',
       text: '#0f172a',
       muted: '#64748b',
@@ -90,10 +46,11 @@ export default function SignUpScreen({ navigation }) {
       secondaryText: '#475569',
       divider: '#e5e7eb',
       footer: '#9ca3af',
-      primary,
+      primary: '#dcb755',
       primarySoft: 'rgba(220, 183, 85, 0.25)',
-    };
-  }, [isDark]);
+    }),
+    []
+  );
 
   const styles = useMemo(() => createStyles(theme), [theme]);
 
@@ -301,29 +258,18 @@ export default function SignUpScreen({ navigation }) {
             <View style={styles.dividerLine} />
           </View>
 
-          <View style={styles.socialGrid}>
-            <TouchableOpacity
-              style={[styles.socialButton, { marginRight: 8 }]}
-              onPress={() => setError('Registro con Microsoft no implementado en esta versión.')}
-              disabled={loading}
-            >
-              <Image
-                source={require('../assets/images/Microsoft logo.png')}
-                style={[styles.socialLogo, { marginRight: 8 }]}
-                resizeMode="contain"
-              />
-              <Text style={styles.socialText}>Microsoft</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.socialButton, { marginLeft: 8 }]}
-              onPress={() => setError('Registro con Apple no implementado en esta versión.')}
-              disabled={loading}
-            >
-              <Text style={[styles.appleIcon, { marginRight: 8 }]}></Text>
-              <Text style={styles.socialText}>Apple</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.socialButton}
+            onPress={() => setError('Registro con Microsoft no implementado en esta versión.')}
+            disabled={loading}
+          >
+            <Image
+              source={require('../assets/images/Microsoft logo.png')}
+              style={[styles.socialLogo, { marginRight: 8 }]}
+              resizeMode="contain"
+            />
+            <Text style={styles.socialText}>Microsoft</Text>
+          </TouchableOpacity>
 
           {/* Navegación a Login */}
           <View style={styles.bottom}>
@@ -497,9 +443,7 @@ function createStyles(theme) {
       fontWeight: '600',
     },
 
-    socialGrid: { flexDirection: 'row' },
     socialButton: {
-      flex: 1,
       height: 48,
       borderRadius: 14,
       borderWidth: 1,
@@ -511,7 +455,6 @@ function createStyles(theme) {
     },
     socialLogo: { width: 22, height: 22 },
     socialText: { fontSize: 14, fontWeight: '800', color: theme.text },
-    appleIcon: { fontSize: 23, color: theme.text, fontWeight: '800' },
 
     bottom: {
       marginTop: 16,

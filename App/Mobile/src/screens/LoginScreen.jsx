@@ -5,7 +5,7 @@
  * Si el login es correcto, guarda user_id en AsyncStorage y navega al Dashboard.
  * En error de red muestra mensaje indicando comprobar si la API está en marcha.
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -18,13 +18,9 @@ import {
   ScrollView,
   Image,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { validarEmail, validarCampos } from '../utils/validation';
 import { login } from '../utils/api';
 import { setSession } from '../utils/session';
-
-/** Clave de preferencia de tema compartida entre Login y Registro */
-const THEME_KEY = '@champion_theme';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -32,20 +28,6 @@ export default function LoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  // Diseño original incluye un toggle claro/oscuro. Lo hacemos a nivel de pantalla.
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    // Al abrir Login, recuperamos la preferencia de tema guardada.
-    (async () => {
-      try {
-        const storedTheme = await AsyncStorage.getItem(THEME_KEY);
-        if (storedTheme === 'dark') setIsDark(true);
-        if (storedTheme === 'light') setIsDark(false);
-      } catch (_) { }
-    })();
-  }, []);
-
   const handleLogin = async () => {
     setError('');
     if (!validarCampos([email, password])) {
@@ -73,7 +55,7 @@ export default function LoginScreen({ navigation }) {
           refreshToken: response.refreshToken ?? undefined,
           email,
         });
-        navigation.replace('Dashboard');
+        navigation.replace('Main');
         return;
       }
 
@@ -88,25 +70,8 @@ export default function LoginScreen({ navigation }) {
     }
   };
 
-  const theme = useMemo(() => {
-    const primary = '#dcb755';
-    if (isDark) {
-      return {
-        background: '#000000',
-        text: '#e2e8f0',
-        muted: '#94a3b8',
-        inputBg: '#0f172a',
-        inputText: '#e2e8f0',
-        border: '#1f2937',
-        cardBg: '#0b1220',
-        buttonText: '#ffffff',
-        toggleBg: '#0b1220',
-        toggleIcon: '#cbd5e1',
-        primary,
-        primarySoft: 'rgba(220, 183, 85, 0.25)',
-      };
-    }
-    return {
+  const theme = useMemo(
+    () => ({
       background: '#ffffff',
       text: '#0f172a',
       muted: '#64748b',
@@ -115,22 +80,13 @@ export default function LoginScreen({ navigation }) {
       border: '#e2e8f0',
       cardBg: '#ffffff',
       buttonText: '#ffffff',
-      toggleBg: '#f1f5f9',
-      toggleIcon: '#475569',
-      primary,
+      primary: '#dcb755',
       primarySoft: 'rgba(220, 183, 85, 0.25)',
-    };
-  }, [isDark]);
+    }),
+    []
+  );
 
   const styles = useMemo(() => createStyles(theme), [theme]);
-
-  const handleToggleTheme = async () => {
-    const nextThemeDark = !isDark;
-    setIsDark(nextThemeDark);
-    try {
-      await AsyncStorage.setItem(THEME_KEY, nextThemeDark ? 'dark' : 'light');
-    } catch (_) { }
-  };
 
   return (
     <KeyboardAvoidingView
@@ -245,42 +201,26 @@ export default function LoginScreen({ navigation }) {
             </TouchableOpacity>
 
             <View style={styles.divider}>
-              <View style={[styles.dividerLine, { backgroundColor: isDark ? '#0f172a' : theme.border }]} />
+              <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
               <Text style={[styles.dividerText, { color: theme.muted }]}>o continúa con</Text>
-              <View style={[styles.dividerLine, { backgroundColor: isDark ? '#0f172a' : theme.border }]} />
+              <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
             </View>
 
-            <View style={styles.socialGrid}>
-              <TouchableOpacity
-                style={[
-                  styles.socialButton,
-                  { borderColor: theme.border, backgroundColor: 'transparent' },
-                  { marginRight: 8 },
-                ]}
-                onPress={() => setError('Login con Microsoft no implementado en esta versión.')}
-                disabled={loading}
-              >
-                <Image
-                  source={require('../assets/images/Microsoft logo.png')}
-                  style={[styles.socialLogo, { marginRight: 8 }]}
-                  resizeMode="contain"
-                />
-                <Text style={[styles.socialText, { color: theme.text }]}>Microsoft</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.socialButton,
-                  { borderColor: theme.border, backgroundColor: 'transparent' },
-                  { marginLeft: 8 },
-                ]}
-                onPress={() => setError('Apple login no implementado en esta versión.')}
-                disabled={loading}
-              >
-                <Text style={[styles.appleIcon, { color: theme.text, marginRight: 8 }]}></Text>
-                <Text style={[styles.socialText, { color: theme.text }]}>Apple</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={[
+                styles.socialButton,
+                { borderColor: theme.border, backgroundColor: 'transparent' },
+              ]}
+              onPress={() => setError('Login con Microsoft no implementado en esta versión.')}
+              disabled={loading}
+            >
+              <Image
+                source={require('../assets/images/Microsoft logo.png')}
+                style={[styles.socialLogo, { marginRight: 8 }]}
+                resizeMode="contain"
+              />
+              <Text style={[styles.socialText, { color: theme.text }]}>Microsoft</Text>
+            </TouchableOpacity>
 
             <View style={styles.bottom}>
               <Text style={[styles.bottomText, { color: theme.muted }]}>
@@ -292,26 +232,6 @@ export default function LoginScreen({ navigation }) {
             </View>
           </View>
         </ScrollView>
-
-        {/* Botón de toggle claro/oscuro (estilo “fixed” del diseño original) */}
-        <TouchableOpacity
-          style={[
-            styles.themeToggle,
-            { backgroundColor: theme.toggleBg, borderColor: theme.border },
-          ]}
-          onPress={handleToggleTheme}
-          activeOpacity={0.9}
-        >
-          {isDark ? (
-            <Image
-              source={require('../assets/images/Sol Login.png')}
-              style={styles.themeToggleIcon}
-              resizeMode="contain"
-            />
-          ) : (
-            <Text style={styles.themeToggleMoon}>☾</Text>
-          )}
-        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
@@ -424,9 +344,7 @@ function createStyles(theme) {
     dividerLine: { height: 1, flex: 1, opacity: 1 },
     dividerText: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', marginHorizontal: 10 },
 
-    socialGrid: { flexDirection: 'row' },
     socialButton: {
-      flex: 1,
       borderWidth: 1,
       borderRadius: 16,
       paddingVertical: 12,
@@ -437,25 +355,9 @@ function createStyles(theme) {
     },
     socialLogo: { width: 20, height: 20 },
     socialText: { fontSize: 14, fontWeight: '800' },
-    appleIcon: { fontSize: 18, fontWeight: '900' },
 
     bottom: { marginTop: 22, alignItems: 'center' },
     bottomText: { fontSize: 13, fontWeight: '600' },
     registerLink: { fontSize: 13, fontWeight: '800', marginTop: 4 },
-
-    themeToggle: {
-      position: 'absolute',
-      right: 18,
-      top: 34,
-      width: 46,
-      height: 46,
-      borderRadius: 23,
-      borderWidth: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      elevation: 2,
-    },
-    themeToggleIcon: { width: 22, height: 22 },
-    themeToggleMoon: { color: theme.toggleIcon, fontSize: 18, fontWeight: '700' },
   });
 }

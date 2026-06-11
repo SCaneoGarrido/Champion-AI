@@ -35,11 +35,17 @@ app.use('/API/Transversal', transversal_router);
 app.listen(PORT, '0.0.0.0', async () => {
     const LOCAL_IP = getLocalIP();
     console.log('Iniciando chequeo de servicios externos...');
+    const skipAzure = process.env.SKIP_AZURE_HEALTHCHECK === 'true';
+    if (skipAzure) {
+        console.warn('⚠️ SKIP_AZURE_HEALTHCHECK=true: omitiendo chequeo de Azure (solo desarrollo local).');
+    }
     // Chequeo inicial de servicios externos con retry y backoff
     const connections = await Promise.all([
         health_service.retryConnection({ serviceKey: 'postgres', testFn: database_service.testPostgres.bind(database_service)}),
-        health_service.retryConnection({ serviceKey: 'azureQueue', testFn: azure_storage_service.testQueueConnection.bind(azure_storage_service)}),
-        health_service.retryConnection({ serviceKey: 'azureBlob', testFn: azure_storage_service.testBlobConnection.bind(azure_storage_service)})
+        ...(skipAzure ? [] : [
+            health_service.retryConnection({ serviceKey: 'azureQueue', testFn: azure_storage_service.testQueueConnection.bind(azure_storage_service)}),
+            health_service.retryConnection({ serviceKey: 'azureBlob', testFn: azure_storage_service.testBlobConnection.bind(azure_storage_service)}),
+        ]),
     ]);
 
     // Validar si vale la pena arrancar la API o salir si no se pudieron conectar las dependencias críticas
