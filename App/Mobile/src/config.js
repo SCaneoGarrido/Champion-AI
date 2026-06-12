@@ -10,7 +10,7 @@
 export const API_BASE_URL =
   typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_URL
     ? process.env.EXPO_PUBLIC_API_URL.replace(/\/$/, '')
-    : 'http://192.168.1.10:5000';
+    : 'http://192.168.100.15:5000';
 
 export const config = {
   login: {

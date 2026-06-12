@@ -1,12 +1,11 @@
-// middlewares/validateSTTRequest.js  CONSIDERAR SI REALMENTE APORTA AL ENDPOINT
+// middlewares/validateSTTRequest.js
+const { sendError } = require('../utils/response.helper');
 
 const validateSTTRequest = (req, res, next) => {
-    const {req_info } = req.body;
+    const { req_info } = req.body;
 
     if (!req_info) {
-        return res.status(400).json({
-            error: { code: "INVALID_PAYLOAD", message: "Estructura inválida" }
-        });
+        return sendError(res, 400, "INVALID_PAYLOAD", "Estructura inválida: req_info requerido.");
     }
 
     req.stt = { req_info };

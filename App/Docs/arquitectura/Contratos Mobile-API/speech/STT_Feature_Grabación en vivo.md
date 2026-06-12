@@ -1,5 +1,9 @@
-# 📡 CHAMPION AI — Contrato API + Arquitectura Real STT Live Recording
-**Versión: 2.0 · Servicio: STT · Feature: live_recording**
+# CHAMPION AI — Contrato API + Arquitectura Real STT Live Recording
+**Versión: 3.0 · Servicio: STT · Feature: live_recording**
+
+> **v3.0 — Contrato de respuestas estandarizado.**
+> Todas las respuestas siguen la estructura `{ success, data, error }`.
+> Ver `App/Docs/analisis_contrato_respuestas_HTTP.md` para el análisis completo.
 
 ---
 
@@ -136,6 +140,23 @@ raw_result_json
 
 ---
 
+# Contrato de Respuesta Estándar
+
+Todas las respuestas de la API siguen esta estructura:
+
+```json
+{
+  "success": true | false,
+  "data": <objeto | array | null>,
+  "error": { "code": "SCREAMING_SNAKE_CASE", "message": "..." } | null
+}
+```
+
+- Si `success: true` → `error` es `null`
+- Si `success: false` → `data` es `null`
+
+---
+
 # Flujo completo
 
 ---
@@ -143,7 +164,7 @@ raw_result_json
 ## 1. Registro
 
 ```http
-POST /auth/register
+POST /API/AUTH/register
 ```
 
 ### Body
@@ -151,8 +172,8 @@ POST /auth/register
 ```json
 {
   "email": "test@championai.app",
-  "username": "test_user",
-  "display_name": "Test User",
+  "first_name": "Test",
+  "last_name": "User",
   "password": "Password123!"
 }
 ```
@@ -165,12 +186,43 @@ POST /auth/register
 3. inserta sec_user_password
 ```
 
+### Response — 201 Created
+
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Usuario creado satisfactoriamente."
+  },
+  "error": null
+}
+```
+
+### Errores posibles
+
+| Status | code | Descripción |
+|--------|------|-------------|
+| 400 | `VALIDATION_ERROR` | Campos faltantes en el body |
+| 409 | `CONFLICT` | El correo ya está registrado |
+| 500 | `INTERNAL_ERROR` | Error interno del servidor |
+
+```json
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "CONFLICT",
+    "message": "El correo electrónico ya está registrado."
+  }
+}
+```
+
 ---
 
 ## 2. Login
 
 ```http
-POST /auth/login
+POST /API/AUTH/login
 ```
 
 ### Body
@@ -182,16 +234,25 @@ POST /auth/login
 }
 ```
 
-### Response
+### Response — 200 OK
 
 ```json
 {
-  "access_token": "jwt_token",
-  "user": {
-    "user_id": "uuid"
-  }
+  "success": true,
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  },
+  "error": null
 }
 ```
+
+### Errores posibles
+
+| Status | code | Descripción |
+|--------|------|-------------|
+| 400 | `VALIDATION_ERROR` | email o password faltante |
+| 401 | `UNAUTHORIZED` | Credenciales inválidas |
+| 500 | `INTERNAL_ERROR` | Error interno del servidor |
 
 ---
 
@@ -199,7 +260,7 @@ POST /auth/login
 
 ```http
 POST /AIServices/Speechv2/init
-Authorization: Bearer {jwt}
+Authorization: Bearer {access_token}
 ```
 
 ### Body
@@ -220,35 +281,50 @@ Authorization: Bearer {jwt}
 
 ```txt
 1. valida JWT
-2. valida user_id
+2. extrae user_id
 3. genera job_id
 4. genera blob_name
-5. genera SAS URL
+5. genera SAS URL (upload_url)
+6. construye blob_url permanente
 ```
 
 ---
 
-## Response
+## Response — 201 Created
 
 ```json
 {
-  "jobId": "job_123",
-  "blobName": "audio/user_uuid/job_123/input.webm",
-  "uploadUrl": "https://storage.blob.core.windows.net/audio/...",
-  "expiresIn": 600
+  "success": true,
+  "data": {
+    "job_id": "job_550e8400-e29b-41d4-a716-446655440000",
+    "blob_name": "job_550e8400-e29b-41d4-a716-446655440000.webm",
+    "upload_url": "https://storage.blob.core.windows.net/audio/...?sv=...&sig=...",
+    "expires_in": 3600
+  },
+  "error": null
 }
 ```
+
+### Errores posibles
+
+| Status | code | Descripción |
+|--------|------|-------------|
+| 401 | `INVALID_TOKEN` | JWT ausente |
+| 403 | `TOKEN_EXPIRED` | JWT inválido o expirado |
+| 500 | `INTERNAL_ERROR` | Error al generar URL o construir blob |
 
 ---
 
 # 4. Subir archivo de audio
+
+El cliente sube directamente a Azure Blob usando la `upload_url` del paso anterior. El backend no interviene en este paso.
 
 ---
 
 ## Usando cURL
 
 ```bash
-curl -X PUT "{uploadUrl}" \
+curl -X PUT "{upload_url}" \
   -H "x-ms-blob-type: BlockBlob" \
   -H "Content-Type: audio/webm" \
   --data-binary "@audio_test.webm"
@@ -260,6 +336,7 @@ curl -X PUT "{uploadUrl}" \
 
 ```txt
 Method: PUT
+URL: {upload_url}
 Body: binary
 
 Headers:
@@ -273,9 +350,9 @@ Content-Type: audio/webm
 
 ```txt
 audio/
-   user_uuid/
-      job_123/
-         input.webm
+   {user_uuid}/
+      {job_id}/
+         {job_id}.webm
 ```
 
 ---
@@ -284,7 +361,7 @@ audio/
 
 ```http
 POST /AIServices/Speechv2/SpeechToTextv2
-Authorization: Bearer {jwt}
+Authorization: Bearer {access_token}
 ```
 
 ### Body
@@ -292,20 +369,20 @@ Authorization: Bearer {jwt}
 ```json
 {
   "req_info": {
-    "job_id": "job_123",
+    "job_id": "job_550e8400-e29b-41d4-a716-446655440000",
     "service": "STT",
     "feature": "live_recording",
     "flow": "flow_live_recording",
     "language_info": {
       "locale": "es-CL",
       "locale_name": "Spanish (Chile)"
-    },
-    "audio": {
-      "format": "webm",
-      "sample_rate": 16000,
-      "duration_seconds": 120,
-      "blob_url": "https://storage.blob.core.windows.net/audio/..."
     }
+  },
+  "audio_info": {
+    "format": "webm",
+    "sample_rate": 16000,
+    "duration_seconds": 120,
+    "blob_url": "https://storage.blob.core.windows.net/audio/..."
   }
 }
 ```
@@ -316,15 +393,51 @@ Authorization: Bearer {jwt}
 
 ```txt
 1. valida JWT
-2. valida user_id
-3. valida duración
-4. valida formato
-5. valida blob_url
-6. ejecuta:
-   sp_create_stt_live_recording_job
-7. publica mensaje en Azure Queue
-8. responde 202
+2. extrae user_id
+3. valida req_info (validateSTTRequest)
+4. valida audio_info (validateAudio):
+   - formato permitido
+   - sample_rate válido (8000 | 16000 | 44100 | 48000)
+   - duración <= 10800 segundos
+   - blob_url presente y no expirada
+5. ejecuta sp_create_stt_live_recording_job
+6. publica mensaje en Azure Queue
+7. responde 202
 ```
+
+---
+
+## Response — 202 Accepted
+
+```json
+{
+  "success": true,
+  "data": {
+    "job_id": "job_550e8400-e29b-41d4-a716-446655440000",
+    "status": "accepted",
+    "flow": "flow_live_recording",
+    "polling_url": "/AIServices/Speechv2/jobs/job_550e8400-e29b-41d4-a716-446655440000/status",
+    "created_at": "2026-06-12T10:00:00.000Z"
+  },
+  "error": null
+}
+```
+
+### Errores posibles
+
+| Status | code | Descripción |
+|--------|------|-------------|
+| 400 | `INVALID_PAYLOAD` | req_info ausente |
+| 400 | `INVALID_STT_CONTEXT` | req_info o audio_info mal formados |
+| 400 | `UNSUPPORTED_FORMAT` | Formato de audio no soportado |
+| 400 | `INVALID_SAMPLE_RATE` | sample_rate inválido |
+| 400 | `DURATION_EXCEEDED` | Audio supera 3 horas |
+| 400 | `INVALID_BLOB_URL` | blob_url ausente o expirada |
+| 401 | `INVALID_TOKEN` | JWT ausente |
+| 403 | `TOKEN_EXPIRED` | JWT inválido o expirado |
+| 403 | `USER_MISMATCH` | user_id del token no coincide con el payload |
+| 500 | `JOB_CREATION_FAILED` | No se pudo crear el job en BD |
+| 500 | `INTERNAL_ERROR` | Error interno no clasificado |
 
 ---
 
@@ -358,13 +471,7 @@ Mensaje:
 
 ```json
 {
-  "job_id": "job_123",
-  "user_id": "uuid",
-  "blob_url": "...",
-  "format": "webm",
-  "sample_rate": 16000,
-  "duration_seconds": 120,
-  "locale": "es-CL"
+  "job_id": "job_550e8400-e29b-41d4-a716-446655440000"
 }
 ```
 
@@ -548,12 +655,14 @@ para evitar duplicados.
 
 ---
 
-# Polling de estado
+# 6. Polling de estado
 
 ```http
 GET /AIServices/Speechv2/jobs/{job_id}/status
-Authorization: Bearer {jwt}
+Authorization: Bearer {access_token}
 ```
+
+> **Estado:** Pendiente de implementación en el router.
 
 Backend consulta:
 
@@ -563,47 +672,70 @@ vw_ai_job_current_status
 
 ---
 
-## Response processing
+## Response — processing (200 OK)
 
 ```json
 {
-  "job_id": "job_123",
-  "status": "processing",
-  "current_step": "summary"
+  "success": true,
+  "data": {
+    "job_id": "job_550e8400-e29b-41d4-a716-446655440000",
+    "status": "processing",
+    "current_step": "summary"
+  },
+  "error": null
 }
 ```
 
 ---
 
-## Response completed
+## Response — completed (200 OK)
 
 ```json
 {
-  "job_id": "job_123",
-  "status": "completed"
+  "success": true,
+  "data": {
+    "job_id": "job_550e8400-e29b-41d4-a716-446655440000",
+    "status": "completed"
+  },
+  "error": null
 }
 ```
 
 ---
 
-## Response failed
+## Response — failed (200 OK)
 
 ```json
 {
-  "job_id": "job_123",
-  "status": "failed",
-  "error_code": "STT_ENGINE_UNAVAILABLE"
+  "success": true,
+  "data": {
+    "job_id": "job_550e8400-e29b-41d4-a716-446655440000",
+    "status": "failed",
+    "error_code": "STT_ENGINE_UNAVAILABLE"
+  },
+  "error": null
 }
 ```
 
+### Errores posibles
+
+| Status | code | Descripción |
+|--------|------|-------------|
+| 401 | `INVALID_TOKEN` | JWT ausente |
+| 403 | `TOKEN_EXPIRED` | JWT inválido o expirado |
+| 404 | `NOT_FOUND` | job_id no encontrado |
+| 500 | `INTERNAL_ERROR` | Error interno del servidor |
+
 ---
 
-# Obtener resultado final
+# 7. Obtener resultado final
 
 ```http
 GET /AIServices/Speechv2/jobs/{job_id}/result
-Authorization: Bearer {jwt}
+Authorization: Bearer {access_token}
 ```
+
+> **Estado:** Pendiente de implementación en el router.
 
 Backend consulta:
 
@@ -613,20 +745,33 @@ vw_stt_recording_result
 
 ---
 
-## Response
+## Response — 200 OK
 
 ```json
 {
-  "job_id": "job_123",
-  "status": "completed",
-  "result": {
-    "transcription": "...",
-    "summary": "...",
-    "notes": "...",
-    "mind_map": {}
-  }
+  "success": true,
+  "data": {
+    "job_id": "job_550e8400-e29b-41d4-a716-446655440000",
+    "status": "completed",
+    "result": {
+      "transcription": "...",
+      "summary": "...",
+      "notes": "...",
+      "mind_map": {}
+    }
+  },
+  "error": null
 }
 ```
+
+### Errores posibles
+
+| Status | code | Descripción |
+|--------|------|-------------|
+| 401 | `INVALID_TOKEN` | JWT ausente |
+| 403 | `TOKEN_EXPIRED` | JWT inválido o expirado |
+| 404 | `NOT_FOUND` | job_id no encontrado o sin resultado |
+| 500 | `INTERNAL_ERROR` | Error interno del servidor |
 
 ---
 
@@ -646,14 +791,14 @@ sp_complete_stt_live_recording_job
 register
 → login
 → init upload
-→ upload audio
-→ create job
+→ upload audio (directo a Azure Blob)
+→ create job (SpeechToTextv2)
 → publish queue message
 → azure function trigger
 → process AI flow
 → save result
-→ polling
-→ fetch final result
+→ polling de estado
+→ fetch resultado final
 ```
 
 ---
@@ -667,4 +812,5 @@ register
 ✔ trazabilidad completa en PostgreSQL
 ✔ arquitectura preparada para futuras features
 ✔ fácil de testear sin UI
+✔ contrato de respuestas uniforme en todos los endpoints
 ```

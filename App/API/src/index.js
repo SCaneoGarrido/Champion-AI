@@ -32,6 +32,17 @@ app.use('/AIServices/Visionv1', vision_router);
 app.use('/API/AUTH', auth_router);
 app.use('/API/Transversal', transversal_router);
 
+// Global error handler — captura errores no manejados por controladores
+app.use((err, req, res, next) => {
+    const logger = require('./utils/logger');
+    logger.error('Unhandled error: ' + err.message);
+    return res.status(500).json({
+        success: false,
+        data: null,
+        error: { code: 'INTERNAL_ERROR', message: 'Error interno del servidor.' }
+    });
+});
+
 app.listen(PORT, '0.0.0.0', async () => {
     const LOCAL_IP = getLocalIP();
     console.log('Iniciando chequeo de servicios externos...');
