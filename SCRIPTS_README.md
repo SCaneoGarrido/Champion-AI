@@ -75,34 +75,6 @@ psql> \q  # Para salir
 
 ---
 
-### 3. Backup en Directorio API (Script Simple)
-
-#### Linux / macOS
-```bash
-cd App/API
-./backup.sh
-```
-
-#### Windows (PowerShell)
-```powershell
-cd App/API
-.\backup.ps1
-```
-
-**Descripción:**
-- Script más simple sin dependencias de Docker
-- Realiza backup directo de la base de datos local
-- Carga variables desde el archivo `.env` en el directorio API
-- Guarda el archivo con timestamp: `YYYY-MM-DD_HH-MM-SS_<DB_NAME>_bk.sql`
-
-**Variables de entorno requeridas en `.env`:**
-```
-DBUSER=tu_usuario
-DATABASE=tu_base_datos
-```
-
----
-
 ## Configuración de Ejecución en Windows
 
 ### Paso 1: Permitir ejecución de scripts en PowerShell
@@ -119,10 +91,6 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 # Desde el directorio raíz del proyecto
 .\backup_db.ps1
 .\db.ps1
-
-# Desde el directorio API
-cd App\API
-.\backup.ps1
 ```
 
 ---
@@ -143,12 +111,7 @@ chmod +x App/API/backup.sh
 # Desde el directorio raíz
 ./backup_db.sh
 ./db.sh
-
-# Desde el directorio API
-cd App/API
-./backup.sh
 ```
-
 ---
 
 ## Importante: Schema sin Datos
@@ -172,14 +135,6 @@ Todos estos scripts realizan backups del **schema únicamente, sin datos**. Esto
 ---
 
 ## Troubleshooting
-
-### Windows: PowerShell dice "comando no encontrado"
-
-```powershell
-# Asegúrate de estar en el directorio correcto
-cd C:\dev\Champion-AI
-.\backup_db.ps1
-```
 
 ### El contenedor no está corriendo
 
