@@ -1,55 +1,61 @@
-const DatabaseService = require('../services/database_service');
-const logger = require('../utils/logger')
+const jwt = require('jsonwebtoken');
+const logger = require('../utils/logger');
 const UserRepository = require("../repositories/user.repository");
 const user_repository = new UserRepository();
 const { compareHash, generateJwtToken, generateRefreshToken } = require('../helpers/auth_helpers');
 
 class AuthService {
-  constructor() {
-    // por el momento no recibe nada
-  }
+    constructor() {}
 
-  async ValidateUser(email, password) {
-    /**
-     * @param {String} email
-     * @param {String} password
-     * @returns {Object}
-     */
+    async ValidateUser(email, password) {
+        try {
+            const user = await user_repository.getUserByEmail(email);
+            if (!user) {
+                logger.warn('[AuthService][ValidateUser] Usuario no encontrado: ' + email);
+                return null;
+            }
 
-    try {
-      let user = await user_repository.getUserByEmail(email);
-      if (!user) {
-        logger.error('[AuthService][ValidateUser] usuario no encontrado');
-        return null;
-      }
-      const password_hash = await user_repository.recoverHashedPassword(user.user_id);
-      const comparedhashResult = await compareHash(password, password_hash);
-      
-      if (!comparedhashResult) {
-        logger.error('[AuthService][ValidateUser] Error al comparar hashes, resultado: ' + comparedhashResult);
-        return null;
-      }
+            const lockStatus = await user_repository.checkAccountLocked(user.user_id);
+            if (lockStatus.locked) {
+                logger.warn('[AuthService][ValidateUser] Cuenta bloqueada: ' + email);
+                return { locked: true, locked_until: lockStatus.locked_until };
+            }
 
-      // Genero los tokens JWT y Refresh token 
-      let jwt = generateJwtToken(user);
-      //let refreshjwt = generateRefreshToken(user);
-    
-      const validationResult = {
-        success: true,
-        data: {
-          jwt: jwt,
-          //refresh_token: refreshjwt
+            const password_hash = await user_repository.recoverHashedPassword(user.user_id);
+            const isValid = await compareHash(password, password_hash);
+
+            if (!isValid) {
+                await user_repository.incrementFailedAttempts(user.user_id);
+                return null;
+            }
+
+            await user_repository.resetFailedAttempts(user.user_id);
+            await user_repository.updateLastLogin(user.user_id);
+
+            return {
+                success: true,
+                data: {
+                    jwt: generateJwtToken(user),
+                    refresh_token: generateRefreshToken(user)
+                }
+            };
+        } catch (error) {
+            logger.error('[AuthService][ValidateUser] Error: ' + error.message);
+            return null;
         }
-      }
-
-      return validationResult;
-
-    } catch (error) {
-      logger.error('[AuthService][ValidateUser] Error al validar el usuario\nError: ' + error.message);
-      return null;
     }
-  }
-}
 
+    async refreshAccessToken(refresh_token) {
+        try {
+            const decoded = jwt.verify(refresh_token, process.env.REFRESH_SECRET);
+            const user = await user_repository.getUserById(decoded.id);
+            if (!user || !user.is_active) return null;
+            return generateJwtToken(user);
+        } catch (error) {
+            logger.warn('[AuthService][refreshAccessToken] Token inválido: ' + error.message);
+            return null;
+        }
+    }
+}
 
 module.exports = AuthService;

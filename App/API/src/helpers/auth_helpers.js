@@ -19,7 +19,11 @@ async function compareHash(plainPasswd, hashedPasswd) {
 
 function generateJwtToken(user) {
     try {
-        return jwt.sign({ id: user.user_id }, process.env.JWT_KEY, { expiresIn: '15m' });
+        return jwt.sign(
+            { id: user.user_id, email: user.email },
+            process.env.JWT_KEY,
+            { expiresIn: '15m' }
+        );
     } catch (error) {
         logger.error('Error al generar JWT: ' + error.message);
         return null;

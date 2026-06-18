@@ -11,33 +11,51 @@ const auth_controller = {
         try {
             const { email, password } = req.body;
             if (!email || !password) {
-                logger.error("Los datos de entrada estan vacios");
                 return sendError(res, 400, "VALIDATION_ERROR", "Datos de entrada faltantes.");
             }
             const resp = await auth_service.ValidateUser(email, password);
             if (resp === null) {
-                logger.error("Credenciales invalidas.");
-                return sendError(res, 401, "UNAUTHORIZED", "Credenciales invalidas.");
+                return sendError(res, 401, "UNAUTHORIZED", "Credenciales inválidas.");
             }
-
-            return sendSuccess(res, 200, { access_token: resp.data.jwt });
+            if (resp.locked) {
+                return sendError(res, 429, "ACCOUNT_LOCKED", `Cuenta bloqueada hasta ${resp.locked_until}.`);
+            }
+            return sendSuccess(res, 200, {
+                access_token: resp.data.jwt,
+                refresh_token: resp.data.refresh_token
+            });
         } catch (error) {
-            logger.error('Error en Login - ' + error.message);
+            logger.error('Error en Login: ' + error.message);
             return sendError(res, 500, "INTERNAL_ERROR", "Error interno del servidor.");
         }
-    }, // login
+    },
+
+    refresh: async (req, res) => {
+        try {
+            const { refresh_token } = req.body;
+            if (!refresh_token) {
+                return sendError(res, 400, "INVALID_PAYLOAD", "refresh_token requerido.");
+            }
+            const access_token = await auth_service.refreshAccessToken(refresh_token);
+            if (!access_token) {
+                return sendError(res, 401, "TOKEN_EXPIRED", "Refresh token inválido o expirado.");
+            }
+            return sendSuccess(res, 200, { access_token });
+        } catch (error) {
+            logger.error('Error en Refresh: ' + error.message);
+            return sendError(res, 500, "INTERNAL_ERROR", "Error interno del servidor.");
+        }
+    },
 
     registrov2: async (req, res) => {
         try {
             const { email, first_name, last_name, password } = req.body;
             if (!email || !password || !first_name || !last_name) {
-                logger.error("Datos de entrada faltantes para registrov2");
                 return sendError(res, 400, "VALIDATION_ERROR", "Datos de entrada faltantes.");
             }
 
-            let user = await user_repository.validateExistingUser(email);
-            if (user) {
-                logger.error("Ya existe un usuario con el correo asociado");
+            const exists = await user_repository.validateExistingUser(email);
+            if (exists) {
                 return sendError(res, 409, "CONFLICT", "El correo electrónico ya está registrado.");
             }
 
@@ -52,19 +70,17 @@ const auth_controller = {
                 last_login_at: null
             };
 
-            const response = await user_repository.createUser(data_dict);
-            if (!response) {
-                logger.error("Error registrando al usuario");
+            const created = await user_repository.createUser(data_dict);
+            if (!created) {
                 return sendError(res, 500, "INTERNAL_ERROR", "Error al registrar el usuario.");
             }
 
             return sendSuccess(res, 201, { message: "Usuario creado satisfactoriamente." });
-
         } catch (error) {
-            logger.error('Error en Registro - ' + error.message);
+            logger.error('Error en Registro: ' + error.message);
             return sendError(res, 500, "INTERNAL_ERROR", "Error interno del servidor.");
         }
-    } // registrov2
-}
+    }
+};
 
 module.exports = auth_controller;

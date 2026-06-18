@@ -32,24 +32,12 @@ const verificarToken = (req, res, next) => {
 };
 
 const extractUserId = (req, res, next) => {
-    try {
-        const authHeader = req.headers['authorization'];
-
-        const token = authHeader && authHeader.split(' ')[1];
-        if (!token) {
-            return sendError(res, 401, "INVALID_TOKEN", "Token inválido o expirado.");
-        }
-
-        const secret_key = process.env.JWT_KEY;
-        const decoded = jwt.verify(token, secret_key);
-
-        req.userId = decoded.id || decoded.sub;
-
-        next();
-    } catch (error) {
-        logger.error(`[auth_helpers][extractUserId] Error al decodificar JWT: ${error.message}`);
-        return null;
+    const userId = req.user?.id;
+    if (!userId) {
+        return sendError(res, 401, "INVALID_TOKEN", "Token inválido.");
     }
+    req.userId = userId;
+    next();
 }
 
 module.exports = { verificarToken, extractUserId };

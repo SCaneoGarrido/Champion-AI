@@ -36,8 +36,8 @@ const validateAudio = (req, res, next) => {
         return sendError(res, 400, "INVALID_SAMPLE_RATE", "sample_rate inválido.");
     }
 
-    if (!audio_info.duration_seconds || audio_info.duration_seconds > 10800) {
-        return sendError(res, 400, "DURATION_EXCEEDED", "Duración de audio inválida o superior al límite.");
+    if (!audio_info.duration_seconds || audio_info.duration_seconds < 1 || audio_info.duration_seconds > 10800) {
+        return sendError(res, 400, "DURATION_EXCEEDED", "Duración de audio inválida (debe ser entre 1 y 10800 segundos).");
     }
 
     if (!audio_info.blob_url) {
