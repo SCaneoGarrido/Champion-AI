@@ -95,3 +95,60 @@ export async function register(body) {
   }
   return { ok: res.ok, data };
 }
+
+// ─── Perfil de usuario ────────────────────────────────────────────────────────
+
+import { authenticatedFetch } from './authFetch';
+
+export async function getUserProfile() {
+  const res = await authenticatedFetch('/API/USER/me');
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error?.message || `HTTP ${res.status}`);
+  return json.data;
+}
+
+export async function updateUserProfile(data) {
+  const res = await authenticatedFetch('/API/USER/me', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error?.message || `HTTP ${res.status}`);
+  return json.data;
+}
+
+export async function initAvatarUpload(ext = 'jpg') {
+  const res = await authenticatedFetch('/API/USER/avatar/init', {
+    method: 'POST',
+    body: JSON.stringify({ ext }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error?.message || `HTTP ${res.status}`);
+  return json.data; // { upload_url, avatar_url }
+}
+
+// ─── Jobs / Estadísticas ──────────────────────────────────────────────────────
+
+export async function getRecentJobs(limit = 20) {
+  const res = await authenticatedFetch(`/AIServices/Speechv2/jobs?limit=${limit}`);
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error?.message || `HTTP ${res.status}`);
+  return json.data?.items ?? [];
+}
+
+export async function getUserStats() {
+  const res = await authenticatedFetch('/AIServices/Speechv2/jobs/stats');
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error?.message || `HTTP ${res.status}`);
+  return json.data ?? { total_jobs: 0, completed: 0, total_duration_seconds: 0 };
+}
+
+export async function patchJobName(jobId, name) {
+  const res = await authenticatedFetch(`/AIServices/Speechv2/jobs/${jobId}/name`, {
+    method: 'PATCH',
+    body: JSON.stringify({ blob_name: name }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error?.message || `HTTP ${res.status}`);
+  return json.data;
+}

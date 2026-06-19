@@ -19,7 +19,7 @@ import {
   Image,
 } from 'react-native';
 import { validarEmail, validarCampos } from '../utils/validation';
-import { login } from '../utils/api';
+import { login, getUserProfile } from '../utils/api';
 import { setSession } from '../utils/session';
 
 export default function LoginScreen({ navigation }) {
@@ -49,12 +49,25 @@ export default function LoginScreen({ navigation }) {
           setError('Respuesta del servidor incompleta.');
           return;
         }
+        // Guardar token primero para que getUserProfile pueda autenticarse
         await setSession({
-          user_id: response.user_id ? String(response.user_id) : undefined,
-          accessToken: response.accessToken,
+          user_id:      response.user_id ? String(response.user_id) : undefined,
+          accessToken:  response.accessToken,
           refreshToken: response.refreshToken ?? undefined,
           email,
         });
+        // Enriquecer sesión con datos del perfil (display_name, avatar, etc.)
+        try {
+          const profile = await getUserProfile();
+          await setSession({
+            display_name: profile.display_name ?? null,
+            name:         profile.display_name ?? null,
+            avatar_url:   profile.avatar_url   ?? null,
+            phone:        profile.phone        ?? null,
+            location:     profile.location     ?? null,
+            occupation:   profile.occupation   ?? null,
+          });
+        } catch { /* no bloqueante — continúa sin datos extra */ }
         navigation.replace('Main');
         return;
       }

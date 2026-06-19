@@ -161,7 +161,7 @@ export function createDashboardStyles(c) {
       borderRadius: 28,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#8e6200',
+      backgroundColor: '#7c5800',
       shadowColor: c.primary,
       shadowOffset: { width: 0, height: 10 },
       shadowOpacity: 0.3,

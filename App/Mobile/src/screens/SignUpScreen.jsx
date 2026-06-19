@@ -1,11 +1,3 @@
-/**
- * SignUpScreen – Pantalla de registro con look alineado al Login.
- *
- * Qué hace:
- * - Valida campos obligatorios, formato de email, contraseña y aceptación de términos.
- * - Usa íconos personalizados (nombre, correo y candado) desde /assets/images.
- * - Mantiene acción de registro social como placeholder (Microsoft).
- */
 import React, { useMemo, useState } from 'react';
 import {
   View,
@@ -19,22 +11,26 @@ import {
   ScrollView,
   Image,
 } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { validarEmail, validarCampos } from '../utils/validation';
 import { register } from '../utils/api';
 
 export default function SignUpScreen({ navigation }) {
-  /** Campos del formulario */
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [location, setLocation] = useState('');
+  const [occupation, setOccupation] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
 
-  /** Estado de UI y feedback */
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const theme = useMemo(
     () => ({
       background: '#ffffff',
@@ -57,9 +53,8 @@ export default function SignUpScreen({ navigation }) {
   const handleRegister = async () => {
     setError('');
 
-    // Validaciones de datos base
-    if (!validarCampos([name, email, password, confirmPassword])) {
-      setError('Completa todos los campos');
+    if (!validarCampos([firstName, lastName, email, password, confirmPassword])) {
+      setError('Completa los campos obligatorios');
       return;
     }
     if (!validarEmail(email)) {
@@ -81,14 +76,21 @@ export default function SignUpScreen({ navigation }) {
 
     setLoading(true);
     try {
-      // Mantenemos la misma lógica de integración ya usada en tu app.
-      const { ok, data } = await register({ name, email, password });
+      const { ok, data } = await register({
+        first_name: firstName.trim(),
+        last_name:  lastName.trim(),
+        email:      email.trim(),
+        password,
+        phone:      phone.trim()      || undefined,
+        location:   location.trim()   || undefined,
+        occupation: occupation.trim() || undefined,
+      });
       if (ok && data?.success) {
         navigation.replace('Login');
       } else {
         setError(data?.error?.message || 'Error al registrarse');
       }
-    } catch (err) {
+    } catch {
       setError('No se pudo conectar con el servidor.');
     } finally {
       setLoading(false);
@@ -103,189 +105,269 @@ export default function SignUpScreen({ navigation }) {
       <View style={styles.screen}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.form}>
-          {/* Cabecera */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Únete a Champion AI</Text>
-            <Text style={styles.subtitle}>
-              Comienza tu viaje hacia la excelencia académica hoy mismo.
-            </Text>
-          </View>
 
-          {/* Mensaje de error */}
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-          {/* Campo: Nombre completo */}
-          <View style={styles.field}>
-            <Text style={styles.label}>Nombre completo</Text>
-            <View style={styles.inputWrap}>
-              <Image
-                source={require('../assets/images/User Logo.png')}
-                style={styles.leftIconImage}
-                resizeMode="contain"
-              />
-              <TextInput
-                style={styles.textInput}
-                placeholder="Ingresa tu nombre"
-                placeholderTextColor={theme.muted}
-                value={name}
-                onChangeText={setName}
-                editable={!loading}
-                textContentType="name"
-              />
+            {/* Cabecera */}
+            <View style={styles.header}>
+              <Text style={styles.title}>Únete a Champion AI</Text>
+              <Text style={styles.subtitle}>
+                Comienza tu viaje hacia la excelencia académica hoy mismo.
+              </Text>
             </View>
-          </View>
 
-          {/* Campo: Correo */}
-          <View style={styles.field}>
-            <Text style={styles.label}>Correo electrónico</Text>
-            <View style={styles.inputWrap}>
-              <Image
-                source={require('../assets/images/Email login.png')}
-                style={styles.leftIconImage}
-                resizeMode="contain"
-              />
-              <TextInput
-                style={styles.textInput}
-                placeholder="ejemplo@correo.com"
-                placeholderTextColor={theme.muted}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                editable={!loading}
-                textContentType="emailAddress"
-              />
-            </View>
-          </View>
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-          {/* Campo: Contraseña */}
-          <View style={styles.field}>
-            <Text style={styles.label}>Contraseña</Text>
-            <View style={styles.inputWrap}>
-              <Image
-                source={require('../assets/images/Candado login.png')}
-                style={styles.leftIconImage}
-                resizeMode="contain"
-              />
-              <TextInput
-                style={styles.textInput}
-                placeholder="Crea una contraseña"
-                placeholderTextColor={theme.muted}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                editable={!loading}
-                textContentType="newPassword"
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword((v) => !v)}
-                disabled={loading}
-                style={styles.passwordToggle}
-              >
-                <Text style={styles.passwordToggleText}>{showPassword ? 'Ocultar' : 'Mostrar'}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Campo: Confirmar contraseña */}
-          <View style={styles.field}>
-            <Text style={styles.label}>Confirmar contraseña</Text>
-            <View style={styles.inputWrap}>
-              <Image
-                source={require('../assets/images/Candado login.png')}
-                style={styles.leftIconImage}
-                resizeMode="contain"
-              />
-              <TextInput
-                style={styles.textInput}
-                placeholder="Repite tu contraseña"
-                placeholderTextColor={theme.muted}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry={!showConfirmPassword}
-                editable={!loading}
-                textContentType="password"
-              />
-              <TouchableOpacity
-                onPress={() => setShowConfirmPassword((v) => !v)}
-                disabled={loading}
-                style={styles.passwordToggle}
-              >
-                <Text style={styles.passwordToggleText}>
-                  {showConfirmPassword ? 'Ocultar' : 'Mostrar'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Términos y condiciones */}
-          <TouchableOpacity
-            style={styles.termsRow}
-            onPress={() => setAcceptTerms((v) => !v)}
-            activeOpacity={0.9}
-            disabled={loading}
-          >
-            <View style={[styles.checkbox, acceptTerms && styles.checkboxChecked]}>
-              {acceptTerms ? <Text style={styles.checkboxMark}>✓</Text> : null}
-            </View>
-            <Text style={styles.termsText}>
-              Acepto los <Text style={styles.termsLink}>términos y condiciones</Text> y la política
-              de privacidad.
-            </Text>
-          </TouchableOpacity>
-
-          {/* Acción principal */}
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleRegister}
-            disabled={loading}
-            activeOpacity={0.9}
-          >
-            {loading ? (
-              <ActivityIndicator color="#0f172a" />
-            ) : (
-              <View style={styles.buttonRow}>
-                <Text style={styles.buttonText}>Crear Cuenta</Text>
-                <Text style={styles.buttonIcon}>➔</Text>
+            {/* Nombre(s) */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Nombre(s) <Text style={styles.required}>*</Text></Text>
+              <View style={styles.inputWrap}>
+                <Image
+                  source={require('../assets/images/User Logo.png')}
+                  style={styles.leftIconImage}
+                  resizeMode="contain"
+                />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Ingresa tu nombre"
+                  placeholderTextColor={theme.muted}
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  editable={!loading}
+                  textContentType="givenName"
+                  autoCapitalize="words"
+                />
               </View>
-            )}
-          </TouchableOpacity>
+            </View>
 
-          {/* Registro social */}
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>o regístrate con</Text>
-            <View style={styles.dividerLine} />
-          </View>
+            {/* Apellido(s) */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Apellido(s) <Text style={styles.required}>*</Text></Text>
+              <View style={styles.inputWrap}>
+                <Image
+                  source={require('../assets/images/User Logo.png')}
+                  style={styles.leftIconImage}
+                  resizeMode="contain"
+                />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Ingresa tu apellido"
+                  placeholderTextColor={theme.muted}
+                  value={lastName}
+                  onChangeText={setLastName}
+                  editable={!loading}
+                  textContentType="familyName"
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
 
-          <TouchableOpacity
-            style={styles.socialButton}
-            onPress={() => setError('Registro con Microsoft no implementado en esta versión.')}
-            disabled={loading}
-          >
-            <Image
-              source={require('../assets/images/Microsoft logo.png')}
-              style={[styles.socialLogo, { marginRight: 8 }]}
-              resizeMode="contain"
-            />
-            <Text style={styles.socialText}>Microsoft</Text>
-          </TouchableOpacity>
+            {/* Correo */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Correo electrónico <Text style={styles.required}>*</Text></Text>
+              <View style={styles.inputWrap}>
+                <Image
+                  source={require('../assets/images/Email login.png')}
+                  style={styles.leftIconImage}
+                  resizeMode="contain"
+                />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="ejemplo@correo.com"
+                  placeholderTextColor={theme.muted}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  editable={!loading}
+                  textContentType="emailAddress"
+                />
+              </View>
+            </View>
 
-          {/* Navegación a Login */}
-          <View style={styles.bottom}>
-            <Text style={styles.bottomText}>¿Ya tienes cuenta?</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Login')} disabled={loading}>
-              <Text style={styles.registerLink}>Inicia sesión</Text>
+            {/* Contraseña */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Contraseña <Text style={styles.required}>*</Text></Text>
+              <View style={styles.inputWrap}>
+                <Image
+                  source={require('../assets/images/Candado login.png')}
+                  style={styles.leftIconImage}
+                  resizeMode="contain"
+                />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Crea una contraseña"
+                  placeholderTextColor={theme.muted}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  editable={!loading}
+                  textContentType="newPassword"
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword((v) => !v)}
+                  disabled={loading}
+                  style={styles.passwordToggle}
+                >
+                  <Text style={styles.passwordToggleText}>{showPassword ? 'Ocultar' : 'Mostrar'}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Confirmar contraseña */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Confirmar contraseña <Text style={styles.required}>*</Text></Text>
+              <View style={styles.inputWrap}>
+                <Image
+                  source={require('../assets/images/Candado login.png')}
+                  style={styles.leftIconImage}
+                  resizeMode="contain"
+                />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Repite tu contraseña"
+                  placeholderTextColor={theme.muted}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showConfirmPassword}
+                  editable={!loading}
+                  textContentType="password"
+                />
+                <TouchableOpacity
+                  onPress={() => setShowConfirmPassword((v) => !v)}
+                  disabled={loading}
+                  style={styles.passwordToggle}
+                >
+                  <Text style={styles.passwordToggleText}>
+                    {showConfirmPassword ? 'Ocultar' : 'Mostrar'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Datos adicionales */}
+            <View style={styles.sectionDivider}>
+              <View style={styles.sectionLine} />
+              <Text style={styles.sectionLabel}>Datos adicionales (opcional)</Text>
+              <View style={styles.sectionLine} />
+            </View>
+
+            {/* Teléfono */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Teléfono</Text>
+              <View style={styles.inputWrap}>
+                <MaterialIcons name="phone" size={22} color={theme.muted} style={styles.leftIconMaterial} />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="+54 9 11 1234-5678"
+                  placeholderTextColor={theme.muted}
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                  editable={!loading}
+                  textContentType="telephoneNumber"
+                />
+              </View>
+            </View>
+
+            {/* Localidad */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Localidad</Text>
+              <View style={styles.inputWrap}>
+                <MaterialIcons name="location-on" size={22} color={theme.muted} style={styles.leftIconMaterial} />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Ciudad o provincia"
+                  placeholderTextColor={theme.muted}
+                  value={location}
+                  onChangeText={setLocation}
+                  editable={!loading}
+                  textContentType="addressCity"
+                />
+              </View>
+            </View>
+
+            {/* Ocupación */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Ocupación</Text>
+              <View style={styles.inputWrap}>
+                <MaterialIcons name="work" size={22} color={theme.muted} style={styles.leftIconMaterial} />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Estudiante, docente, profesional…"
+                  placeholderTextColor={theme.muted}
+                  value={occupation}
+                  onChangeText={setOccupation}
+                  editable={!loading}
+                />
+              </View>
+            </View>
+
+            {/* Términos */}
+            <TouchableOpacity
+              style={styles.termsRow}
+              onPress={() => setAcceptTerms((v) => !v)}
+              activeOpacity={0.9}
+              disabled={loading}
+            >
+              <View style={[styles.checkbox, acceptTerms && styles.checkboxChecked]}>
+                {acceptTerms ? <Text style={styles.checkboxMark}>✓</Text> : null}
+              </View>
+              <Text style={styles.termsText}>
+                Acepto los <Text style={styles.termsLink}>términos y condiciones</Text> y la política
+                de privacidad.
+              </Text>
             </TouchableOpacity>
-          </View>
+
+            {/* Botón principal */}
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleRegister}
+              disabled={loading}
+              activeOpacity={0.9}
+            >
+              {loading ? (
+                <ActivityIndicator color="#0f172a" />
+              ) : (
+                <View style={styles.buttonRow}>
+                  <Text style={styles.buttonText}>Crear Cuenta</Text>
+                  <Text style={styles.buttonIcon}>➔</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            {/* Registro social */}
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>o regístrate con</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={() => setError('Registro con Microsoft no implementado en esta versión.')}
+              disabled={loading}
+            >
+              <Image
+                source={require('../assets/images/Microsoft logo.png')}
+                style={[styles.socialLogo, { marginRight: 8 }]}
+                resizeMode="contain"
+              />
+              <Text style={styles.socialText}>Microsoft</Text>
+            </TouchableOpacity>
+
+            {/* Link a Login */}
+            <View style={styles.bottom}>
+              <Text style={styles.bottomText}>¿Ya tienes cuenta?</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Login')} disabled={loading}>
+                <Text style={styles.registerLink}>Inicia sesión</Text>
+              </TouchableOpacity>
+            </View>
+
           </View>
 
-          {/* Pie legal */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>© 2026 Champion AI. Todos los derechos reservados.</Text>
           </View>
         </ScrollView>
-
       </View>
     </KeyboardAvoidingView>
   );
@@ -339,6 +421,7 @@ function createStyles(theme) {
       marginBottom: 8,
       marginLeft: 4,
     },
+    required: { color: '#ef4444' },
     inputWrap: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -350,6 +433,7 @@ function createStyles(theme) {
       paddingHorizontal: 12,
     },
     leftIconImage: { width: 22, height: 22, marginRight: 10 },
+    leftIconMaterial: { marginRight: 10 },
     textInput: {
       flex: 1,
       color: theme.inputText,
@@ -365,6 +449,21 @@ function createStyles(theme) {
       color: theme.muted,
       fontWeight: '700',
       fontSize: 13,
+    },
+
+    sectionDivider: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 8,
+      marginBottom: 16,
+    },
+    sectionLine: { flex: 1, height: 1, backgroundColor: theme.divider },
+    sectionLabel: {
+      marginHorizontal: 10,
+      color: theme.muted,
+      fontSize: 12,
+      fontWeight: '700',
+      letterSpacing: 0.4,
     },
 
     termsRow: {
@@ -467,6 +566,5 @@ function createStyles(theme) {
 
     footer: { marginTop: 32, alignItems: 'center' },
     footerText: { fontSize: 12, color: theme.footer, textAlign: 'center' },
-
   });
 }

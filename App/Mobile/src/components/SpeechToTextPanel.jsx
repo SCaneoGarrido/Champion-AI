@@ -14,7 +14,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
-import AudioRecorder from './AudioRecorder';
+import LiveSTTRecorder from './LiveSTTRecorder';
 import AudioFileUploader from './AudioFileUploader';
 import { createSpeechToTextStyles, STT_GRADIENT } from './SpeechToTextPanel.styles';
 
@@ -151,7 +151,7 @@ export default function SpeechToTextPanel({ onClose, variant = 'modal' }) {
                 <Text style={styles.chipText}>Resumen</Text>
               </View>
             </View>
-            <AudioRecorder {...recorderColors} />
+            <LiveSTTRecorder />
           </View>
         ) : (
           <View style={styles.card}>

@@ -61,11 +61,12 @@ class UserRepository {
                 const r1 = await client.query(`
                     INSERT INTO sec_user (
                         username, email, display_name,
-                        first_name, last_name, is_active,
-                        must_change_password, last_login_at,
-                        created_at, updated_at
+                        first_name, last_name,
+                        phone, location, occupation,
+                        is_active, must_change_password,
+                        last_login_at, created_at, updated_at
                     )
-                    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+                    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
                     RETURNING user_id
                 `, [
                     data_dict.username,
@@ -73,6 +74,9 @@ class UserRepository {
                     data_dict.display_name,
                     capitalizeFirstLetter(data_dict.first_name),
                     capitalizeFirstLetter(data_dict.last_name),
+                    data_dict.phone    ?? null,
+                    data_dict.location ?? null,
+                    data_dict.occupation ?? null,
                     data_dict.is_active,
                     data_dict.must_change_password,
                     data_dict.last_login_at,
@@ -81,6 +85,11 @@ class UserRepository {
                 ]);
 
                 const user_id = r1.rows[0].user_id;
+
+                await client.query(
+                    `UPDATE sec_user SET created_by = $1 WHERE user_id = $1`,
+                    [user_id]
+                );
 
                 await client.query(`
                     INSERT INTO sec_user_password (
@@ -181,6 +190,73 @@ class UserRepository {
             await database_service.query(query, [user_id]);
         } catch (error) {
             logger.error('[UserRepository][updateLastLogin] Error: ' + error.message);
+        }
+    }
+
+    async validateEmailAvailable(email, exclude_user_id) {
+        try {
+            const res = await database_service.query(
+                `SELECT 1 FROM sec_user WHERE lower(email) = lower($1) AND user_id != $2 AND is_active = true LIMIT 1`,
+                [email, exclude_user_id],
+                true
+            );
+            if (!res.success) return null;
+            return res.rowCount === 0;
+        } catch (error) {
+            logger.error(`[UserRepository][validateEmailAvailable] Error: ${error.message}`);
+            return null;
+        }
+    }
+
+    async getProfile(user_id) {
+        try {
+            const query = `
+                SELECT user_id, email, username, display_name, first_name, last_name,
+                       phone, location, occupation, avatar_url, last_login_at
+                FROM sec_user
+                WHERE user_id = $1 AND is_active = true
+                LIMIT 1
+            `;
+            const res = await database_service.query(query, [user_id], true);
+            if (!res.success || res.rowCount === 0) return null;
+            return res.data[0];
+        } catch (error) {
+            logger.error(`[UserRepository][getProfile] Error: ${error.message}`);
+            return null;
+        }
+    }
+
+    async updateProfile(user_id, { display_name, email, phone, location, occupation, avatar_url }) {
+        try {
+            const query = `
+                UPDATE sec_user
+                SET
+                    display_name = COALESCE($2, display_name),
+                    email        = COALESCE($3, email),
+                    phone        = $4,
+                    location     = $5,
+                    occupation   = $6,
+                    avatar_url   = COALESCE($7, avatar_url),
+                    updated_at   = NOW()
+                WHERE user_id = $1 AND is_active = true
+            `;
+            const res = await database_service.query(query, [
+                user_id,
+                display_name ?? null,
+                email       ?? null,
+                phone       ?? null,
+                location    ?? null,
+                occupation  ?? null,
+                avatar_url  ?? null,
+            ]);
+            if (!res.success) {
+                logger.error(`[UserRepository][updateProfile] Query failed: ${res.error}`);
+                return false;
+            }
+            return true;
+        } catch (error) {
+            logger.error(`[UserRepository][updateProfile] Error: ${error.message}`);
+            return false;
         }
     }
 }

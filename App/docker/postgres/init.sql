@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 98c8HXIcSkA6ChNaYsOEOpwD190wu7iIhyryEJZgxh0lWMrd4me9Ts7rTu7LtHq
+\restrict 5RKtr5fnn5h4KaSaqlOQiXXtaDIsEniWIFVtLtOlSMjZaIdH4vIkFXwwzMeZy1Y
 
 -- Dumped from database version 17.10
 -- Dumped by pg_dump version 17.10
@@ -77,7 +77,7 @@ DROP TABLE IF EXISTS public.ai_job_status_history;
 DROP TABLE IF EXISTS public.ai_job;
 DROP FUNCTION IF EXISTS public.sync_ai_job_from_history();
 DROP PROCEDURE IF EXISTS public.sp_update_ai_job_status_v1(IN p_job_id character varying, IN p_status character varying, IN p_step_name character varying, IN p_message text, IN p_error_code character varying, IN p_error_message text, IN p_retryable boolean, IN p_steps_snapshot jsonb, IN p_metadata jsonb, IN p_actor_type character varying);
-DROP PROCEDURE IF EXISTS public.sp_create_stt_live_recording_job_v1(IN p_job_id character varying, IN p_user_id uuid, IN p_service_code character varying, IN p_feature_code character varying, IN p_flow character varying, IN p_initial_status character varying, IN p_initial_message text, IN p_actor_type character varying, IN p_language_locale character varying, IN p_language_name character varying, IN p_audio_format character varying, IN p_sample_rate integer, IN p_duration_seconds integer, IN p_blob_name text, IN p_blob_url text, IN p_upload_status character varying, IN p_request_payload jsonb);
+DROP PROCEDURE IF EXISTS public.sp_create_stt_live_recording_job_v1(IN p_job_id character varying, IN p_user_id uuid, IN p_service_code character varying, IN p_feature_code character varying, IN p_flow character varying, IN p_initial_status character varying, IN p_initial_message text, IN p_actor_type character varying, IN p_language_locale character varying, IN p_language_name character varying, IN p_audio_format character varying, IN p_sample_rate integer, IN p_duration_seconds numeric, IN p_blob_name text, IN p_blob_url text, IN p_upload_status character varying, IN p_request_payload jsonb);
 DROP PROCEDURE IF EXISTS public.sp_complete_stt_live_recording_job_v1(IN p_job_id character varying, IN p_final_status character varying, IN p_final_step character varying, IN p_completion_message text, IN p_actor_type character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb, IN p_raw_result_json jsonb);
 DROP FUNCTION IF EXISTS public.set_updated_at();
 DROP FUNCTION IF EXISTS public.fn_get_stt_live_recording_job_context(p_job_id character varying);
@@ -141,41 +141,33 @@ ALTER FUNCTION public.fn_can_process_ai_job(p_job_id character varying) OWNER TO
 -- Name: fn_get_stt_live_recording_job_context(character varying); Type: FUNCTION; Schema: public; Owner: champion_db_user
 --
 
-CREATE FUNCTION public.fn_get_stt_live_recording_job_context(p_job_id character varying) RETURNS TABLE(job_id character varying, user_id uuid, service_code character varying, feature_code character varying, flow character varying, status character varying, current_step character varying, recording_id uuid, language_locale character varying, language_name character varying, audio_format character varying, sample_rate integer, duration_seconds integer, blob_name text, blob_url text, upload_status character varying, request_payload jsonb, job_metadata jsonb)
+CREATE FUNCTION public.fn_get_stt_live_recording_job_context(p_job_id character varying) RETURNS TABLE(job_id character varying, user_id uuid, service_code character varying, feature_code character varying, flow character varying, status character varying, current_step character varying, recording_id uuid, language_locale character varying, language_name character varying, audio_format character varying, sample_rate integer, duration_seconds numeric, blob_name text, blob_url text, upload_status character varying, request_payload jsonb, job_metadata jsonb)
     LANGUAGE plpgsql
     AS $$
 BEGIN
     RETURN QUERY
     SELECT
         j.job_id,
-        j.requested_by AS user_id,
-
+        j.requested_by,
         j.service_code,
         j.feature_code,
         j.flow,
         j.status,
         j.current_step,
-
         r.recording_id,
-
         r.language_locale,
         r.language_name,
-
         r.audio_format,
         r.sample_rate,
         r.duration_seconds,
-
         r.blob_name,
         r.blob_url,
         r.upload_status,
-
         j.request_payload,
-        j.metadata AS job_metadata
-
-    FROM ai_job j
-    INNER JOIN stt_recording r
+        j.metadata
+    FROM public.ai_job j
+    INNER JOIN public.stt_recording r
         ON r.job_id = j.job_id
-
     WHERE j.job_id = p_job_id;
 END;
 $$;
@@ -300,13 +292,14 @@ $$;
 ALTER PROCEDURE public.sp_complete_stt_live_recording_job_v1(IN p_job_id character varying, IN p_final_status character varying, IN p_final_step character varying, IN p_completion_message text, IN p_actor_type character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb, IN p_raw_result_json jsonb) OWNER TO champion_db_user;
 
 --
--- Name: sp_create_stt_live_recording_job_v1(character varying, uuid, character varying, character varying, character varying, character varying, text, character varying, character varying, character varying, character varying, integer, integer, text, text, character varying, jsonb); Type: PROCEDURE; Schema: public; Owner: champion_db_user
+-- Name: sp_create_stt_live_recording_job_v1(character varying, uuid, character varying, character varying, character varying, character varying, text, character varying, character varying, character varying, character varying, integer, numeric, text, text, character varying, jsonb); Type: PROCEDURE; Schema: public; Owner: champion_db_user
 --
 
-CREATE PROCEDURE public.sp_create_stt_live_recording_job_v1(IN p_job_id character varying, IN p_user_id uuid, IN p_service_code character varying, IN p_feature_code character varying, IN p_flow character varying, IN p_initial_status character varying, IN p_initial_message text, IN p_actor_type character varying, IN p_language_locale character varying, IN p_language_name character varying, IN p_audio_format character varying, IN p_sample_rate integer, IN p_duration_seconds integer, IN p_blob_name text, IN p_blob_url text, IN p_upload_status character varying, IN p_request_payload jsonb DEFAULT NULL::jsonb)
+CREATE PROCEDURE public.sp_create_stt_live_recording_job_v1(IN p_job_id character varying, IN p_user_id uuid, IN p_service_code character varying, IN p_feature_code character varying, IN p_flow character varying, IN p_initial_status character varying, IN p_initial_message text, IN p_actor_type character varying, IN p_language_locale character varying, IN p_language_name character varying, IN p_audio_format character varying, IN p_sample_rate integer, IN p_duration_seconds numeric, IN p_blob_name text, IN p_blob_url text, IN p_upload_status character varying, IN p_request_payload jsonb DEFAULT NULL::jsonb)
     LANGUAGE plpgsql
     AS $$
 BEGIN
+
     INSERT INTO ai_job (
         job_id,
         requested_by,
@@ -411,11 +404,12 @@ BEGIN
         blob_url = EXCLUDED.blob_url,
         upload_status = EXCLUDED.upload_status,
         updated_at = NOW();
+
 END;
 $$;
 
 
-ALTER PROCEDURE public.sp_create_stt_live_recording_job_v1(IN p_job_id character varying, IN p_user_id uuid, IN p_service_code character varying, IN p_feature_code character varying, IN p_flow character varying, IN p_initial_status character varying, IN p_initial_message text, IN p_actor_type character varying, IN p_language_locale character varying, IN p_language_name character varying, IN p_audio_format character varying, IN p_sample_rate integer, IN p_duration_seconds integer, IN p_blob_name text, IN p_blob_url text, IN p_upload_status character varying, IN p_request_payload jsonb) OWNER TO champion_db_user;
+ALTER PROCEDURE public.sp_create_stt_live_recording_job_v1(IN p_job_id character varying, IN p_user_id uuid, IN p_service_code character varying, IN p_feature_code character varying, IN p_flow character varying, IN p_initial_status character varying, IN p_initial_message text, IN p_actor_type character varying, IN p_language_locale character varying, IN p_language_name character varying, IN p_audio_format character varying, IN p_sample_rate integer, IN p_duration_seconds numeric, IN p_blob_name text, IN p_blob_url text, IN p_upload_status character varying, IN p_request_payload jsonb) OWNER TO champion_db_user;
 
 --
 -- Name: sp_update_ai_job_status_v1(character varying, character varying, character varying, text, character varying, text, boolean, jsonb, jsonb, character varying); Type: PROCEDURE; Schema: public; Owner: champion_db_user
@@ -632,7 +626,11 @@ CREATE TABLE public.sec_user (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     created_by uuid,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_by uuid
+    updated_by uuid,
+    phone character varying(20),
+    location character varying(50),
+    occupation character varying(50),
+    avatar_url character varying(255)
 );
 
 
@@ -671,7 +669,7 @@ CREATE TABLE public.stt_recording (
     language_name character varying(100),
     audio_format character varying(20) NOT NULL,
     sample_rate integer,
-    duration_seconds integer,
+    duration_seconds numeric(10,3),
     blob_name text,
     blob_url text,
     upload_id character varying(100),
@@ -682,7 +680,7 @@ CREATE TABLE public.stt_recording (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT chk_stt_recording_audio_format CHECK (((audio_format)::text = ANY (ARRAY[('webm'::character varying)::text, ('mp4'::character varying)::text, ('m4a'::character varying)::text, ('mp3'::character varying)::text, ('wav'::character varying)::text, ('ogg'::character varying)::text]))),
-    CONSTRAINT chk_stt_recording_duration CHECK (((duration_seconds IS NULL) OR ((duration_seconds >= 1) AND (duration_seconds <= 10800)))),
+    CONSTRAINT chk_stt_recording_duration CHECK (((duration_seconds IS NULL) OR ((duration_seconds >= (1)::numeric) AND (duration_seconds <= (10800)::numeric)))),
     CONSTRAINT chk_stt_recording_sample_rate CHECK (((sample_rate IS NULL) OR (sample_rate = ANY (ARRAY[8000, 16000, 44100, 48000])))),
     CONSTRAINT chk_stt_recording_size_bytes CHECK (((size_bytes IS NULL) OR (size_bytes >= 0))),
     CONSTRAINT chk_stt_recording_upload_status CHECK (((upload_status)::text = ANY (ARRAY[('initialized'::character varying)::text, ('uploading'::character varying)::text, ('uploaded'::character varying)::text, ('validated'::character varying)::text, ('failed'::character varying)::text, ('expired'::character varying)::text])))
@@ -1155,5 +1153,5 @@ ALTER TABLE ONLY public.stt_recording
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 98c8HXIcSkA6ChNaYsOEOpwD190wu7iIhyryEJZgxh0lWMrd4me9Ts7rTu7LtHq
+\unrestrict 5RKtr5fnn5h4KaSaqlOQiXXtaDIsEniWIFVtLtOlSMjZaIdH4vIkFXwwzMeZy1Y
 

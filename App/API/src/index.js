@@ -7,6 +7,7 @@ const cors = require('cors');
 const speech_router = require('./routes/speech_routes');
 const vision_router = require('./routes/vision_routes');
 const auth_router = require('./routes/auth_routes');
+const user_router = require('./routes/user_routes');
 const transversal_router = require('./routes/transversal_routes');
 const morgan = require('morgan');
 const DatabaseService = require('./services/database_service');
@@ -37,6 +38,7 @@ app.locals.azure_storage_service = azure_storage_service;
 app.use('/AIServices/Speechv2', speech_router);
 app.use('/AIServices/Visionv1', vision_router);
 app.use('/API/AUTH', auth_router);
+app.use('/API/USER', user_router);
 app.use('/API/Transversal', transversal_router);
 
 // Global error handler — captura errores no manejados por controladores

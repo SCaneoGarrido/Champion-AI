@@ -15,7 +15,7 @@ CREATE OR REPLACE PROCEDURE sp_create_stt_live_recording_job_v1(
 
     p_audio_format VARCHAR(20),
     p_sample_rate INTEGER,
-    p_duration_seconds INTEGER,
+    p_duration_seconds NUMERIC(10,3),
 
     p_blob_name TEXT,
     p_blob_url TEXT,

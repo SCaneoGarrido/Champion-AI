@@ -83,6 +83,77 @@ class JobRepository {
         }
     }
 
+    async getRecentJobsByUser(user_id, limit = 20) {
+        try {
+            const query = `
+                SELECT
+                    j.job_id,
+                    j.service_code,
+                    j.feature_code,
+                    j.status,
+                    j.requested_at,
+                    j.completed_at,
+                    r.blob_name,
+                    r.duration_seconds,
+                    r.language_locale
+                FROM vw_ai_job_current_status j
+                LEFT JOIN stt_recording r ON r.job_id::text = j.job_id::text
+                WHERE j.requested_by = $1
+                ORDER BY j.requested_at DESC
+                LIMIT $2
+            `;
+            const res = await database_service.query(query, [user_id, limit], true);
+            if (!res.success) return [];
+            return res.data ?? [];
+        } catch (error) {
+            logger.error(`[JobRepository][getRecentJobsByUser] Error: ${error.message}`);
+            return [];
+        }
+    }
+
+    async getStatsByUser(user_id) {
+        try {
+            const query = `
+                SELECT
+                    COUNT(*)::int                                              AS total_jobs,
+                    COUNT(*) FILTER (WHERE j.status = 'completed')::int       AS completed,
+                    COUNT(*) FILTER (WHERE j.status = 'queued')::int          AS queued,
+                    COUNT(*) FILTER (WHERE j.status = 'processing')::int      AS processing,
+                    COUNT(*) FILTER (WHERE j.status = 'failed')::int          AS failed,
+                    COALESCE(SUM(r.duration_seconds), 0)::numeric(12,3)       AS total_duration_seconds
+                FROM vw_ai_job_current_status j
+                LEFT JOIN stt_recording r ON r.job_id::text = j.job_id::text
+                WHERE j.requested_by = $1
+            `;
+            const res = await database_service.query(query, [user_id], true);
+            if (!res.success || res.rowCount === 0) {
+                return { total_jobs: 0, completed: 0, queued: 0, processing: 0, failed: 0, total_duration_seconds: 0 };
+            }
+            return res.data[0];
+        } catch (error) {
+            logger.error(`[JobRepository][getStatsByUser] Error: ${error.message}`);
+            return { total_jobs: 0, completed: 0, queued: 0, processing: 0, failed: 0, total_duration_seconds: 0 };
+        }
+    }
+
+    async updateJobBlobName(job_id, user_id, blob_name) {
+        try {
+            const res = await database_service.query(
+                `UPDATE stt_recording SET blob_name = $1, updated_at = NOW()
+                 WHERE job_id = $2 AND user_id = $3`,
+                [blob_name, job_id, user_id]
+            );
+            if (!res.success) {
+                logger.error(`[JobRepository][updateJobBlobName] Query failed: ${res.error}`);
+                return false;
+            }
+            return true;
+        } catch (error) {
+            logger.error(`[JobRepository][updateJobBlobName] Error: ${error.message}`);
+            return false;
+        }
+    }
+
     async getJobStatus(job_id, user_id) {
         try {
             const query = `

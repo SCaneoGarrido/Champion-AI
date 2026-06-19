@@ -81,7 +81,7 @@ const speechcontroller = {
             const { req_info } = req.body;
             const userId = req.userId;
 
-            const jobId = `job_${uuidv4()}`;
+            const jobId = uuidv4()
             const format = req_info?.audio?.format;
             const blobPath = `audio/${userId}/${jobId}/${jobId}.${format}`;
 
@@ -120,7 +120,49 @@ const speechcontroller = {
             logger.error('[speech.controller][getJobStatus] Error: ' + error.message);
             return sendError(res, 500, "INTERNAL_ERROR", "Error interno del servidor.");
         }
-    }
+    },
+
+    getRecentJobs: async (req, res) => {
+        try {
+            const userId = req.userId;
+            const limit = Math.min(parseInt(req.query.limit) || 20, 50);
+            const jobs = await job_repository.getRecentJobsByUser(userId, limit);
+            return sendSuccess(res, 200, { items: jobs, count: jobs.length });
+        } catch (error) {
+            logger.error('[speech.controller][getRecentJobs] Error: ' + error.message);
+            return sendError(res, 500, "INTERNAL_ERROR", "Error interno del servidor.");
+        }
+    },
+
+    getUserStats: async (req, res) => {
+        try {
+            const userId = req.userId;
+            const stats = await job_repository.getStatsByUser(userId);
+            return sendSuccess(res, 200, stats);
+        } catch (error) {
+            logger.error('[speech.controller][getUserStats] Error: ' + error.message);
+            return sendError(res, 500, "INTERNAL_ERROR", "Error interno del servidor.");
+        }
+    },
+
+    updateJobName: async (req, res) => {
+        try {
+            const userId = req.userId;
+            const { job_id } = req.params;
+            const blob_name = req.body?.blob_name?.trim();
+            if (!blob_name) {
+                return sendError(res, 400, 'MISSING_NAME', 'Se requiere un nombre para la grabación.');
+            }
+            const ok = await job_repository.updateJobBlobName(job_id, userId, blob_name);
+            if (!ok) {
+                return sendError(res, 404, 'NOT_FOUND', 'Grabación no encontrada o no autorizada.');
+            }
+            return sendSuccess(res, 200, { job_id, blob_name });
+        } catch (error) {
+            logger.error('[speech.controller][updateJobName] Error: ' + error.message);
+            return sendError(res, 500, 'INTERNAL_ERROR', 'Error interno del servidor.');
+        }
+    },
 };
 
 module.exports = speechcontroller;

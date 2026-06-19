@@ -18,7 +18,7 @@ RETURNS TABLE (
 
     audio_format VARCHAR(20),
     sample_rate INTEGER,
-    duration_seconds INTEGER,
+    duration_seconds NUMERIC(10,3),
 
     blob_name TEXT,
     blob_url TEXT,

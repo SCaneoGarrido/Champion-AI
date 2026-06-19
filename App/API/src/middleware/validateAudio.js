@@ -44,9 +44,13 @@ const validateAudio = (req, res, next) => {
         return sendError(res, 400, "INVALID_PAYLOAD", "blob_url requerido.");
     }
 
-    const blobExpiration = azure_storage_service.validateBlobUrlExpiration(audio_info.blob_url);
-    if (!blobExpiration.valid) {
-        return sendError(res, 400, "INVALID_BLOB_URL", blobExpiration.message);
+    // La URL del blob es la URL permanente (sin SAS); solo validar expiración si incluye token SAS
+    const hasSasToken = audio_info.blob_url.includes('se=');
+    if (hasSasToken) {
+        const blobExpiration = azure_storage_service.validateBlobUrlExpiration(audio_info.blob_url);
+        if (!blobExpiration.valid) {
+            return sendError(res, 400, "INVALID_BLOB_URL", blobExpiration.message);
+        }
     }
 
     next();

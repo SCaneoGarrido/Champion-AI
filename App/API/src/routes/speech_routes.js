@@ -44,6 +44,27 @@ speech_router.post(
 );
 
 speech_router.get(
+    '/jobs/stats',
+    verificarToken,
+    extractUserId,
+    speech_controller.getUserStats
+);
+
+speech_router.get(
+    '/jobs',
+    verificarToken,
+    extractUserId,
+    speech_controller.getRecentJobs
+);
+
+speech_router.patch(
+    '/jobs/:job_id/name',
+    verificarToken,
+    extractUserId,
+    speech_controller.updateJobName
+);
+
+speech_router.get(
     '/jobs/:job_id/status',
     verificarToken,
     extractUserId,

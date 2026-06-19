@@ -49,25 +49,35 @@ const auth_controller = {
 
     registrov2: async (req, res) => {
         try {
-            const { email, first_name, last_name, password } = req.body;
+            const { email, first_name, last_name, password, phone, location, occupation } = req.body;
+
             if (!email || !password || !first_name || !last_name) {
-                return sendError(res, 400, "VALIDATION_ERROR", "Datos de entrada faltantes.");
+                return sendError(res, 400, "VALIDATION_ERROR", "Nombre, apellido, correo y contraseña son requeridos.");
+            }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+                return sendError(res, 400, "INVALID_EMAIL", "El correo no tiene un formato válido.");
             }
 
-            const exists = await user_repository.validateExistingUser(email);
+            const exists = await user_repository.validateExistingUser(email.trim());
             if (exists) {
                 return sendError(res, 409, "CONFLICT", "El correo electrónico ya está registrado.");
             }
 
             const data_dict = {
-                ...req.body,
+                email:       email.trim().toLowerCase(),
+                first_name:  first_name.trim(),
+                last_name:   last_name.trim(),
+                phone:       phone?.trim()      || null,
+                location:    location?.trim()   || null,
+                occupation:  occupation?.trim() || null,
+                password,
+                username:    email.trim().toLowerCase(),
+                display_name: `${first_name.trim()} ${last_name.trim()}`,
                 is_active: true,
+                must_change_password: false,
+                last_login_at: null,
                 created_at: new Date(),
                 updated_at: new Date(),
-                username: email,
-                display_name: `${first_name} ${last_name}`,
-                must_change_password: false,
-                last_login_at: null
             };
 
             const created = await user_repository.createUser(data_dict);
