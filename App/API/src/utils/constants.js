@@ -1,15 +1,15 @@
 const JOBSTATUS = Object.freeze({
-    QUEUED:     'queued',
-    PROCESSING: 'processing',
-    COMPLETED:  'completed',
-    FAILED:     'failed'
+  QUEUED: 'queued',
+  PROCESSING: 'processing',
+  COMPLETED: 'completed',
+  FAILED: 'failed'
 });
-
+// este a function
 const STT_LIVE_RECORDING_STEPS = Object.freeze({
-    TRANSCRIPTION:  "transcription",
-    SUMMARY:        "summary",
-    NOTES:          "notes",
-    MIND_MAP:       "mind_map"
+  TRANSCRIPTION: "transcription",
+  SUMMARY: "summary",
+  NOTES: "notes",
+  MIND_MAP: "mind_map"
 });
 
 const JOB_ACTOR_TYPES = Object.freeze({
@@ -23,7 +23,7 @@ const JOB_ACTOR_TYPES = Object.freeze({
 const JOB_MESSAGES = Object.freeze({
   JOB_CREATED: 'Job creado y enviado a cola',
   JOB_QUEUED: 'Job encolado correctamente',
-  
+
   TRANSCRIPTION_STARTED: 'Iniciando transcripción',
   TRANSCRIPTION_COMPLETED: 'Transcripción completada',
 

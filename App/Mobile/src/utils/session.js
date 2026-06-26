@@ -46,3 +46,9 @@ export function getAccessTokenFromSession(session) {
   if (!session) return null;
   return session.accessToken ?? session.jwt ?? null;
 }
+
+/** Refresh token (compat con refreshToken o refresh_token). */
+export function getRefreshTokenFromSession(session) {
+  if (!session) return null;
+  return session.refreshToken ?? session.refresh_token ?? null;
+}

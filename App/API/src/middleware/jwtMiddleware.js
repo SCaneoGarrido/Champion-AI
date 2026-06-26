@@ -27,7 +27,10 @@ const verificarToken = (req, res, next) => {
 
     } catch (error) {
         logger.error('JWT Error: ' + error.message);
-        return sendError(res, 403, "TOKEN_EXPIRED", "Token inválido o expirado.");
+        if (error.name === 'TokenExpiredError') {
+            return sendError(res, 401, "TOKEN_EXPIRED", "El token de acceso ha expirado.");
+        }
+        return sendError(res, 403, "INVALID_TOKEN", "Token inválido.");
     }
 };
 

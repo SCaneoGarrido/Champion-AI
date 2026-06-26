@@ -16,6 +16,9 @@ const speechcontroller = {
         try {
             const { req_info, audio_info } = req.body || {};
             const userId = req.userId;
+            logger.info(`Informacion de la peticion\n\n${JSON.stringify(req.body, null, 2)}\n`);
+
+
             if (!req_info || !audio_info) {
                 return sendError(res, 400, "INVALID_STT_CONTEXT", "No se pudo construir el contexto STT requerido.");
             }
