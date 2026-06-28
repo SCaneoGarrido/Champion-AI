@@ -1,5 +1,4 @@
 const logger = require('../utils/logger');
-require('dotenv').config();
 const AzureStorageService = require('../services/azure_storage_service.js');
 const { sendError } = require('../utils/response.helper');
 

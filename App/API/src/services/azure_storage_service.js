@@ -1,4 +1,3 @@
-require('dotenv').config();
 const { BlobServiceClient, StorageSharedKeyCredential, generateBlobSASQueryParameters, BlobSASPermissions } = require('@azure/storage-blob');
 const { QueueClient } = require('@azure/storage-queue');
 const logger = require('../utils/logger');

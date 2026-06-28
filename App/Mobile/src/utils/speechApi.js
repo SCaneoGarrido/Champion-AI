@@ -168,7 +168,7 @@ export async function submitSTTJob({
                 job_id: jobId,
                 service: 'STT',
                 feature: 'LIVE_RECORDING',
-                flow: 'stt',
+                flow: 'stt_live_recording',
                 language_info: { locale, locale_name: localeName },
             },
             audio_info: {
@@ -234,7 +234,7 @@ export async function submitRecordingToSpeechPipeline({
                 job_id: jobId,
                 service: 'STT',
                 feature: 'FILE_UPLOAD',
-                flow: 'stt',
+                flow: 'stt_file_upload',
                 language_info: { locale, locale_name: localeName },
             },
             audio_info: {

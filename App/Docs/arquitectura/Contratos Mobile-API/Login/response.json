@@ -1,9 +1,0 @@
-{
-    "success": true,
-    "data": {
-        "accessToken": "jwt_token",
-        "user": {
-            "id": "usr_123"
-        }
-    }
-}

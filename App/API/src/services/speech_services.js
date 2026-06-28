@@ -3,9 +3,6 @@ const fs = require('fs');
 const logger = require('../utils/logger');
 const axios = require('axios');
 
-require('dotenv').config();
-
-
 class SpeechService {
   #speech_key;
   #speech_endpoint;
