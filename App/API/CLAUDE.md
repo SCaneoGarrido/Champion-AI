@@ -46,8 +46,9 @@ Nunca romper este contrato. Nunca devolver una estructura diferente por convenie
 |---|---|---|---|---|
 | POST | `/AIServices/Speechv2/init` | JWT | Implementado | 201 |
 | POST | `/AIServices/Speechv2/SpeechToTextv2` | JWT | Implementado | 202 |
-| GET | `/AIServices/Speechv2/jobs/{job_id}/status` | JWT | **Pendiente** | 200 |
-| GET | `/AIServices/Speechv2/jobs/{job_id}/result` | JWT | **Pendiente** | 200 |
+| GET | `/AIServices/Speechv2/jobs/{job_id}/status` | JWT | Implementado | 200 |
+| GET | `/AIServices/Speechv2/jobs/{job_id}/result` | JWT | Implementado | 200 |
+| POST | `/AIServices/Speechv2/jobs/{job_id}/retry` | JWT | Implementado | 202 |
 
 ## Detalle de cada endpoint
 
@@ -156,7 +157,7 @@ Registra el job en BD y lo encola para procesamiento.
 **Lógica:**
 1. Validar JWT y payload
 2. `CALL sp_create_stt_live_recording_job_v1(...)` → job en estado `queued`
-3. Publicar `{ "job_id": "..." }` en queue `champion-ai-stt-live-recording`
+3. Publicar `{ "job_id": "..." }` en queue `championaiqueue`
 4. **Si la publicación falla:** `CALL sp_update_ai_job_status_v1(status='failed', error_code='QUEUE_SEND_FAILED')`
 
 **Respuesta 202:**
@@ -186,7 +187,7 @@ Registra el job en BD y lo encola para procesamiento.
 
 ---
 
-### GET /AIServices/Speechv2/jobs/{job_id}/status — PENDIENTE
+### GET /AIServices/Speechv2/jobs/{job_id}/status
 
 Consulta el estado actual del job via vista `vw_ai_job_current_status`.
 
@@ -201,7 +202,7 @@ Vista a usar: `SELECT * FROM vw_ai_job_current_status WHERE job_id = $1 AND requ
 
 ---
 
-### GET /AIServices/Speechv2/jobs/{job_id}/result — PENDIENTE
+### GET /AIServices/Speechv2/jobs/{job_id}/result
 
 Devuelve resultado completo via vista `vw_stt_recording_result`.
 

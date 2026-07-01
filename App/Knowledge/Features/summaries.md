@@ -7,7 +7,7 @@ tags: #feature #summaries #llm
 ## Descripción
 
 La generación de resúmenes es un output automático del flujo [[speech-to-text]].
-Cuando el usuario procesa un audio, el sistema genera un resumen estructurado a partir de la transcripción, usando Azure OpenAI.
+Cuando el usuario procesa un audio, el sistema genera un resumen ejecutivo a partir de la transcripción usando Azure OpenAI (gpt-5-mini).
 
 > No existe como feature independiente: el resumen siempre es parte del resultado STT.
 
@@ -18,13 +18,39 @@ Cuando el usuario procesa un audio, el sistema genera un resumen estructurado a 
 El proceso ocurre dentro de la [[azure-function]], en el paso `summary`:
 
 ```
-transcription_text → Azure OpenAI → summary_text
+transcription_text → gpt-5-mini (summary.md prompt) → summary_text
 ```
 
 El paso `summary` es el segundo en la cadena de procesamiento:
 
 ```
 transcription → summary → notes → mind_map → completed
+```
+
+**Próxima etapa planificada:** se insertará `transcript_cleanup` entre `transcription` y `summary`. Ver [[pipeline-roadmap]].
+
+---
+
+## Estructura del output
+
+El prompt `summary.md` instruye al modelo a producir Markdown estructurado:
+
+```markdown
+# Executive Summary
+(párrafo conciso con lo esencial)
+
+# Main Topics
+- Topic
+- Topic
+
+# Key Insights
+(bullet list con las ideas más relevantes)
+
+# Decisions
+(solo decisiones explícitas — si no hay: "No explicit decisions were made.")
+
+# Final Conclusion
+(síntesis de lo discutido)
 ```
 
 ---
@@ -38,7 +64,6 @@ Campo: `summary_text` (TEXT)
 
 ## Cómo se obtiene
 
-Via endpoint (pendiente de implementación):
 ```http
 GET /AIServices/Speechv2/jobs/{job_id}/result
 ```
@@ -52,26 +77,14 @@ Respuesta:
     "status": "completed",
     "result": {
       "transcription": "...",
-      "summary": "...",
+      "summary": "# Executive Summary\n...",
       "notes": "...",
       "mind_map": {}
     }
-  }
+  },
+  "error": null
 }
 ```
-
-Ver [[polling]].
-
----
-
-## Preguntas abiertas
-
-- ¿Qué prompt se usa para generar el resumen?
-- ¿El resumen tiene una longitud máxima o estructura esperada?
-- ¿Se puede solicitar el resumen de forma independiente (sin audio)?
-- ¿Qué modelo de Azure OpenAI se usa?
-
-Ver [[known-issues]].
 
 ---
 
@@ -81,5 +94,6 @@ Ver [[known-issues]].
 - [[azure-function]] — Componente que ejecuta la generación
 - [[notes]] — Otro output del mismo flujo
 - [[mind-maps]] — Otro output del mismo flujo
+- [[pipeline-roadmap]] — Evolución futura del pipeline
 - [[tables]] — Tabla `stt_recording_result`
 - [[polling]] — Cómo obtener el resultado

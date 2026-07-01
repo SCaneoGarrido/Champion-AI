@@ -26,7 +26,7 @@ Ayúdame a diagnosticar. Revisa en este orden:
 2. BD — ¿El mensaje fue publicado en la queue?
    (Revisar si ai_job tiene status='queued' o si ya pasó a 'failed' con QUEUE_SEND_FAILED)
 
-3. Azure Queue — ¿Hay mensajes pendientes en champion-ai-stt-live-recording?
+3. Azure Queue — ¿Hay mensajes pendientes en championaiqueue?
 
 4. Azure Function — ¿La Function está activa y consumiendo mensajes?
 

@@ -1,7 +1,7 @@
 # Champion AI — Bóveda de Conocimiento
 
 > Fuente de conocimiento derivada del proyecto. No modifica el código original.
-> Generada el: 2026-06-28
+> Última actualización: 2026-07-01
 
 ---
 
@@ -31,6 +31,7 @@ graph TD
     SCHEMA["🗄️ Schema\nDatabase/schema-overview"]
     STATES["🔄 Job States\nDatabase/job-states"]
     OPS["⚙️ Operations\nOperations/local-setup"]
+    ROAD["🚀 Pipeline Roadmap\nRoadmap/pipeline-roadmap"]
 
     VISION --> ARCH
     ARCH --> API
@@ -42,6 +43,7 @@ graph TD
     STT --> SUM
     STT --> NOTES
     STT --> MIND
+    STT --> ROAD
     API --> SCHEMA
     FUNC --> SCHEMA
     SCHEMA --> STATES
@@ -52,14 +54,14 @@ graph TD
 
 ## Índice por carpeta
 
-### [[vision|Product]] — Visión del producto
+### Product — Visión del producto
 - [[vision]] — Visión, usuarios, objetivos, equipo
 
 ### Architecture — Sistema y componentes
 - [[overview]] — Diagrama general del sistema
 - [[backend-api]] — API Node.js / Express
-- [[azure-function]] — Azure Function (Queue Trigger)
-- [[azure-services]] — Azure Blob, Queue, AI
+- [[azure-function]] — Azure Function (Queue Trigger, Python / Durable Functions)
+- [[azure-services]] — Azure Blob, Queue, Fast Transcription, OpenAI
 
 ### Features — Funcionalidades
 - [[speech-to-text]] — STT live_recording (implementada)
@@ -90,6 +92,7 @@ graph TD
 - [[ADR-004-response-envelope]] — Contrato `{ success, data, error }`
 - [[ADR-005-is-current-pattern]] — Flag `is_current` en historial de estados
 - [[ADR-006-idempotent-stored-procedures]] — Idempotencia ante redelivery de queue
+- [[ADR-007-fast-transcription]] — Por qué Fast Transcription en lugar de SDK Continuous Recognition
 
 ### Bugs — Problemas conocidos
 - [[known-issues]] — Vacíos, contradicciones y pendientes
@@ -101,6 +104,7 @@ graph TD
 
 ### Roadmap — Futuro
 - [[pending-features]] — Features no implementadas
+- [[pipeline-roadmap]] — Evolución del pipeline de procesamiento inteligente
 
 ---
 
@@ -109,9 +113,12 @@ graph TD
 | Componente | Estado |
 |---|---|
 | Auth (register + login) | Implementado |
-| STT live_recording (init + create job) | Implementado |
-| STT polling `/jobs/{id}/status` | **Pendiente** |
-| STT resultado `/jobs/{id}/result` | **Pendiente** |
+| STT live_recording — pipeline completo | Implementado |
+| STT polling `/jobs/{id}/status` | Implementado |
+| STT resultado `/jobs/{id}/result` | Implementado |
+| STT retry de jobs fallidos | Implementado |
+| STT Transcript Cleanup | Planificado |
+| STT Topic Extraction | Roadmap |
 | Text to Speech | Sin documentar |
 | File Management | Sin documentar |
 
@@ -121,9 +128,12 @@ graph TD
 
 ```
 Champion-AI/README.md
-Champion-AI/App/Docs/arquitectura/STT_Feature_Grabación en vivo.md
+Champion-AI/ARCHITECTURE.md
+Champion-AI/CLAUDE.md
+Champion-AI/App/API/CLAUDE.md
+Champion-AI/App/procesamiento/CLAUDE.md
 Champion-AI/App/SQL/Stored Procedures/
 Champion-AI/App/SQL/Functions/
-Champion-AI/App/SQL/Migrations/
 Champion-AI/App/docker/postgres/init.sql
+Champion-AI/App/procesamiento/prompts/
 ```

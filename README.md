@@ -1,255 +1,236 @@
-# 🤖 Champion AI
+# Champion AI
 
 <p align="center">
   <img src="./App/Docs/LogoApp/Logo Champion AI.png" alt="Champion AI Icon" width="720"/>
 </p>
 
-# 📋 Descripción
+## Descripción
 
-**Champion AI** es una plataforma tecnológica orientada a integrar múltiples capacidades de **Inteligencia Artificial** en un solo ecosistema. El proyecto busca construir un **hub de servicios de IA** que permita a los usuarios utilizar distintas herramientas basadas en modelos inteligentes para procesar, transformar y analizar información.
+**Champion AI** es un hub de servicios de Inteligencia Artificial accesible desde una app móvil. Permite procesar contenido (audio, texto) usando IA de Azure de forma simple y sin conocimiento técnico.
 
-La plataforma está pensada principalmente como una **aplicación móvil**, permitiendo que los usuarios interactúen con distintos servicios de IA desde un único lugar.
-
-Entre las capacidades que la plataforma busca integrar se encuentran:
-
-- Conversión de **texto a voz**
-- Conversión de **voz a texto**
-- **Generación automática de resúmenes**
-- Procesamiento de contenido mediante **modelos de lenguaje**
-- Integración con servicios de **voz, visión y búsqueda**
-
-Estas funcionalidades se implementan utilizando **servicios de inteligencia artificial nativos de Microsoft Azure**, permitiendo construir una plataforma escalable y extensible.
+La primera feature implementada de extremo a extremo es **Speech-to-Text (STT) live_recording**: el usuario graba audio → la app lo sube a Azure Blob → la API lo encola → una Azure Function transcribe, resume, genera notas y un mapa mental → el cliente hace polling hasta obtener el resultado.
 
 ---
 
-# 👁️ Visión del Proyecto
+## Stack tecnológico
 
-Champion AI busca facilitar el acceso a herramientas de inteligencia artificial que permitan a los usuarios procesar información de manera más rápida y eficiente.
-
-El objetivo es integrar distintas tecnologías de IA dentro de una sola plataforma que permita transformar contenido entre distintos formatos (texto, audio, conocimiento estructurado) y apoyar tareas que normalmente requieren tiempo o esfuerzo manual.
-
-La plataforma está diseñada para evolucionar progresivamente, permitiendo incorporar nuevas capacidades de inteligencia artificial a medida que el proyecto crece.
-
----
-
-# 🏗️ Pilares del Proyecto
-
-## 🧠 Procesamiento Inteligente de Contenidos
-
-El sistema utiliza servicios de inteligencia artificial para transformar contenido entre distintos formatos, permitiendo automatizar tareas como:
-
-- Transcripción de audio
-- Conversión de texto a voz
-- Análisis de contenido
-- Generación de resúmenes
+| Capa | Tecnología |
+|---|---|
+| App móvil | React Native (Expo) |
+| Backend | Node.js + Express.js — puerto 5051 |
+| Procesamiento serverless | Azure Function Apps (Python) — Azure Durable Functions |
+| Base de datos | PostgreSQL 17.10 (Docker) — puerto 5432 |
+| Almacenamiento | Azure Blob Storage |
+| Cola de mensajes | Azure Queue Storage |
+| Transcripción | Azure AI Speech — Fast Transcription REST API |
+| Generación de contenido | Azure OpenAI (gpt-5-mini) |
 
 ---
 
-## 📱 Experiencia de Usuario Simple
+## Pipeline de procesamiento STT
 
-La aplicación móvil busca ofrecer una experiencia clara e intuitiva que permita a los usuarios:
-
-1. Cargar contenido
-2. Procesarlo mediante servicios de IA
-3. Visualizar o utilizar los resultados generados
-
-El objetivo es reducir la complejidad técnica y facilitar el acceso a herramientas avanzadas de inteligencia artificial.
-
----
-
-## ⚡ Desarrollo Ágil
-
-El proyecto se desarrolla utilizando **metodología Scrum**, con iteraciones cortas que permiten avanzar progresivamente en el desarrollo de funcionalidades clave del sistema.
-
----
-
-## 📈 Escalabilidad y Evolución
-
-Champion AI se diseña con una arquitectura basada en **APIs y servicios desacoplados**, lo que permite integrar nuevas tecnologías de inteligencia artificial sin afectar el funcionamiento actual del sistema.
-
-Esto permite que la plataforma evolucione hacia un ecosistema más amplio de herramientas basadas en IA.
-
----
-
-# ⚙️ Funcionalidades Principales
-
-Las funcionalidades actuales del sistema se organizan en las siguientes áreas principales.
-
-## 🎤 Conversión de Texto a Audio (Text to Speech)
-
-Permite ingresar texto o contenido escrito para generar audio reproducible mediante servicios de síntesis de voz.
-
-Esto permite consumir contenido en formato auditivo desde la aplicación móvil.
-
----
-
-## 📝 Conversión de Audio a Texto (Speech to Text)
-
-Permite procesar audios o grabaciones para generar automáticamente una transcripción editable.
-
-Esto facilita la transformación de contenido hablado en información escrita.
-
----
-
-## 📋 Generación Automática de Resúmenes
-
-Utiliza modelos de inteligencia artificial para analizar textos extensos y generar resúmenes estructurados que permitan comprender rápidamente el contenido.
-
----
-
-## 📁 Gestión de Archivos
-
-La plataforma permite gestionar archivos que serán utilizados para procesamiento mediante IA, como:
-
-- Audios
-- Textos
-- Documentos
-
-Estos archivos pueden ser utilizados posteriormente para ejecutar distintas funcionalidades del sistema.
-
----
-
-# 🏛️ Arquitectura del Sistema
-
-Champion AI está diseñado como un sistema basado en **servicios y APIs**, donde distintos componentes trabajan de forma desacoplada para integrar capacidades de inteligencia artificial.
-
-La arquitectura general considera los siguientes componentes principales:
-
-### 📱 Aplicación móvil
-
-Aplicación desarrollada en **React Native**, que actúa como la interfaz principal para los usuarios y permite interactuar con las funcionalidades del sistema.
-
----
-
-### 🔧 API Backend
-
-Backend desarrollado en **Node.js utilizando Express.js**.
-
-Este servicio se encarga de:
-
-- Gestionar solicitudes provenientes de la aplicación móvil
-- Orquestar el uso de servicios de inteligencia artificial
-- Gestionar archivos y procesamiento
-- Centralizar la lógica de negocio de la plataforma
-
----
-
-### ☁️ Azure Function Apps
-
-Algunos procesos específicos del sistema se ejecutan mediante **Azure Function Apps desarrolladas en Java**, permitiendo ejecutar tareas de forma desacoplada y escalable.
-
----
-
-### 🤖 Servicios de Inteligencia Artificial
-
-El sistema se integra con distintos **servicios de inteligencia artificial de Microsoft Azure**, incluyendo capacidades relacionadas con:
-
-- procesamiento de voz
-- modelos de lenguaje
-- análisis de texto
-- visión computacional
-- búsqueda
-
----
-
-# 💻 Tecnologías Utilizadas
-
-## 📱 Aplicación móvil
-
-- **React Native**
-
----
-
-## 🔧 Backend
-
-- **Node.js**
-- **Express.js**
-
----
-
-## ☁️ Procesamiento Serverless
-
-- **Azure Function Apps**
-- **Python**
-
----
-
-## 🤖 Inteligencia Artificial
-
-Servicios de **Microsoft Azure AI**, utilizados para el procesamiento de contenido y ejecución de funcionalidades inteligentes dentro de la plataforma.
-
----
-
-## 📁 Estructura del Repositorio
+El pipeline ejecuta en la Azure Function de forma completamente asíncrona:
 
 ```
-Champion-AI
-│
-├── App/
-│   ├── Mobile/                        # App móvil (Expo + React Native)
-│   ├── API/                           # Backend Node.js + Express
-│   ├── ChampionAi.functionapp/        # Azure Functions (Python)
-│   ├── docker/
-│   │   ├── api/Dockerfile             # Imagen Docker de la API
-│   │   └── postgres/init.sql          # Schema completo de la BD (versionado)
-│   ├── docker-compose.yml             # Configuración del contenedor PostgreSQL
-│   ├── backup_db.sh                   # Script de backup y sincronización de la BD
-│   └── Docs/                          # Documentación y contratos
-│
-└── README.md
+Audio (WebM/M4A/MP3/OGG/WAV/FLAC)
+        │
+        ▼
+Azure AI Speech — Fast Transcription
+(HTTP POST · procesamiento ~10–50× real-time · sin conversión de formato)
+        │
+        ▼  [planned: Transcript Cleanup via GPT-5]
+        │
+        ▼
+Resumen ejecutivo (gpt-5-mini)
+        │
+        ▼
+Notas estructuradas — texto + JSON (gpt-5-mini)
+        │
+        ▼
+Mapa mental jerárquico — JSON (gpt-5-mini)
+        │
+        ▼
+Resultado almacenado en PostgreSQL · cliente notificado via polling
+```
+
+### Azure AI Speech — Fast Transcription
+
+Reemplaza al Azure Speech SDK Continuous Recognition. Ventajas:
+
+- Procesa el audio completo en una sola llamada HTTP (`POST /speechtotext/transcriptions:transcribe?api-version=2024-11-15`)
+- Acepta formatos nativos (WebM, M4A, MP3, OGG, WAV, FLAC, AAC) — sin conversión previa a WAV
+- Velocidad: ~10–50× real-time (audio de 14 min → 1–2 min de procesamiento)
+- Límites: 200 MB / 4 horas por archivo
+
+### Azure OpenAI — gpt-5-mini
+
+Modelo de razonamiento utilizado para todos los pasos de generación de contenido. Comportamiento importante para el desarrollo:
+
+- No acepta el parámetro `temperature` (usa por defecto 1)
+- Requiere `max_completion_tokens` en lugar de `max_tokens`
+- Los tokens de razonamiento interno cuentan contra el límite declarado
+- Configurado con `max_completion_tokens: 16384` para dar margen al razonamiento
+
+---
+
+## Arquitectura del sistema
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        App Móvil                            │
+│                   React Native / Expo                       │
+└────────────────────────┬────────────────────────────────────┘
+                         │ HTTP + JWT
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Champion API                             │
+│                Node.js + Express — :5051                    │
+│  Auth · Validación · SAS URL · Jobs · Polling               │
+└──────┬────────────────────┬───────────────────┬────────────┘
+       │ via SP              │ Publica { job_id } │ Genera SAS URL
+       ▼                     ▼                    ▼
+┌─────────────┐    ┌─────────────────┐   ┌──────────────────┐
+│ PostgreSQL  │    │  Azure Queue    │   │  Azure Blob      │
+│   :5432     │    │ championaiqueue │   │  Storage         │
+│  champion_db│    └────────┬────────┘   └────────┬─────────┘
+└─────────────┘             │ Trigger               │ PUT directo
+       ▲                    ▼                       │ (cliente)
+       │ Solo SPs  ┌─────────────────┐              │
+       └───────────│  Azure Function  │◄─────────────┘
+                   │  Python / Durable│  Descarga audio
+                   │                 │
+                   │ Fast Transcription
+                   │ + gpt-5-mini    │
+                   └─────────────────┘
+```
+
+### Principios arquitectónicos
+
+| Principio | Descripción |
+|---|---|
+| La API orquesta — no procesa | Acepta, valida, encola y responde 202. Nunca ejecuta IA. |
+| La Function procesa — no coordina | Consume la queue y ejecuta el pipeline de IA. No llama a la API. |
+| Solo Stored Procedures | La Function nunca hace DML directo. Todo estado pasa por SPs. |
+| El audio nunca pasa por la API | El cliente sube directamente a Azure Blob via SAS URL. |
+| El cliente hace polling | No hay WebSocket. El cliente consulta `/jobs/{id}/status` hasta `completed`. |
+| Idempotencia garantizada | `fn_can_process_ai_job` + `ON CONFLICT DO UPDATE` en SPs críticos. |
+
+---
+
+## Estructura del repositorio
+
+```
+Champion-AI/
+├── CLAUDE.md                        ← Contexto global para Claude Code
+├── ARCHITECTURE.md                  ← Arquitectura técnica detallada
+├── README.md
+└── App/
+    ├── API/                         ← Backend Node.js / Express
+    │   ├── CLAUDE.md                ← Contexto del componente API
+    │   └── src/
+    │       ├── routes/              ← Endpoints Express
+    │       ├── repositories/        ← Acceso a BD
+    │       └── middleware/          ← Auth JWT, validación
+    │
+    ├── Mobile/                      ← App React Native / Expo
+    │   ├── src/
+    │   │   ├── screens/             ← Pantallas
+    │   │   └── services/            ← Llamadas a la API
+    │   └── .env                     ← EXPO_PUBLIC_API_URL
+    │
+    ├── procesamiento/               ← Azure Function App (Python)
+    │   ├── CLAUDE.md                ← Contexto del componente
+    │   ├── function_app.py          ← Entry point — registra blueprints
+    │   ├── config.py                ← Variables de entorno
+    │   ├── requirements.txt         ← azure-functions, openai, requests, psycopg2...
+    │   ├── local.settings.json      ← Config local (no commitear)
+    │   ├── orchestrators/           ← Orquestador Durable
+    │   ├── activities/              ← Activities modulares
+    │   ├── trigger/                 ← Queue trigger
+    │   ├── shared/                  ← DB, servicios AI, utils
+    │   └── prompts/                 ← Prompts de GPT-5-mini
+    │
+    ├── SQL/                         ← Migrations, Stored Procedures, Functions
+    │   ├── Migrations/
+    │   ├── Stored Procedures/
+    │   └── Functions/
+    │
+    ├── Knowledge/                   ← Bóveda de conocimiento (Obsidian)
+    ├── rules/                       ← Reglas reutilizables por Claude Code
+    ├── agents/                      ← Agentes especializados por dominio
+    ├── commands/                    ← Prompts reutilizables
+    ├── docker/
+    │   └── postgres/
+    │       └── init.sql             ← Schema completo (versionado)
+    └── docker-compose.yml           ← PostgreSQL container
 ```
 
 ---
 
-# 🚀 Cómo iniciar el proyecto
+## Estado actual del proyecto
 
-## Requisitos previos
+| Feature | Estado |
+|---|---|
+| Auth — register + login | Implementado |
+| STT — init upload (SAS URL) | Implementado |
+| STT — create job + enqueue | Implementado |
+| STT — Azure Function pipeline | Implementado |
+| STT — GET /jobs/{id}/status | Implementado |
+| STT — GET /jobs/{id}/result | Implementado |
+| STT — retry de jobs fallidos | Implementado |
+| STT — Transcript Cleanup (GPT-5) | Planificado — próximo a implementar |
+| STT — Topic Extraction | Roadmap |
+| Text to Speech (TTS) | Sin documentar |
+| Gestión de Archivos | Sin documentar |
 
-- **Node.js** 18 o superior (recomendado LTS).  
-  - Descarga: [https://nodejs.org](https://nodejs.org)  
-  - Verificar: `node -v` y `npm -v` en la terminal.
-- **npm** (incluido con Node.js).
-- **Expo Go** en el móvil (opcional, para probar la app): [Android](https://play.google.com/store/apps/details?id=host.exp.exponent) | [iOS](https://apps.apple.com/app/expo-go/id982107779).
-- Para la **API**: variables de entorno configuradas en `App/API` (ver `.env.example` o documentación del backend). La API usa base de datos (MongoDB u otra según configuración).
+---
 
-## Pasos para levantar todo
+## Roadmap del pipeline inteligente
 
-### 1. Clonar e instalar dependencias
+Ver `App/Knowledge/Roadmap/pipeline-roadmap.md` para el detalle completo.
 
-```bash
-# Clonar el repositorio (si aún no lo tienes)
-git clone <url-del-repositorio>
-cd Champion-AI
-```
+| Etapa | Estado | Descripción |
+|---|---|---|
+| Fast Transcription | Implementado | Transcripción via REST API |
+| Transcript Cleanup | Planificado | Limpieza de artefactos de voz con GPT-5 |
+| Summary + Notes + Mind Map | Implementado | Generación de contenido estructurado |
+| Topic Extraction | Roadmap | Detección de temas y capítulos con timestamps |
+| Study Mode | Roadmap | Modo de estudio basado en topics |
+| Búsqueda en audio | Roadmap | Búsqueda por contenido con citas temporales |
+| Flashcards / Quizzes | Roadmap | Generación automática desde topics |
 
-### 2. Levantar la base de datos (Docker)
+---
 
-La base de datos PostgreSQL se comparte a través del repositorio usando Docker. El schema completo se encuentra versionado en `App/docker/postgres/init.sql` y se inicializa automáticamente al levantar el contenedor por primera vez.
+## Cómo levantar el proyecto
 
-**Requisito:** tener [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado.
+### Requisitos previos
+
+| Herramienta | Versión | Verificación |
+|---|---|---|
+| Node.js | 18+ LTS | `node -v` |
+| Python | 3.11+ | `python --version` |
+| Docker Desktop | cualquier reciente | UI de Docker |
+| Azure Functions Core Tools | v4 | `func --version` |
+| Expo Go (opcional) | app en móvil | Para dispositivo físico |
+
+### 1. Base de datos (PostgreSQL via Docker)
 
 ```bash
 cd App
-
-# Levantar el contenedor en segundo plano
 docker compose up -d
-
-# Si necesitas recrear la BD desde cero (aplica el init.sql actualizado)
-docker compose down -v && docker compose up -d
 ```
 
-| Comando | Descripción |
+- BD disponible en `localhost:5432`
+- Usuario: `champion_db_user`
+- BD: `champion_db`
+- Schema cargado automáticamente desde `App/docker/postgres/init.sql`
+
+| Comando | Efecto |
 |---|---|
-| `docker compose up -d` | Levanta el contenedor de PostgreSQL en segundo plano. Si el volumen ya existe, mantiene los datos actuales. |
-| `docker compose down -v` | Detiene el contenedor **y elimina el volumen** (borra todos los datos). Úsalo cuando quieras partir desde cero con el schema del repositorio. |
+| `docker compose up -d` | Levanta el contenedor. Preserva datos si el volumen existe. |
+| `docker compose down -v` | Detiene y **elimina todos los datos**. El próximo `up` aplica `init.sql` desde cero. |
 
-- La BD queda disponible en **localhost:5432**.
-- Usuario: `champion_db_user` / Contraseña: la definida en tu `.env`.
-- El schema y los datos de prueba se cargan solos en el primer arranque.
-
----
-
-### 3. Levantar el backend (API Node)
+### 2. Backend API (Node.js)
 
 ```bash
 cd App/API
@@ -257,12 +238,23 @@ npm install
 npm start
 ```
 
-- La API queda en **http://localhost:5051** (o el puerto definido en `.env`).
-- Debe estar en ejecución para que la app móvil pueda hacer login y registro.
+API disponible en `http://localhost:5051`. Configurar variables en `App/API/.env`.
 
-### 3. Levantar la app móvil (Expo)
+### 3. Azure Function (Python)
 
-En **otra terminal**:
+```bash
+cd App/procesamiento
+python -m venv .venv
+.venv\Scripts\activate       # Windows
+source .venv/bin/activate    # macOS/Linux
+
+pip install -r requirements.txt
+func start
+```
+
+Requiere `local.settings.json` con las variables de Azure (SPEECH_KEY, SPEECH_REGION, OPENAI_KEY, OPENAI_ENDPOINT, OPENAI_API_VERSION, OPENAI_DEPLOYMENT, AZURE_STORAGE_CONNECTION_STRING, AzureWebJobsStorage, etc.)
+
+### 4. App Móvil (Expo)
 
 ```bash
 cd App/Mobile
@@ -270,80 +262,33 @@ npm install
 npx expo start
 ```
 
-- Se mostrará un **código QR** en la terminal (o en el navegador).
-- Para abrir en el **móvil**: instala **Expo Go**, escanea el QR y asegúrate de que el móvil y el PC estén en la **misma red Wi‑Fi**.
-- Para **emulador**: en la terminal de Expo pulsa `a` (Android) o `i` (iOS, solo macOS).
+Para dispositivo físico, crear `App/Mobile/.env`:
+```env
+EXPO_PUBLIC_API_URL=http://TU_IP_LOCAL:5051
+```
 
-### 4. Configurar la URL de la API en el móvil (si usas dispositivo físico)
-
-En el móvil, `localhost` apunta al propio teléfono. Para que la app hable con tu API en el PC:
-
-1. En el PC, ejecuta `ipconfig` (Windows) o `ifconfig` (Mac/Linux) y anota la **IPv4** de tu red (ej. `192.168.1.10`).
-2. En la raíz de `App/Mobile` crea un archivo **`.env`** con:
-   ```env
-   EXPO_PUBLIC_API_URL=http://TU_IP:5051
-   ```
-   (reemplaza `TU_IP` por tu IPv4).
-3. Reinicia Expo (`Ctrl+C` y luego `npx expo start`) y vuelve a escanear el QR.
-
-Más detalles en **App/Mobile/README.md**.
+> El móvil y el PC deben estar en la misma red Wi-Fi.
 
 ---
 
-# 🗄️ Backup y sincronización de la base de datos
-
-El script `App/backup_db.sh` permite exportar el estado actual de la BD y actualizar el `init.sql` del repositorio, de manera que todos los miembros del equipo puedan obtener la última versión.
-
-**Requisito:** el contenedor `postgres_db` debe estar corriendo (`docker compose up -d`).
+## Sincronización de la base de datos
 
 ```bash
 cd App
 bash backup_db.sh
 ```
 
-**Lo que hace el script:**
+Genera un dump completo, actualiza `docker/postgres/init.sql` y conserva los últimos 10 backups en `App/backups/` (en `.gitignore`).
 
-1. Verifica que el contenedor esté activo.
-2. Genera un dump completo de la BD y lo guarda en `App/backups/` con timestamp (ej. `champion_db_20260603_120000.sql`).
-3. Copia ese dump a `docker/postgres/init.sql`, actualizando el schema versionado en el repositorio.
-4. Elimina backups antiguos, conservando solo los últimos 10.
-
-**Para compartir los cambios con el equipo:**
-
+Para que otro integrante aplique la última versión:
 ```bash
-git add App/docker/postgres/init.sql
-git commit -m "chore: update db schema"
-git push
-```
-
-**Para que otro integrante aplique la nueva versión:**
-
-```bash
-# En la máquina del compañero, desde App/
+cd App
 docker compose down -v && docker compose up -d
 ```
 
-> Los archivos de `App/backups/` están en `.gitignore` y no se suben al repositorio.
-
 ---
 
-# 🚧 Estado del Proyecto
+## Equipo
 
-El proyecto se encuentra actualmente en **fase de desarrollo**, donde se están implementando los primeros componentes del backend y las integraciones iniciales con servicios de inteligencia artificial.
-
-Las primeras funcionalidades priorizadas corresponden a:
-
-- Conversión de texto a voz
-- Conversión de voz a texto
-- Generación automática de resúmenes
-
-Estas capacidades servirán como base para la evolución futura de la plataforma hacia un hub más amplio de herramientas basadas en inteligencia artificial.
-
----
-
-# 👥 Equipo
-
-Proyecto desarrollado por:
-
-- Nicolás Bustamante  
+- Nicolás Bustamante
 - Sebastián Caneo

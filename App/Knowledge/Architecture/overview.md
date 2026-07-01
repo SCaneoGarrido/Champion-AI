@@ -11,10 +11,10 @@ graph TD
     MOBILE["📱 App Móvil\nReact Native / Expo"]
     API["🔧 Champion API\nNode.js / Express\nlocalhost:5051"]
     PG["🗄️ PostgreSQL\nlocalhost:5432"]
-    QUEUE["📨 Azure Queue\nchampion-ai-stt-live-recording"]
-    FUNC["⚡ Azure Function\nQueue Trigger"]
+    QUEUE["📨 Azure Queue\nchampionaiqueue"]
+    FUNC["⚡ Azure Function\nPython / Durable Functions"]
     BLOB["☁️ Azure Blob Storage\naudio/{user}/{job}/"]
-    AI["🤖 Azure AI\nSpeech + OpenAI"]
+    AI["🤖 Azure AI\nFast Transcription + gpt-5-mini"]
 
     MOBILE -- "HTTP + JWT" --> API
     API -- "UPSERT/SELECT via SP" --> PG
@@ -22,7 +22,7 @@ graph TD
     API -- "Genera SAS URL" --> BLOB
     MOBILE -- "PUT audio (directo)" --> BLOB
     QUEUE -- "Trigger" --> FUNC
-    FUNC -- "Descarga audio" --> BLOB
+    FUNC -- "Descarga audio (bytes crudos)" --> BLOB
     FUNC -- "Transcribe + LLM" --> AI
     FUNC -- "Solo Stored Procedures" --> PG
     API -- "Polling vía vistas" --> PG
@@ -71,7 +71,7 @@ Responsable de:
 - Creación de jobs via Stored Procedures
 - Publicación de mensajes en Azure Queue
 - Exposición de endpoints de polling (estado y resultado)
-- Centralizar toda la lógica de negocio del sistema
+- Endpoint de retry de jobs fallidos
 
 **No ejecuta procesamiento de IA. No hace DML directo en BD.**
 
@@ -79,17 +79,18 @@ Ver [[backend-api]] para el detalle completo.
 
 ---
 
-### Azure Function — Queue Trigger
+### Azure Function — Python / Durable Functions
 
-Trigger: `champion-ai-stt-live-recording`
+Trigger: `championaiqueue`
 
 Responsable de:
 - Consumir mensajes desde la queue
-- Obtener contexto del job desde PostgreSQL (`fn_get_stt_live_recording_job_context`)
-- Descargar el audio desde Azure Blob
-- Ejecutar transcripción (Azure Speech)
-- Ejecutar generación de resumen, notas y mapa mental (Azure OpenAI)
-- Guardar resultados en PostgreSQL via Stored Procedures
+- Obtener contexto del job desde PostgreSQL
+- Descargar el audio desde Azure Blob (formato original — sin conversión)
+- Ejecutar transcripción via **Azure AI Speech Fast Transcription** (REST API)
+- Ejecutar generación de resumen, notas y mapa mental via **Azure OpenAI (gpt-5-mini)**
+- Guardar resultados parciales tras cada paso exitoso (smart retry)
+- Guardar resultado final en PostgreSQL via Stored Procedures
 - Actualizar estado del job en cada paso
 
 **Regla absoluta: solo puede llamar Stored Procedures. Nunca DML directo.**
@@ -115,7 +116,7 @@ Ver [[schema-overview]] para el modelo de datos.
 
 ### Azure Queue Storage
 
-Queue: `champion-ai-stt-live-recording`
+Queue: `championaiqueue`
 
 El nombre de la queue define el **bounded context** del servicio STT.
 
@@ -136,10 +137,10 @@ Estructura de paths:
 audio/
   {user_uuid}/
     {job_id}/
-      {job_id}.webm
+      {job_id}.{formato}
 ```
 
-Formatos soportados: `webm`, `mp4`, `m4a`, `mp3`, `wav`, `ogg`
+Formatos soportados: `webm`, `mp4`, `m4a`, `mp3`, `wav`, `ogg`, `flac`, `aac`
 
 El cliente sube **directamente** via SAS URL. La API nunca recibe el binario.
 Ver [[ADR-003-sas-direct-upload]].
@@ -148,11 +149,16 @@ Ver [[ADR-003-sas-direct-upload]].
 
 ### Azure AI Services
 
-Servicios utilizados en el flujo STT:
-- **Azure Speech** — Transcripción de audio a texto
-- **Azure OpenAI** — Generación de resumen, notas y mapa mental
+| Servicio | Tecnología | Uso |
+|---|---|---|
+| Azure AI Speech | Fast Transcription REST API | Transcripción de audio a texto en el paso `transcription` |
+| Azure OpenAI | gpt-5-mini (reasoning model) | Generación de resumen, notas y mapa mental |
 
-Detalles de modelos, configuración y prompts: **no documentados en las fuentes disponibles**. Ver [[known-issues]].
+**Fast Transcription:** procesa el audio completo en una sola llamada HTTP. Acepta formatos nativos sin conversión. Velocidad ~10–50× real-time.
+
+**gpt-5-mini:** modelo de razonamiento. No acepta `temperature`. Requiere `max_completion_tokens` con margen amplio (16384) para los tokens de razonamiento interno.
+
+Detalles completos en [[azure-services]].
 
 ---
 
@@ -164,6 +170,7 @@ Detalles de modelos, configuración y prompts: **no documentados en las fuentes 
 | API no recibe binarios de audio | Escalabilidad: el storage no pasa por la API |
 | Queue garantiza at-least-once | Los SPs deben ser idempotentes |
 | JWT requerido en todos los endpoints (excepto register/login) | No hay endpoints públicos de procesamiento |
+| Fast Transcription — sin conversión de formato | El audio se envía en su formato original |
 
 ---
 

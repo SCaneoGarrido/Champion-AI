@@ -464,7 +464,7 @@ queued
 Queue:
 
 ```txt
-champion-ai-stt-live-recording
+championaiqueue
 ```
 
 Mensaje:
@@ -499,7 +499,7 @@ error_code = QUEUE_SEND_FAILED
 Trigger:
 
 ```txt
-champion-ai-stt-live-recording
+championaiqueue
 ```
 
 ---

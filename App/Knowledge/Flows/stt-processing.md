@@ -8,13 +8,15 @@ tags: #flow #processing #azure-function #async
 
 Después de que la API publica el `job_id` en la queue, el procesamiento ocurre de forma **completamente asíncrona** dentro de la Azure Function. El cliente no está conectado durante este proceso: consulta el resultado via polling.
 
+La transcripción usa **Azure AI Speech Fast Transcription** (REST API), que procesa el audio completo en una sola llamada HTTP a ~10–50× velocidad real. El audio se envía en su formato original (WebM, M4A, MP3, OGG, WAV, FLAC, AAC) — sin conversión previa.
+
 ---
 
 ## Trigger
 
 La Function se activa automáticamente cuando llega un mensaje a:
 ```
-Queue: champion-ai-stt-live-recording
+Queue: championaiqueue
 Mensaje: { "job_id": "job_550e8400-..." }
 ```
 
@@ -31,7 +33,7 @@ flowchart TD
 
     TRANS_START["sp_update_ai_job_status\nstatus=processing / step=transcription"]
     DOWNLOAD["Descargar audio\ndesde Azure Blob"]
-    SPEECH["Azure Speech\nTranscripción"]
+    SPEECH["Azure AI Speech Fast Transcription\nHTTP POST → transcription_text"]
 
     SUM_START["sp_update_ai_job_status\nstep=summary"]
     SUMMARY["Azure OpenAI\nGeneración de resumen"]
@@ -95,10 +97,15 @@ Devuelve todo lo necesario para procesar:
 ```
 sp_update_ai_job_status → status=processing, step=transcription
 ↓
-Descarga audio desde blob_url
+Descarga audio desde blob_url (formato original: WebM, M4A, MP3, OGG, WAV…)
 ↓
-Azure Speech Service → transcription_text
+Azure AI Speech Fast Transcription (HTTP POST REST API)
+→ transcription_text
 ```
+
+**Tecnología:** Fast Transcription REST API (`/speechtotext/transcriptions:transcribe?api-version=2024-11-15`).
+No se realiza conversión de formato previa — el audio se envía tal como fue subido por el cliente.
+Velocidad típica: 10–50× real-time (audio de 14 min → ~1–2 min de procesamiento).
 
 ### 3. Resumen
 

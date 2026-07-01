@@ -1,0 +1,370 @@
+---
+Análisis de Migración: Continuous Recognition → Fast Transcription
+
+1. Diagnóstico del problema actual
+
+La causa raíz del problema de rendimiento es una incompatibilidad de paradigma:
+
+- Azure Speech Continuous Recognition está diseñado para procesar audio que llega en tiempo real. Internamente procesa el stream a medida que llega, con un coste de overhead por frame y por evento de reconocimiento.
+- Cuando se usa con audio pregrabado (nuestro caso), el SDK procesa el audio al ritmo del stream, lo que en la práctica lo hace igual o más lento que el tiempo real.
+- El resultado: 14 min de audio → ~26 min de procesamiento (≈ 1.85× más lento que real-time).
+
+Azure AI Speech Fast Transcription está diseñado específicamente para audio pregrabado y trabaja con los archivos completos, no en streaming. En benchmarks reportados por Microsoft, procesa típicamente a 10×–50× la velocidad real, lo que implicaría procesar esos 14 minutos en aproximadamente 1–2 minutos.
+
+---
+2. Diferencias técnicas entre ambas APIs
+
+┌────────────────────┬─────────────────────────────────────────────┬────────────────────────────────────────────────┐
+│     Dimensión      │       Continuous Recognition (actual)       │         Fast Transcription (propuesta)         │
+├────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────┤
+│ Paradigma          │ Streaming en tiempo real                    │ Batch sobre archivo completo                   │
+├────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────┤
+│ Interfaz           │ SDK Python (azure-cognitiveservices-speech) │ REST API directa (HTTP POST)                   │
+├────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────┤
+│ Formato de entrada │ WAV PCM 16kHz mono 16-bit (obligatorio)     │ WAV, MP3, OGG, FLAC, AAC, M4A, WebM (nativo)   │
+├────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────┤
+│ Concurrencia       │ Callbacks + threading.Event                 │ Request HTTP síncrono, respuesta JSON completa │
+├────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────┤
+│ Velocidad          │ ≤ 1× real-time (frecuentemente peor)        │ 10–50× real-time                               │
+├────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────┤
+│ Resultado          │ Fragmentos incrementales concatenados       │ Texto completo en una respuesta                │
+├────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────┤
+│ Autenticación      │ Subscription key via SDK                    │ Header Ocp-Apim-Subscription-Key               │
+├────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────┤
+│ Timeout máximo     │ _RECOGNITION_TIMEOUT_SECONDS = 600 (manual) │ Timeout HTTP configurable                      │
+├────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────┤
+│ Límite de audio    │ Sin límite documentado en SDK               │ 200 MB / 4 horas por request                   │
+└────────────────────┴─────────────────────────────────────────────┴────────────────────────────────────────────────┘
+
+---
+3. Archivos afectados
+
+3.1 Eliminación completa o reemplazo
+
+┌───────────────────────────────────┬─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│              Archivo              │                                                                                     Impacto                                                                                     │
+├───────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ shared/services/speech_service.py │ Reescritura total. Desaparece _WavBytesCallback, transcribe_wav_bytes, y todo el código de Continuous Recognition. Se reemplaza por una función que hace un HTTP POST           │
+│                                   │ multipart.                                                                                                                                                                      │
+├───────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ shared/services/audio_service.py  │ Posible eliminación completa. La Fast Transcription API acepta WebM, M4A, MP3, OGG y WAV de forma nativa. La conversión a WAV PCM deja de ser necesaria. Si se mantiene, sería  │
+│                                   │ como fallback de último recurso para formatos exóticos.                                                                                                                         │
+└───────────────────────────────────┴─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+3.2 Simplificación significativa
+
+┌──────────────────────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│               Archivo                │                                                                                Impacto                                                                                 │
+├──────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ activities/transcription_activity.py │ Simplificación. Desaparece la llamada a convert_to_wav_bytes. El pipeline queda: download_audio_bytes → fast_transcribe.                                               │
+├──────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ shared/services/blob_service.py      │ Limpieza de código muerto. Las funciones upload_tmp_wav, download_tmp_wav y delete_tmp_wav ya son código muerto (no se usan en el pipeline actual) y deben eliminarse. │
+└──────────────────────────────────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+3.3 Cambios menores
+
+┌──────────────────┬─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│     Archivo      │                                                                                         Impacto                                                                                         │
+├──────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ config.py        │ Sin cambios en variables. Las mismas SPEECH_KEY y SPEECH_REGION se usan para autenticar la REST API. El endpoint se construye como https://{SPEECH_REGION}.api.cognitive.microsoft.com. │
+├──────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ requirements.txt │ Eliminar azure-cognitiveservices-speech (~150 MB de dependencias). Potencialmente eliminar av (PyAV). Agregar requests o confirmar que ya está disponible.                              │
+└──────────────────┴─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+3.4 Documentación
+
+┌──────────────────────────────────────────────┬─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                   Archivo                    │                                           Impacto                                           │
+├──────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────┤
+│ App/procesamiento/CLAUDE.md                  │ Actualizar descripción del servicio de transcripción y el diagrama de flujo.                │
+├──────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────┤
+│ App/Knowledge/Architecture/azure-services.md │ Actualizar sección Azure AI: cambiar descripción de Speech a Fast Transcription REST API.   │
+├──────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────┤
+│ App/Knowledge/Flows/stt-processing.md        │ Eliminar referencia a conversión WAV obligatoria. Actualizar el diagrama Mermaid del flujo. │
+├──────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────┤
+│ ARCHITECTURE.md                              │ Actualizar referencias a Azure Speech si las hay.                                           │
+└──────────────────────────────────────────────┴─────────────────────────────────────────────────────────────────────────────────────────────┘
+
+---
+4. Componentes que dejan de existir
+
+speech_service.py
+├── class _WavBytesCallback           ← ELIMINADO
+│   ├── __init__(wav_bytes)
+│   ├── read(buffer)
+│   └── close()
+│
+└── def transcribe_wav_bytes()        ← ELIMINADO
+    ├── SpeechConfig
+    ├── AudioStreamFormat
+    ├── PullAudioInputStream
+    ├── SpeechRecognizer
+    ├── on_recognized (callback)
+    ├── on_session_stopped (callback)
+    ├── on_canceled (callback)
+    ├── threading.Event
+    └── done.wait(timeout=600)
+
+audio_service.py
+└── def convert_to_wav_bytes()        ← ELIMINADO
+    ├── av.open (decoder)
+    ├── av.AudioResampler
+    └── av.open (encoder WAV)
+
+blob_service.py
+├── def upload_tmp_wav()              ← YA MUERTO, ELIMINAR
+├── def download_tmp_wav()            ← YA MUERTO, ELIMINAR
+└── def delete_tmp_wav()              ← YA MUERTO, ELIMINAR
+
+---
+5. Nuevos componentes necesarios
+
+5.1 speech_service.py — nuevo fast_transcribe
+
+La API Fast Transcription tiene esta interfaz REST:
+
+POST https://{region}.api.cognitive.microsoft.com/speechtotext/transcriptions:transcribe
+     ?api-version=2024-11-15
+
+Headers:
+  Ocp-Apim-Subscription-Key: {SPEECH_KEY}
+  Accept: application/json
+
+Body: multipart/form-data
+  - audio: (bytes del archivo, Content-Type: audio/{format})
+  - definition: (JSON)
+      {
+        "locales": ["es-CL"],
+        "profanityFilterMode": "None",
+        "channels": [0]
+      }
+
+Respuesta 200:
+{
+  "duration": "PT14M30.5S",
+  "combinedPhrases": [
+    { "channel": 0, "text": "Transcripción completa..." }
+  ],
+  "phrases": [...]
+}
+
+El nuevo fast_transcribe(audio_bytes, audio_format, language_locale) -> str haría:
+1. Construir request multipart (audio bytes + definition JSON)
+2. HTTP POST con timeout largo (ej. 300s)
+3. Parsear response["combinedPhrases"][0]["text"]
+4. Loguear duration y métricas de la respuesta
+
+5.2 Mapeo de Content-Type por formato
+
+_CONTENT_TYPE_MAP = {
+    "webm": "audio/webm",
+    "mp3":  "audio/mpeg",
+    "m4a":  "audio/mp4",
+    "mp4":  "audio/mp4",
+    "wav":  "audio/wav",
+    "ogg":  "audio/ogg",
+    "flac": "audio/flac",
+    "aac":  "audio/aac",
+}
+
+5.3 transcription_activity.py — pipeline simplificado
+
+Actual:  download_audio_bytes → convert_to_wav_bytes → transcribe_wav_bytes
+Nuevo:   download_audio_bytes → fast_transcribe
+
+El audio baja en su formato original (webm, m4a, etc.) y va directo a la API sin conversión.
+
+---
+6. Cambios en comunicación con Azure Speech
+
+┌─────────────────────┬─────────────────────────────────────────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────┐
+│       Aspecto       │                          Antes                          │                                            Después                                             │
+├─────────────────────┼─────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Protocolo           │ SDK propietario sobre WebSocket                         │ HTTPS (REST estándar)                                                                          │
+├─────────────────────┼─────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Autenticación       │ speechsdk.SpeechConfig(subscription=key, region=region) │ Header HTTP Ocp-Apim-Subscription-Key: {key}                                                   │
+├─────────────────────┼─────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Endpoint            │ Implícito en el SDK                                     │ Explícito: https://{region}.api.cognitive.microsoft.com/speechtotext/transcriptions:transcribe │
+├─────────────────────┼─────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Formato requerido   │ WAV PCM 16kHz mono 16-bit estrictamente                 │ Formato original del archivo (webm, mp3, etc.)                                                 │
+├─────────────────────┼─────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Envío del audio     │ Stream via PullAudioInputStream callback                │ HTTP POST multipart/form-data con bytes completos                                              │
+├─────────────────────┼─────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Recepción resultado │ Eventos recognized acumulados                           │ Campo combinedPhrases[0].text en JSON de respuesta                                             │
+├─────────────────────┼─────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Dependencia SDK     │ azure-cognitiveservices-speech (~150 MB)                │ Ninguna, solo requests                                                                         │
+└─────────────────────┴─────────────────────────────────────────────────────────┴────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+---
+7. Cambios en la Azure Function
+
+La arquitectura Durable Functions no cambia. Lo que cambia es el contenido de la activity transcribe_audio:
+
+Antes:
+transcribe_audio activity:
+  1. download_audio_bytes(blob_url)          → ~2s
+  2. convert_to_wav_bytes(bytes, format)     → ~30-60s (PyAV conversion)
+  3. transcribe_wav_bytes(wav_bytes, locale) → ~26min (Continuous Recognition)
+  Total: ~26-27 min para 14 min de audio
+
+Después:
+transcribe_audio activity:
+  1. download_audio_bytes(blob_url)                   → ~2s
+  2. fast_transcribe(audio_bytes, format, locale)     → ~1-2min (REST API)
+  Total: ~1-2 min para 14 min de audio
+
+No hay cambios en el orquestador, en el trigger, en los otros activities ni en la gestión de estados.
+
+---
+8. Cambios en manejo de estados del Job
+
+No hay cambios en la máquina de estados ni en los Stored Procedures. Los estados siguen siendo:
+
+queued → processing/transcription → processing/summary → ... → completed
+
+Lo que cambia internamente en el paso transcription es la tecnología que lo ejecuta. El error_code STT_ENGINE_UNAVAILABLE sigue siendo el código de error apropiado para fallos de Fast Transcription (o se puede refinar a STT_FAST_TRANSCRIPTION_ERROR si se prefiere más granularidad).
+
+Los códigos HTTP que puede retornar la REST API de Fast Transcription:
+- 400 Bad Request → audio inválido o formato no soportado
+- 401 Unauthorized → clave incorrecta
+- 413 Payload Too Large → archivo > 200 MB
+- 429 Too Many Requests → rate limit
+- 5xx → error del servicio
+
+Estos deberían mapearse a códigos de error del job o tratarse con retries diferenciados.
+
+---
+9. Riesgos de la migración
+
+┌───────────────────────────────────────────────────┬─────────────────────────────────────────────┬─────────┬────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                      Riesgo                       │                Probabilidad                 │ Impacto │                                           Mitigación                                           │
+├───────────────────────────────────────────────────┼─────────────────────────────────────────────┼─────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Formato no soportado por Fast Transcription API   │ Baja (soporta WebM, M4A, MP3, OGG, WAV)     │ Alto    │ Mantener audio_service.py como fallback de conversión a WAV; activarlo si el formato falla     │
+├───────────────────────────────────────────────────┼─────────────────────────────────────────────┼─────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Timeout HTTP en archivos muy grandes (>30 min)    │ Media                                       │ Alto    │ Configurar timeout de 600s; para archivos muy grandes considerar Batch Transcription API       │
+├───────────────────────────────────────────────────┼─────────────────────────────────────────────┼─────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Límite de 200 MB superado                         │ Baja (audio comprimido ~5-15 MB por 14 min) │ Medio   │ Validar tamaño antes de enviar; loguear si se acerca al límite                                 │
+├───────────────────────────────────────────────────┼─────────────────────────────────────────────┼─────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Diferencias en calidad de transcripción           │ Media                                       │ Bajo    │ Ambos usan los mismos modelos de Azure Speech internamente; la calidad debería ser equivalente │
+├───────────────────────────────────────────────────┼─────────────────────────────────────────────┼─────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Cambio en modelo de precios                       │ Media                                       │ Bajo    │ Fast Transcription tiene pricing diferente; revisar antes de producción                        │
+├───────────────────────────────────────────────────┼─────────────────────────────────────────────┼─────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Rate limiting más restrictivo                     │ Media                                       │ Medio   │ Agregar retry con exponential backoff para 429                                                 │
+├───────────────────────────────────────────────────┼─────────────────────────────────────────────┼─────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Indisponibilidad de la REST API durante migración │ Baja                                        │ Alto    │ El mecanismo de retry del job ya existe (sp_reset_ai_job_for_retry_v1)                         │
+├───────────────────────────────────────────────────┼─────────────────────────────────────────────┼─────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Memoria en Activity para archivos grandes         │ Baja                                        │ Medio   │ El archivo ya vive en memoria para la descarga; no hay overhead adicional                      │
+└───────────────────────────────────────────────────┴─────────────────────────────────────────────┴─────────┴────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+---
+10. Ventajas de la migración
+
+┌─────────────────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│             Ventaja             │                                            Descripción                                             │
+├─────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Velocidad ×10–25                │ 14 min de audio: de ~26 min → ~1–2 min                                                             │
+├─────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Código 80% más simple           │ Desaparecen callbacks, threading, timeout manual, máquina de estados del SDK                       │
+├─────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Elimina la conversión WAV       │ PyAV ya no es necesario para la mayoría de formatos → menos memoria, menos CPU, menos dependencias │
+├─────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Dependencia de 150 MB eliminada │ azure-cognitiveservices-speech ya no es necesario → builds más rápidos, imagen más liviana         │
+├─────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Más formatos nativos            │ La API acepta el archivo como viene; no hay riesgo de bugs de conversión                           │
+├─────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Mejor observabilidad            │ La respuesta JSON incluye duración, offset por frase, confidence scores                            │
+├─────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ HTTP estándar                   │ Más fácil de debuggear, testear y mockear que el SDK propietario                                   │
+├─────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ UX mejorada                     │ El paso transcription pasará de ser el más lento al más rápido del pipeline                        │
+└─────────────────────────────────┴────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+---
+11. Plan de implementación por fases
+
+Las fases están ordenadas para minimizar riesgo: cada fase es un cambio atómico y reversible.
+
+---
+Fase 1 — Validación de la API (sin tocar código)
+
+Objetivo: Confirmar que la Fast Transcription API funciona con los formatos reales del sistema antes de escribir una línea de código.
+
+Acciones:
+- Tomar un blob de audio real (WebM o M4A) de Azure Blob Storage
+- Hacer un curl o Postman directo a la API con las credenciales del entorno
+- Verificar que retorna texto correcto y medir tiempo de respuesta real
+- Confirmar el api-version disponible en la región actual (SPEECH_REGION)
+
+Criterio de éxito: Transcripción correcta via REST en < 5 min para un archivo de 10+ min.
+
+---
+Fase 2 — Reemplazar speech_service.py
+
+Objetivo: Crear la nueva función fast_transcribe que usa la REST API.
+
+Acciones:
+- Reescribir speech_service.py completo: eliminar _WavBytesCallback y transcribe_wav_bytes; crear fast_transcribe(audio_bytes, audio_format, language_locale) -> str
+- Mantener la misma firma de entrada/salida para minimizar cambios en la activity
+- Agregar logs detallados: tamaño del request, tiempo de respuesta, duration del resultado
+- Manejar errores HTTP con códigos específicos
+
+---
+Fase 3 — Simplificar transcription_activity.py
+
+Objetivo: Eliminar el paso de conversión WAV del pipeline.
+
+Acciones:
+- Reemplazar la cadena convert_to_wav_bytes → transcribe_wav_bytes por fast_transcribe
+- El flujo queda: download_audio_bytes → fast_transcribe
+- Actualizar el docstring del activity
+
+---
+Fase 4 — Limpiar dependencias eliminadas
+
+Objetivo: Eliminar código y librerías que ya no se usan.
+
+Acciones:
+- Eliminar audio_service.py (si no hay casos de fallback) o reducirlo a una función de emergencia
+- Eliminar upload_tmp_wav, download_tmp_wav, delete_tmp_wav de blob_service.py (ya eran código muerto)
+- Actualizar requirements.txt: eliminar azure-cognitiveservices-speech y potencialmente av
+- Verificar que no hay ningún import de los módulos eliminados en otros archivos
+
+---
+Fase 5 — Actualizar documentación y diagramas
+
+Objetivo: Que la Knowledge Base refleje la realidad del sistema.
+
+Acciones:
+- stt-processing.md: actualizar diagrama Mermaid (eliminar nodo de conversión WAV, cambiar etiqueta de Azure Speech)
+- azure-services.md: actualizar sección de Azure Speech describiendo Fast Transcription REST API
+- App/procesamiento/CLAUDE.md: actualizar descripción del pipeline de transcripción y dependencias
+- ARCHITECTURE.md: si menciona Continuous Recognition, actualizar
+
+---
+Fase 6 — Manejo de errores refinado (opcional)
+
+Objetivo: Aprovechar la granularidad de errores HTTP para mejor trazabilidad.
+
+Acciones:
+- Distinguir errores: STT_UNSUPPORTED_FORMAT (400), STT_QUOTA_EXCEEDED (429), STT_ENGINE_UNAVAILABLE (5xx)
+- Agregar retry automático con backoff para errores 429 y 503 dentro de la activity
+- Agregar validación de tamaño de archivo antes de enviar (warn si > 100 MB)
+
+---
+Resumen de fases
+
+┌───────────────────────────────┬───────────────────────────────┬────────┬───────────────┐
+│             Fase              │            Alcance            │ Riesgo │   Bloquea a   │
+├───────────────────────────────┼───────────────────────────────┼────────┼───────────────┤
+│ 1 — Validación API            │ Cero cambios de código        │ Nulo   │ Todo lo demás │
+├───────────────────────────────┼───────────────────────────────┼────────┼───────────────┤
+│ 2 — speech_service.py         │ 1 archivo, reescritura        │ Bajo   │ Fases 3, 4    │
+├───────────────────────────────┼───────────────────────────────┼────────┼───────────────┤
+│ 3 — transcription_activity.py │ 1 archivo, simplificación     │ Bajo   │ Fase 4        │
+├───────────────────────────────┼───────────────────────────────┼────────┼───────────────┤
+│ 4 — Limpieza de dependencias  │ 3 archivos, eliminación       │ Bajo   │ Fase 5        │
+├───────────────────────────────┼───────────────────────────────┼────────┼───────────────┤
+│ 5 — Documentación             │ Solo docs                     │ Nulo   │ —             │
+├───────────────────────────────┼───────────────────────────────┼────────┼───────────────┤
+│ 6 — Errores refinados         │ 1 archivo, mejora incremental │ Nulo   │ —             │
+└───────────────────────────────┴───────────────────────────────┴────────┴───────────────┘

@@ -4,34 +4,72 @@ tags: #roadmap #pending #future
 
 ---
 
-## Estado del sistema al momento de esta documentación
+## Estado actual del sistema
 
-La única feature completamente documentada y con implementación parcial es **STT live_recording**.
-
----
-
-## Features pendientes de implementación
-
-### Endpoints de polling del STT
-
-**Prioridad:** Alta — son parte del flujo actual
-
-Los siguientes endpoints están documentados en el contrato API pero no implementados en el router:
-
-| Endpoint | Estado |
+| Feature | Estado |
 |---|---|
-| `GET /AIServices/Speechv2/jobs/{job_id}/status` | Pendiente |
-| `GET /AIServices/Speechv2/jobs/{job_id}/result` | Pendiente |
-
-Vistas necesarias ya existen en la BD:
-- `vw_ai_job_current_status`
-- `vw_stt_recording_result`
-
-Ver [[polling]].
+| Auth (register + login) | Implementado |
+| STT live_recording — pipeline completo | Implementado |
+| STT — polling `/jobs/{id}/status` | Implementado |
+| STT — resultado `/jobs/{id}/result` | Implementado |
+| STT — retry de jobs fallidos | Implementado |
+| STT — Smart retry (resume desde paso fallido) | Implementado |
+| STT — Transcript Cleanup (GPT-5) | **Planificado — próxima implementación** |
+| STT — Topic Extraction | **Roadmap** |
+| Text to Speech (TTS) | Sin documentar |
+| Gestión de Archivos | Sin documentar |
 
 ---
 
-### Text to Speech (TTS)
+## Pipeline inteligente — evolución
+
+Ver [[pipeline-roadmap]] para el detalle técnico completo de la evolución del pipeline.
+
+Resumen:
+
+| Fase | Etapa | Estado |
+|---|---|---|
+| 1 | Fast Transcription → Summary → Notes → Mind Map | Implementado |
+| 2 | + Transcript Cleanup (GPT-5) | Planificado |
+| 3 | + Topic Extraction | Roadmap |
+| 4 | + Study Mode / Search / Citations / Flashcards / Quizzes | Visión |
+
+---
+
+## Transcript Cleanup (próxima implementación)
+
+**Prioridad:** Alta — mejora la calidad de todos los outputs downstream
+
+Paso de limpieza entre `transcription` y `summary` que usa GPT-5-mini para eliminar artefactos de voz (muletillas, repeticiones, frases incompletas) antes de que el texto sea procesado por los demás pasos.
+
+**Requiere implementar:**
+- `activities/cleanup_activity.py`
+- `prompts/transcript_cleanup.md`
+- Step name: `transcript_cleanup`
+- Extensión de `stt_recording_result` con campo `transcript_clean_text`
+- Extensión de `sp_save_stt_partial_result_v1`
+
+Ver [[pipeline-roadmap]] para el diseño completo.
+
+---
+
+## Topic Extraction (roadmap)
+
+**Prioridad:** Media-Alta — habilita la mayor parte del roadmap de experiencia de usuario
+
+Extracción semántica de temas y capítulos con timestamps, basada en el texto limpio + los offsets de `phrases[]` que ya devuelve Fast Transcription.
+
+Habilita:
+- Navegación por capítulos dentro del audio
+- Study Mode
+- Búsqueda por contenido con citas temporales
+- Generación de flashcards y quizzes
+
+Ver [[pipeline-roadmap]] para el diseño completo.
+
+---
+
+## Text to Speech (TTS)
 
 **Prioridad:** Media — mencionada como capacidad del producto
 
@@ -47,7 +85,7 @@ Ver [[text-to-speech]].
 
 ---
 
-### Gestión de Archivos
+## Gestión de Archivos
 
 **Prioridad:** Media — mencionada en el README
 
@@ -62,42 +100,28 @@ Requiere diseñar:
 
 ---
 
-### Funcionalidades adicionales mencionadas en el README
-
-El README menciona como capacidades del hub de IA:
-
-| Capacidad | Estado de documentación |
-|---|---|
-| Análisis de contenido | Sin documentar |
-| Integración con visión computacional | Sin documentar |
-| Integración con búsqueda | Sin documentar |
-| Conversión texto → audio (TTS) | Sin documentar |
-
----
-
-## Mejoras arquitectónicas sugeridas
-
-Estas no están documentadas en las fuentes pero son inferibles como mejoras naturales:
+## Mejoras arquitectónicas identificadas
 
 ### Notificaciones push (reemplaza polling)
 
-El cliente actualmente hace polling cada N segundos para saber si el job terminó.
+El cliente actualmente hace polling cada N segundos.
 Una mejora natural sería notificaciones push (FCM/APNs) cuando el job completa.
 
-Esto eliminaría:
-- La carga de polling sobre la API
-- La latencia entre la finalización y la notificación al usuario
+Beneficios:
+- Elimina la carga de polling sobre la API
+- Reduce latencia entre finalización y notificación al usuario
 
 ### Soporte multi-idioma
 
-La arquitectura soporta `language_locale` como parámetro, pero solo `es-CL` está documentado como caso de uso. La extensión a otros locales es directa.
+La arquitectura soporta `language_locale` como parámetro del job. El valor por defecto es `es-CL`. La extensión a otros locales es directa — Fast Transcription lo soporta via el campo `locales` en la request.
 
 ### Dashboard de observabilidad
 
-La tabla `ai_job_status_history` acumula todo el historial de transiciones con timestamps y actores. Esto es la base para un dashboard de métricas:
-- Tiempo promedio por step
+La tabla `ai_job_status_history` acumula el historial completo de transiciones con timestamps y actores. Base para métricas:
+- Tiempo promedio por step (por modelo de IA)
 - Tasa de éxito/fallo por feature
 - Jobs en cola vs en procesamiento
+- Costo estimado de IA por job
 
 ---
 
@@ -111,11 +135,14 @@ Cuando se implemente una nueva feature, la bóveda debe actualizarse con:
 4. Actualización de `Database/stored-procedures.md` si hay nuevos SPs
 5. Actualización de `Architecture/backend-api.md` con los nuevos endpoints
 6. Actualización de `README.md` en el índice y la tabla de estado
+7. Actualización de `Roadmap/pending-features.md`
+8. Actualización de `CLAUDE.md` raíz con el nuevo estado del proyecto
 
 ---
 
 ## Referencias cruzadas
 
 - [[known-issues]] — Problemas y vacíos actuales
+- [[pipeline-roadmap]] — Evolución técnica del pipeline de procesamiento
 - [[vision]] — Capacidades planificadas del producto
 - [[speech-to-text]] — Feature de referencia para nuevas implementaciones

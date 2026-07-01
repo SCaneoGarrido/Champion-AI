@@ -6,77 +6,102 @@ Contexto de componente. Ver `CLAUDE.md` en la raíz del proyecto para principios
 
 La Azure Function es el **procesador** del sistema. Se activa automáticamente cuando la API publica un mensaje en la queue.
 
-**Procesa. No orquesta. No coordina. No llama a la API.**
+**Procesa. No orquesta entre componentes. No llama a la API.**
+
+## Lenguaje y modelo de ejecución
+
+**Python**. El pipeline usa **Azure Durable Functions** con el patrón Orchestrator + Activities.
+
+## Estructura de archivos
+
+```
+procesamiento/
+  function_app.py              ← punto de entrada — registra todos los blueprints
+  config.py                    ← variables de entorno
+  requirements.txt
+
+  orchestrators/
+    stt_live_recording.py      ← orquestador Durable (solo flujo, sin I/O)
+
+  activities/                  ← un archivo por dominio funcional
+    context_activity.py        ← check_and_get_context, set_job_status
+    transcription_activity.py  ← transcribe_audio
+    ai_activity.py             ← generate_summary, generate_notes, generate_mind_map
+    completion_activity.py     ← complete_job_activity
+
+  trigger/
+    queue_trigger.py           ← Queue trigger → arranca stt_live_recording
+
+  shared/
+    database/
+      db_client.py             ← pool de conexiones PostgreSQL
+      job_repository.py        ← wrappers para SPs y SQL functions
+    services/
+      blob_service.py          ← descarga de audio desde Azure Blob
+      speech_service.py        ← transcripción via Fast Transcription REST API
+      openai_service.py        ← resumen, notas, mapa mental via OpenAI
+    utils/
+      constants.py             ← JobStatus, ProcessingStep, ErrorCode, ACTOR_TYPE
+      __init__.py              ← validate_job_payload
+
+  prompts/                     ← prompts de Azure OpenAI
+    system.md                  ← system prompt de Champion AI
+    summary.md
+    notes.md
+    notes_json.md
+    mind_map.md
+```
 
 ## Trigger
 
 ```
-Queue:   champion-ai-stt-live-recording
-Mensaje: { "job_id": "job_{uuid}" }
+Queue:   championaiqueue
+Mensaje: { "job_id": "..." }
 ```
 
-La Function recibe solo el `job_id`. El contexto completo lo obtiene de PostgreSQL en el paso 2.
-
-## Lenguaje
-
-**Advertencia:** Existe una contradicción en las fuentes del proyecto.
-- `README.md` (sección Arquitectura): menciona **Java**
-- `README.md` (sección Tecnologías): menciona **Python**
-
-Verificar el código fuente en `App/procesamiento/` para determinar el lenguaje real antes de modificar.
+La Function recibe solo el `job_id`. El contexto completo lo obtiene de PostgreSQL (paso 2).
 
 ## Flujo de ejecución completo
 
+El pipeline corre como Durable Function `stt_live_recording`. Cada paso es una activity independiente.
+
 ```
-[Mensaje recibido: { job_id }]
+[Queue: { job_id }]
         │
-        ▼
-1. fn_can_process_ai_job(job_id)
+        ▼ queue_trigger.py → client.start_new("stt_live_recording", instance_id=job_id)
+        │
+        ▼ ORCHESTRATOR: stt_live_recording
+        │
+        ▼ ACTIVITY: check_and_get_context(job_id)
    ┌─────────────────────────────┐
-   │ can_process = false?        │──► Detener silenciosamente (redelivery)
-   │ Razones: JOB_NOT_FOUND      │
-   │ JOB_ALREADY_COMPLETED       │
-   │ JOB_ALREADY_FAILED          │
-   │ INVALID_JOB_STATUS          │
+   │ can_process = false?        │──► return (silencioso — redelivery)
    └─────────────────────────────┘
-        │ can_process = true
-        ▼
-2. fn_get_stt_live_recording_job_context(job_id)
-   → obtiene: blob_url, language_locale, audio_format, recording_id, user_id, etc.
+        │ can_process = true → job_context = { blob_url, audio_format, language_locale }
         │
-        ▼
-3. sp_update_ai_job_status_v1(status='processing', step='transcription')
+        ▼ ACTIVITY: set_job_status → processing / transcription
         │
-        ▼
-4. Descarga audio desde blob_url (Azure Blob Storage)
+        ▼ ACTIVITY: transcribe_audio(blob_url, audio_format, language_locale)
+        │   Blob Storage → bytes (formato original) → Fast Transcription REST API → transcription_text
+        │ error → set_job_status(failed, STT_ENGINE_UNAVAILABLE) → return
         │
-        ▼
-5. Azure Speech → transcription_text
-        │ error → sp_update_ai_job_status_v1(status='failed', error_code='STT_ENGINE_UNAVAILABLE')
-        ▼
-6. sp_update_ai_job_status_v1(status='processing', step='summary')
+        ▼ ACTIVITY: set_job_status → processing / summary
         │
-        ▼
-7. Azure OpenAI(transcription_text) → summary_text
-        │ error → sp_update_ai_job_status_v1(status='failed', ...)
-        ▼
-8. sp_update_ai_job_status_v1(status='processing', step='notes')
+        ▼ ACTIVITY: generate_summary_activity(transcription_text) → summary_text
+        │ error → set_job_status(failed, OPENAI_UNAVAILABLE) → return
         │
-        ▼
-9. Azure OpenAI(transcription_text) → notes_text + notes_json
-        │ error → sp_update_ai_job_status_v1(status='failed', ...)
-        ▼
-10. sp_update_ai_job_status_v1(status='processing', step='mind_map')
+        ▼ ACTIVITY: set_job_status → processing / notes
         │
-        ▼
-11. Azure OpenAI(transcription_text) → mind_map_json
-        │ error → sp_update_ai_job_status_v1(status='failed', ...)
-        ▼
-12. sp_complete_stt_live_recording_job_v1(
-      job_id, final_status='completed',
-      transcription_text, summary_text,
-      notes_text, notes_json, mind_map_json
-    )
+        ▼ ACTIVITY: generate_notes_activity(transcription_text) → { notes_text, notes_json }
+        │ error → set_job_status(failed, OPENAI_UNAVAILABLE) → return
+        │
+        ▼ ACTIVITY: set_job_status → processing / mind_map
+        │
+        ▼ ACTIVITY: generate_mind_map_activity(transcription_text) → mind_map_json
+        │ error → set_job_status(failed, OPENAI_UNAVAILABLE) → return
+        │
+        ▼ ACTIVITY: complete_job_activity (retry x3, intervalo 5s)
+            sp_complete_stt_live_recording_job_v1(...)
+        │ error → set_job_status(failed, INTERNAL_ERROR)
 ```
 
 ## Regla absoluta de acceso a base de datos
@@ -88,11 +113,26 @@ Esta es la restricción más importante del componente. Toda escritura en BD pas
 | Función SQL | Cuándo |
 |---|---|
 | `fn_can_process_ai_job(job_id)` | Paso 1 — guard de idempotencia |
-| `fn_get_stt_live_recording_job_context(job_id)` | Paso 2 — obtener contexto |
+| `fn_get_stt_live_recording_job_context(job_id)` | Paso 2 — obtener contexto + resultados parciales |
 | `sp_update_ai_job_status_v1(...)` | Pasos 3, 6, 8, 10 y en errores |
-| `sp_complete_stt_live_recording_job_v1(...)` | Paso 12 — guardar resultado |
+| `sp_save_stt_partial_result_v1(...)` | Tras cada paso de IA exitoso (smart retry) |
+| `sp_complete_stt_live_recording_job_v1(...)` | Paso final — guardar resultado completo |
 
 Conexión directa a PostgreSQL en `:5432`. **No pasa por la Champion API.**
+
+## Pipeline planificado (próxima implementación)
+
+El siguiente paso a implementar es **Transcript Cleanup** entre `transcription` y `summary`:
+
+```
+transcription → transcript_cleanup → summary → notes → mind_map
+```
+
+- Nueva activity: `cleanup_activity.py`
+- Nuevo prompt: `prompts/transcript_cleanup.md`
+- Step name: `transcript_cleanup`
+- Campo en resultado: `transcript_clean_text` (requiere extensión de SP y tabla)
+- Smart retry ya soporta el nuevo paso — solo agregar al COALESCE de `sp_save_stt_partial_result_v1`
 
 ## Idempotencia
 

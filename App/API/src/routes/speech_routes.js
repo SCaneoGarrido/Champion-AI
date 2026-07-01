@@ -71,4 +71,18 @@ speech_router.get(
     speech_controller.getJobStatus
 );
 
+speech_router.get(
+    '/jobs/:job_id/result',
+    verificarToken,
+    extractUserId,
+    speech_controller.getJobResult
+);
+
+speech_router.post(
+    '/jobs/:job_id/retry',
+    verificarToken,
+    extractUserId,
+    speech_controller.retryJob
+);
+
 module.exports = speech_router;

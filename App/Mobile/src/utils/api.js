@@ -143,6 +143,20 @@ export async function getUserStats() {
   return json.data ?? { total_jobs: 0, completed: 0, total_duration_seconds: 0 };
 }
 
+export async function retryJob(jobId) {
+  const res = await authenticatedFetch(`/AIServices/Speechv2/jobs/${jobId}/retry`, { method: 'POST' });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error?.code ?? `HTTP ${res.status}`);
+  return json.data ?? null;
+}
+
+export async function getJobResult(jobId) {
+  const res = await authenticatedFetch(`/AIServices/Speechv2/jobs/${jobId}/result`);
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error?.message || `HTTP ${res.status}`);
+  return json.data ?? null;
+}
+
 export async function patchJobName(jobId, name) {
   const res = await authenticatedFetch(`/AIServices/Speechv2/jobs/${jobId}/name`, {
     method: 'PATCH',

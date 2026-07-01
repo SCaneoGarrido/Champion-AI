@@ -122,7 +122,7 @@ Content-Type: application/json
 **Lo que hace el backend:**
 1. Valida JWT y payload
 2. Ejecuta `sp_create_stt_live_recording_job_v1` → job en estado `queued`
-3. Publica `{ "job_id": "..." }` en queue `champion-ai-stt-live-recording`
+3. Publica `{ "job_id": "..." }` en queue `championaiqueue`
 4. Si falla el envío a queue: marca el job como `failed` con `QUEUE_SEND_FAILED`
 
 **Respuesta exitosa — 202 Accepted:**

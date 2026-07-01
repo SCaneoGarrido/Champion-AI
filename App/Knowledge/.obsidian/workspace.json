@@ -4,17 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "886855b1d3e9987f",
+        "id": "9c0f59e3122ef0fd",
         "type": "tabs",
         "children": [
           {
-            "id": "5ec6a474147370d2",
+            "id": "acae578f64afc580",
             "type": "leaf",
             "state": {
-              "type": "graph",
+              "type": "empty",
               "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Vista gráfica"
+              "icon": "lucide-file",
+              "title": "Nueva pestaña"
             }
           }
         ]
@@ -49,7 +49,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "tag:#status",
+                "query": "tag:#summaries",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -177,8 +177,25 @@
       "bases:Crear nueva base": false
     }
   },
-  "active": "5ec6a474147370d2",
+  "active": "acae578f64afc580",
   "lastOpenFiles": [
+    "Operations/local-setup.md.tmp.48756.1280b429ebdf",
+    "Operations/local-setup.md.tmp.48756.cb45c762a4c9",
+    "ADR/ADR-007-fast-transcription.md",
+    "ADR/ADR-007-fast-transcription.md.tmp.48756.2e641a9344a9",
+    "Features/summaries.md.tmp.48756.acb21f098b72",
+    "README.md.tmp.48756.df7a8a884625",
+    "Roadmap/pending-features.md.tmp.48756.00be8e8a19ed",
+    "Features/speech-to-text.md.tmp.48756.466b513cdab3",
+    "Architecture/overview.md.tmp.48756.9ec9392152a2",
+    "Architecture/azure-function.md.tmp.48756.a82601251007",
+    "Bugs/known-issues.md.tmp.48756.4725aa1c75f4",
+    "Roadmap/pipeline-roadmap.md",
+    "Roadmap/pipeline-roadmap.md.tmp.48756.10b5e0fba623",
+    "Prompts/summary.md",
+    "Changelog/changelog_20260629.md",
+    "README.md",
+    "Prompts/mind_map.md",
     "ADR/ADR-004-response-envelope.md",
     "Flows/polling.md",
     "Architecture/backend-api.md"

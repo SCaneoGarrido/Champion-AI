@@ -70,7 +70,7 @@ Permite que la API responda `202 Accepted` de inmediato sin esperar la ejecució
 ### Queue del sistema STT
 
 ```
-Nombre: champion-ai-stt-live-recording
+Nombre: championaiqueue
 ```
 
 El nombre de la queue define el **bounded context**: todo lo relacionado con STT live_recording pasa por esta queue.
@@ -105,7 +105,7 @@ El job queda en `failed` antes de llegar a la queue.
 
 | Servicio | Uso en el sistema |
 |---|---|
-| Azure Speech | Transcripción de audio a texto (paso `transcription`) |
+| Azure AI Speech — Fast Transcription | Transcripción de audio a texto (paso `transcription`) via REST API |
 | Azure OpenAI | Generación de resumen, notas y mapa mental |
 
 ### Integración
@@ -113,15 +113,36 @@ El job queda en `failed` antes de llegar a la queue.
 Los servicios de AI son llamados exclusivamente desde la **Azure Function**, nunca desde la API.
 El resultado se almacena en `stt_recording_result` y no se re-procesa.
 
+### Azure AI Speech — Fast Transcription
+
+**Endpoint:**
+```
+POST https://{SPEECH_REGION}.api.cognitive.microsoft.com
+     /speechtotext/transcriptions:transcribe
+     ?api-version=2024-11-15
+```
+
+**Autenticación:** Header `Ocp-Apim-Subscription-Key: {SPEECH_KEY}`
+
+**Formatos de audio soportados nativamente:** WebM, MP3, M4A, MP4, OGG, WAV, FLAC, AAC
+
+**Límites:** 200 MB por archivo / 4 horas de audio máximo
+
+**Request:** `multipart/form-data` con dos partes:
+- `audio`: bytes del archivo en su formato original
+- `definition`: JSON con `locales`, `profanityFilterMode`, `channels`
+
+**Response:** JSON con `combinedPhrases[0].text` (transcripción completa) y `phrases` (segmentos con offset y confidence)
+
+**Configuración actual:**
+- `SPEECH_KEY` / `SPEECH_REGION` — mismas variables que el SDK anterior
+- Timeout de request: 600 s (10 minutos)
+
 ### Detalles pendientes de documentación
 
-Los siguientes aspectos no están documentados en las fuentes disponibles:
-
-- Modelos de Azure OpenAI utilizados (GPT-4, GPT-3.5, etc.)
+- Modelos de Azure OpenAI utilizados
 - Prompts para generación de resumen, notas y mapa mental
-- Configuración de Azure Speech (modelos, idiomas soportados además de `es-CL`)
-- Manejo de rate limits o errores de servicio
-- Timeouts configurados en la Function
+- Rate limits de Fast Transcription en la región del entorno
 
 Ver [[known-issues]] para el registro completo de vacíos.
 

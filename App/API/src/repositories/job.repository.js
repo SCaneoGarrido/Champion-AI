@@ -91,6 +91,8 @@ class JobRepository {
                     j.service_code,
                     j.feature_code,
                     j.status,
+                    j.current_step,
+                    j.last_error_code,
                     j.requested_at,
                     j.completed_at,
                     r.blob_name,
@@ -151,6 +153,73 @@ class JobRepository {
         } catch (error) {
             logger.error(`[JobRepository][updateJobBlobName] Error: ${error.message}`);
             return false;
+        }
+    }
+
+    async getJobResult(job_id, user_id) {
+        try {
+            const query = `
+                SELECT
+                    job_id, user_id,
+                    language_locale, language_name,
+                    audio_format, duration_seconds, blob_name,
+                    job_status, current_step,
+                    result_id,
+                    transcription_text, summary_text,
+                    notes_text, notes_json, mind_map_json,
+                    generated_at
+                FROM vw_stt_recording_result
+                WHERE job_id = $1 AND user_id = $2
+                LIMIT 1
+            `;
+            const res = await database_service.query(query, [job_id, user_id], true);
+            if (!res.success || res.rowCount === 0) return null;
+            return res.data[0];
+        } catch (error) {
+            logger.error(`[JobRepository][getJobResult] Error: ${error.message}`);
+            return null;
+        }
+    }
+
+    async getFailedJobForRetry(job_id, user_id) {
+        try {
+            const query = `
+                SELECT job_id, status, last_error_code
+                FROM vw_ai_job_current_status
+                WHERE job_id = $1 AND requested_by = $2
+                LIMIT 1
+            `;
+            const res = await database_service.query(query, [job_id, user_id], true);
+            if (!res.success || res.rowCount === 0) return null;
+            return res.data[0];
+        } catch (error) {
+            logger.error(`[JobRepository][getFailedJobForRetry] Error: ${error.message}`);
+            return null;
+        }
+    }
+
+    async resetJobForRetry(job_id) {
+        const _parseCode = (msg = '') => {
+            if (msg.includes('MAX_RETRIES_EXCEEDED')) return 'MAX_RETRIES_EXCEEDED';
+            if (msg.includes('JOB_NOT_RETRYABLE'))    return 'JOB_NOT_RETRYABLE';
+            if (msg.includes('JOB_NOT_FOUND'))        return 'JOB_NOT_FOUND';
+            return null;
+        };
+        try {
+            const query = `CALL sp_reset_ai_job_for_retry_v1($1, $2)`;
+            const res = await database_service.query(query, [job_id, JOB_ACTOR_TYPES.BACKEND], false);
+            if (!res.success) {
+                const code = _parseCode(String(res.error ?? ''));
+                if (code) return { ok: false, code };
+                logger.error(`[JobRepository][resetJobForRetry] SP error: ${res.error}`);
+                return { ok: false, code: 'INTERNAL_ERROR' };
+            }
+            return { ok: true };
+        } catch (error) {
+            const code = _parseCode(error.message ?? '');
+            if (code) return { ok: false, code };
+            logger.error(`[JobRepository][resetJobForRetry] Error: ${error.message}`);
+            return { ok: false, code: 'INTERNAL_ERROR' };
         }
     }
 

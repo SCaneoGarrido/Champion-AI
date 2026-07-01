@@ -15,15 +15,23 @@ tags: #operations #setup #local #docker
 
 ---
 
+## Requisitos adicionales
+
+| Herramienta | Uso |
+|---|---|
+| Python 3.11+ | Azure Function App |
+| Azure Functions Core Tools v4 | Ejecutar la Function localmente (`func start`) |
+
 ## Orden de inicio
 
 ```
 1. PostgreSQL (Docker)
 2. Backend API (Node.js)
-3. App Móvil (Expo)
+3. Azure Function (Python)
+4. App Móvil (Expo)
 ```
 
-Los tres pueden correr en terminales paralelas. La API depende de la BD; la app depende de la API.
+Los cuatro pueden correr en terminales paralelas. La API y la Function dependen de la BD; la app depende de la API.
 
 ---
 
@@ -73,7 +81,34 @@ Las variables necesarias incluyen al menos la conexión a PostgreSQL y las crede
 
 ---
 
-## 3. App Móvil (Expo)
+## 3. Azure Function (Python)
+
+```bash
+cd App/procesamiento
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+# macOS/Linux
+source .venv/bin/activate
+
+pip install -r requirements.txt
+func start
+```
+
+Requiere `local.settings.json` con las variables de Azure. Ver `App/procesamiento/local.settings.json` (no commitear).
+
+**Variables necesarias:**
+- `AzureWebJobsStorage` — Azure Storage connection string (o Azurite local)
+- `AZURE_STORAGE_CONNECTION_STRING` — para acceso a Blob
+- `AZURE_BLOB_CONTAINER_NAME` — contenedor de audio
+- `SPEECH_KEY` / `SPEECH_REGION` — Fast Transcription
+- `OPENAI_KEY` / `OPENAI_ENDPOINT` / `OPENAI_API_VERSION` / `OPENAI_DEPLOYMENT` — gpt-5-mini
+- `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` — PostgreSQL
+
+---
+
+## 4. App Móvil (Expo)
 
 ```bash
 cd App/Mobile

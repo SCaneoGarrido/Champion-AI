@@ -110,6 +110,24 @@ const speechcontroller = {
         }
     },
 
+    getJobResult: async (req, res) => {
+        try {
+            const { job_id } = req.params;
+            const userId = req.userId;
+            const result = await job_repository.getJobResult(job_id, userId);
+            if (!result) {
+                return sendError(res, 404, "JOB_NOT_FOUND", "Job no encontrado.");
+            }
+            if (!result.result_id) {
+                return sendError(res, 409, "RESULT_NOT_READY", "El resultado del job aún no está disponible.");
+            }
+            return sendSuccess(res, 200, result);
+        } catch (error) {
+            logger.error('[speech.controller][getJobResult] Error: ' + error.message);
+            return sendError(res, 500, "INTERNAL_ERROR", "Error interno del servidor.");
+        }
+    },
+
     getJobStatus: async (req, res) => {
         try {
             const { job_id } = req.params;
@@ -145,6 +163,41 @@ const speechcontroller = {
         } catch (error) {
             logger.error('[speech.controller][getUserStats] Error: ' + error.message);
             return sendError(res, 500, "INTERNAL_ERROR", "Error interno del servidor.");
+        }
+    },
+
+    retryJob: async (req, res) => {
+        try {
+            const { job_id } = req.params;
+            const userId = req.userId;
+
+            const job = await job_repository.getFailedJobForRetry(job_id, userId);
+            if (!job) {
+                return sendError(res, 404, 'JOB_NOT_FOUND', 'Job no encontrado.');
+            }
+            if (job.status !== 'failed') {
+                return sendError(res, 409, 'JOB_NOT_RETRYABLE', `El job no está en estado failed (estado actual: ${job.status}).`);
+            }
+
+            const reset = await job_repository.resetJobForRetry(job_id);
+            if (!reset.ok) {
+                if (reset.code === 'MAX_RETRIES_EXCEEDED') {
+                    return sendError(res, 429, 'MAX_RETRIES_EXCEEDED', 'El job ha superado el límite de 3 reintentos.');
+                }
+                return sendError(res, 500, reset.code, 'No se pudo resetear el job para reintento.');
+            }
+
+            await azure_storage_service.uploadToQueue({ job_id });
+
+            return sendSuccess(res, 202, {
+                job_id,
+                status: 'queued',
+                polling_url: `/AIServices/Speechv2/jobs/${job_id}/status`,
+                retried_at: new Date().toISOString(),
+            });
+        } catch (error) {
+            logger.error('[speech.controller][retryJob] Error: ' + error.message);
+            return sendError(res, 500, 'INTERNAL_ERROR', 'Error interno del servidor.');
         }
     },
 

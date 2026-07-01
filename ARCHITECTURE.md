@@ -19,20 +19,16 @@
        ▼                     ▼                    ▼
 ┌─────────────┐    ┌─────────────────┐   ┌──────────────────┐
 │ PostgreSQL  │    │  Azure Queue    │   │  Azure Blob      │
-│   :5432     │    │ champion-ai-stt │   │  Storage         │
-│  champion_db│    │ -live-recording │   │  audio/{u}/{j}/  │
-└─────────────┘    └────────┬────────┘   └────────┬─────────┘
-       ▲                    │ Trigger               │ PUT directo
-       │ Solo SPs           ▼                       │ (cliente)
-       │           ┌─────────────────┐              │
+│   :5432     │    │ championaiqueue │   │  Storage         │
+│  champion_db│    └────────┬────────┘   └────────┬─────────┘
+└─────────────┘             │ Trigger               │ PUT directo
+       ▲                    ▼                       │ (cliente)
+       │ Solo SPs  ┌─────────────────┐              │
        └───────────│  Azure Function  │◄─────────────┘
-                   │  Queue Trigger  │  Descarga audio
+                   │  Python / Durable│  Descarga audio
                    │                 │
-                   │  ┌───────────┐  │
-                   │  │ Azure AI  │  │
-                   │  │ Speech +  │  │
-                   │  │ OpenAI    │  │
-                   │  └───────────┘  │
+                   │  Fast Transcription (REST)
+                   │  + Azure OpenAI (gpt-5-mini)
                    └─────────────────┘
 ```
 
@@ -65,8 +61,9 @@
 - Validación de todos los payloads entrantes
 - Generación de SAS URLs temporales para Azure Blob (expira 3600s)
 - Creación de jobs via `sp_create_stt_live_recording_job_v1`
-- Publicación de `{ job_id }` en la queue `champion-ai-stt-live-recording`
+- Publicación de `{ job_id }` en la queue `championaiqueue`
 - Exposición de endpoints de polling (`/jobs/{id}/status`, `/jobs/{id}/result`)
+- Exposición de endpoint de retry (`/jobs/{id}/retry`)
 - Centralización de toda la lógica de negocio del sistema
 
 **Qué no hace:**
@@ -79,23 +76,33 @@
 
 ---
 
-### Azure Function — Queue Trigger
+### Azure Function — Python / Azure Durable Functions
 
-**Trigger:** queue `champion-ai-stt-live-recording`, mensaje `{ "job_id": "..." }`
+**Lenguaje:** Python. **Patrón:** Orchestrator + Activities (Azure Durable Functions).
 
-**Qué hace (en orden):**
+**Trigger:** queue `championaiqueue`, mensaje `{ "job_id": "..." }`
+
+**Pipeline implementado (en orden):**
 1. `fn_can_process_ai_job` — guard de idempotencia
-2. `fn_get_stt_live_recording_job_context` — obtiene contexto completo del job
+2. `fn_get_stt_live_recording_job_context` — obtiene contexto completo del job + resultados parciales
 3. `sp_update_ai_job_status_v1` → `processing / transcription`
-4. Descarga audio de Azure Blob
-5. Azure Speech → `transcription_text`
+4. Descarga audio de Azure Blob (formato original — sin conversión)
+5. **Azure AI Speech Fast Transcription** → `transcription_text`
 6. `sp_update_ai_job_status_v1` → `processing / summary`
-7. Azure OpenAI → `summary_text`
+7. **Azure OpenAI (gpt-5-mini)** → `summary_text`
 8. `sp_update_ai_job_status_v1` → `processing / notes`
-9. Azure OpenAI → `notes_text` + `notes_json`
+9. **Azure OpenAI (gpt-5-mini)** → `notes_text` + `notes_json`
 10. `sp_update_ai_job_status_v1` → `processing / mind_map`
-11. Azure OpenAI → `mind_map_json`
+11. **Azure OpenAI (gpt-5-mini)** → `mind_map_json`
 12. `sp_complete_stt_live_recording_job_v1` → guarda resultado + `completed`
+
+**Smart retry:** si el job falla y es reintentado, la Function lee los resultados parciales ya guardados (`sp_save_stt_partial_result_v1`) y omite los pasos ya completados.
+
+**Pipeline objetivo (incluye etapa planificada):**
+```
+transcription → [transcript_cleanup] → summary → notes → mind_map
+```
+El paso `transcript_cleanup` está planificado como próxima implementación. Usará GPT-5-mini para limpiar artefactos de voz antes de los pasos de generación de contenido.
 
 **En caso de error en cualquier paso:**
 ```
@@ -131,6 +138,8 @@ sp_update_ai_job_status_v1(status='failed', error_code='STT_ENGINE_UNAVAILABLE')
 | `sp_create_stt_live_recording_job_v1` | API | Al crear el job |
 | `sp_update_ai_job_status_v1` | API + Function | En cada transición de estado |
 | `sp_complete_stt_live_recording_job_v1` | Function | Al finalizar con éxito |
+| `sp_save_stt_partial_result_v1` | Function | Después de cada paso de IA (smart retry) |
+| `sp_reset_ai_job_for_retry_v1` | API | Al solicitar retry de un job fallido |
 
 **Functions SQL:**
 
@@ -145,7 +154,7 @@ sp_update_ai_job_status_v1(status='failed', error_code='STT_ENGINE_UNAVAILABLE')
 
 ### Azure Queue Storage
 
-**Queue:** `champion-ai-stt-live-recording`
+**Queue:** `championaiqueue`
 
 **Mensaje:** `{ "job_id": "job_{uuid}" }` — deliberadamente mínimo
 
@@ -159,7 +168,7 @@ sp_update_ai_job_status_v1(status='failed', error_code='STT_ENGINE_UNAVAILABLE')
 
 **Path:** `audio/{user_uuid}/{job_id}/{job_id}.{formato}`
 
-**Formatos:** `webm`, `mp4`, `m4a`, `mp3`, `wav`, `ogg`
+**Formatos:** `webm`, `mp4`, `m4a`, `mp3`, `wav`, `ogg`, `flac`, `aac`
 
 **SAS URL:** expira en 3600s, permite solo `PUT` sobre el blob específico
 
@@ -169,14 +178,27 @@ sp_update_ai_job_status_v1(status='failed', error_code='STT_ENGINE_UNAVAILABLE')
 
 ### Azure AI
 
-| Servicio | Paso | Output |
-|---|---|---|
-| Azure Speech | `transcription` | `transcription_text` |
-| Azure OpenAI | `summary` | `summary_text` |
-| Azure OpenAI | `notes` | `notes_text`, `notes_json` |
-| Azure OpenAI | `mind_map` | `mind_map_json` |
+| Servicio | Tecnología | Paso | Output |
+|---|---|---|---|
+| Azure AI Speech | Fast Transcription REST API | `transcription` | `transcription_text` |
+| Azure OpenAI | gpt-5-mini | `summary` | `summary_text` |
+| Azure OpenAI | gpt-5-mini | `notes` | `notes_text`, `notes_json` |
+| Azure OpenAI | gpt-5-mini | `mind_map` | `mind_map_json` |
 
 Solo la Azure Function llama estos servicios. La API nunca interactúa con Azure AI.
+
+**Notas de integración con gpt-5-mini:**
+- Modelo de razonamiento — los thinking tokens cuentan contra `max_completion_tokens`
+- No acepta el parámetro `temperature` (solo soporta el valor por defecto = 1)
+- Parámetro correcto: `max_completion_tokens` (no `max_tokens`)
+- Configurado con `max_completion_tokens: 16384` para dar margen al razonamiento interno
+
+**Notas de integración con Fast Transcription:**
+- Endpoint: `POST https://{SPEECH_REGION}.api.cognitive.microsoft.com/speechtotext/transcriptions:transcribe?api-version=2024-11-15`
+- Auth: header `Ocp-Apim-Subscription-Key`
+- Request: `multipart/form-data` — `audio` (bytes originales) + `definition` (JSON con locales/channels)
+- Response: `combinedPhrases[0].text` + `phrases[]` (segmentos con offset)
+- Sin conversión de formato — el audio se envía tal como fue subido por el cliente
 
 ## Flujos del sistema
 
@@ -192,13 +214,24 @@ Solo la Azure Function llama estos servicios. La API nunca interactúa con Azure
 
 6. [Azure Queue → Azure Function]
    fn_can_process_ai_job → fn_get_context → processing/transcription
-   → Azure Speech → processing/summary → Azure OpenAI → processing/notes
-   → Azure OpenAI → processing/mind_map → Azure OpenAI → completed
+   → Fast Transcription → processing/summary → gpt-5-mini → processing/notes
+   → gpt-5-mini → processing/mind_map → gpt-5-mini → completed
 
-7. GET /AIServices/Speechv2/jobs/{id}/status → 200 { status: "processing"|"completed"|"failed" }
+7. GET /AIServices/Speechv2/jobs/{id}/status → 200 { status, current_step }
    (repetir hasta completed o failed)
 
 8. GET /AIServices/Speechv2/jobs/{id}/result → 200 { transcription, summary, notes, mind_map }
+```
+
+### Flujo de retry
+
+```
+1. GET /AIServices/Speechv2/jobs/{id}/status → 200 { status: "failed", error_code: "..." }
+2. POST /AIServices/Speechv2/jobs/{id}/retry → 202 (re-encola el job)
+3. [Azure Function consume el nuevo mensaje]
+   → lee resultados parciales de stt_recording_result
+   → omite pasos ya completados (smart retry)
+   → ejecuta desde el paso fallido en adelante
 ```
 
 ### Máquina de estados de un job
@@ -224,10 +257,15 @@ processing / mind_map
    │
    ▼
 completed         ◄── cualquier paso puede fallar ──► failed
+                                                         │
+                                                         │ retry endpoint
+                                                         ▼
+                                                      queued (reintentado)
 ```
 
 Estados terminales: `completed`, `failed`.
 `fn_can_process_ai_job` rechaza reprocesamiento de estados terminales.
+Máximo 3 reintentos controlados por `sp_reset_ai_job_for_retry_v1`.
 
 ### Protocolo de transición de estado
 
@@ -252,9 +290,9 @@ UPDATE ai_job SET status = '...', current_step = '...';
 | Champion API | Azure Blob | SDK Azure | Genera SAS URL |
 | Azure Queue | Azure Function | Queue Trigger | `{ job_id }` JSON |
 | Azure Function | PostgreSQL | Stored Procedures + Functions | SQL (directo :5432) |
-| Azure Function | Azure Blob | SDK Azure | Descarga audio |
-| Azure Function | Azure Speech | SDK Azure | Audio → texto |
-| Azure Function | Azure OpenAI | SDK Azure | Texto → contenido estructurado |
+| Azure Function | Azure Blob | SDK Azure | Descarga audio (bytes crudos) |
+| Azure Function | Azure AI Speech | HTTP REST multipart | Audio → `transcription_text` |
+| Azure Function | Azure OpenAI | SDK openai | Texto → contenido estructurado |
 
 ## Decisiones arquitectónicas (ADRs)
 
@@ -266,6 +304,22 @@ UPDATE ai_job SET status = '...', current_step = '...';
 | ADR-004 | Envelope `{ success, data, error }` | Contrato predecible, un interceptor HTTP en el cliente |
 | ADR-005 | Flag `is_current` en historial de estados | Acceso O(1) al estado actual sin query por timestamp |
 | ADR-006 | SPs idempotentes ante redelivery | Azure Queue garantiza at-least-once, no exactly-once |
+| ADR-007 | Fast Transcription en lugar de SDK Continuous Recognition | 10–50× más rápido, sin conversión de formato, menos dependencias |
+
+## Roadmap del pipeline inteligente
+
+Ver `App/Knowledge/Roadmap/pipeline-roadmap.md` para el detalle completo.
+
+```
+Etapa actual:
+  transcription → summary → notes → mind_map
+
+Próxima etapa (planificada):
+  transcription → transcript_cleanup → summary → notes → mind_map
+
+Roadmap futuro:
+  ... → topic_extraction → [chapters | study_mode | search | citations | flashcards | quizzes]
+```
 
 ## Principios de diseño
 
@@ -275,12 +329,13 @@ UPDATE ai_job SET status = '...', current_step = '...';
 4. **Defensa en profundidad para idempotencia** — guard a nivel Function + `ON CONFLICT` a nivel SP
 5. **La BD protege su propia integridad** — constraints, triggers y el índice único de `is_current`
 6. **Diseño preparado para múltiples features** — `ai_job` es genérico; `stt_recording` es específico de STT
+7. **Smart retry sin re-costo** — resultados parciales persistidos tras cada paso, retry reanuda desde el fallo
 
 ## Vacíos conocidos (a resolver)
 
-- Lenguaje real de la Azure Function (contradicción Java vs Python en el README)
-- Modelos de Azure OpenAI, prompts y configuración de Azure Speech
 - Expiración del JWT y mecanismo de refresh
-- Estructura interna de `notes_json` y `mind_map_json`
 - Transiciones completas de `upload_status` en `stt_recording`
 - Lógica de bloqueo de cuenta (`failed_attempts`, `locked_until` en `sec_user_password`)
+- Rate limits de Fast Transcription por región
+- Documentación de Text to Speech (TTS)
+- Documentación de Gestión de Archivos

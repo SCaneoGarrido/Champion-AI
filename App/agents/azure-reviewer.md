@@ -61,11 +61,23 @@ Azure Function Apps (Queue Trigger), Azure Blob Storage, Azure Queue Storage, Az
 - [ ] ¿El `job_id` se usa para consultar contexto en BD, no para reconstruir datos?
 - [ ] ¿La Function no publica mensajes en queues (es consumidora, no productora)?
 
-### Azure AI
+### Azure AI Speech — Fast Transcription
 
+- [ ] ¿El audio se descarga y envía en su formato original (sin conversión a WAV)?
+- [ ] ¿El endpoint es `https://{SPEECH_REGION}.api.cognitive.microsoft.com/...` (no `SPEECH_ENDPOINT`)?
+- [ ] ¿El request usa `multipart/form-data` con partes `audio` y `definition`?
 - [ ] ¿El `language_locale` viene del contexto del job (no hardcodeado como `es-CL`)?
-- [ ] ¿Los resultados de IA se almacenan en BD via `sp_complete_stt_live_recording_job_v1`?
-- [ ] ¿Los errores de Azure Speech o Azure OpenAI producen `status='failed'` con error_code específico?
+- [ ] ¿El texto se extrae de `combinedPhrases[0].text` en la respuesta?
+- [ ] ¿Los errores de Fast Transcription producen `status='failed'` con `error_code='STT_ENGINE_UNAVAILABLE'`?
+
+### Azure OpenAI (gpt-5-mini)
+
+- [ ] ¿No se pasa el parámetro `temperature`? (gpt-5-mini no lo acepta)
+- [ ] ¿Se usa `max_completion_tokens` (no `max_tokens`)?
+- [ ] ¿El valor de `max_completion_tokens` es suficientemente alto (mínimo 4096, recomendado 16384)?
+- [ ] ¿Los errores de OpenAI producen `status='failed'` con `error_code='OPENAI_UNAVAILABLE'`?
+- [ ] ¿Los resultados de IA se almacenan en BD via `sp_save_stt_partial_result_v1` tras cada paso?
+- [ ] ¿Al final se llama `sp_complete_stt_live_recording_job_v1` con todos los resultados?
 
 ## Problemas comunes a detectar
 
@@ -73,9 +85,15 @@ Azure Function Apps (Queue Trigger), Azure Blob Storage, Azure Queue Storage, Az
 - No llamar `fn_can_process_ai_job` al inicio → reprocesamiento de jobs completados
 - Llamar `fn_get_stt_live_recording_job_context` antes de verificar si puede procesarse
 - Actualizar el estado de BD después del trabajo (en lugar de antes) → si el trabajo falla, el estado no refleja el intento
-- Hardcodear `es-CL` en la llamada a Azure Speech en lugar de usar `language_locale`
+- Hardcodear `es-CL` en lugar de usar `language_locale` del contexto del job
 - No manejar errores de Azure AI con `error_code` específico
 - Descarga de audio desde un path generado en código en lugar del `blob_url` del contexto
+- Convertir el audio a WAV antes de enviarlo — Fast Transcription acepta formatos nativos
+- Usar `azure-cognitiveservices-speech` SDK en lugar de Fast Transcription REST API
+- Pasar `temperature` a gpt-5-mini — causa error 400
+- Usar `max_tokens` en lugar de `max_completion_tokens` — causa error 400
+- Usar un `max_completion_tokens` bajo (< 4096) con gpt-5-mini — el modelo agota el presupuesto en razonamiento y devuelve vacío
+- No guardar resultados parciales via `sp_save_stt_partial_result_v1` tras cada paso de IA
 
 ## Criterios de aprobación
 

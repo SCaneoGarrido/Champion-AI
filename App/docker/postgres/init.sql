@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 5RKtr5fnn5h4KaSaqlOQiXXtaDIsEniWIFVtLtOlSMjZaIdH4vIkFXwwzMeZy1Y
+\restrict N7NIRUODcnYYYLGqTTfAbLADaVBf6coC0seoRNb6FocnB9e76V4Kt5eE4KTukJ7
 
 -- Dumped from database version 17.10
 -- Dumped by pg_dump version 17.10
@@ -77,6 +77,8 @@ DROP TABLE IF EXISTS public.ai_job_status_history;
 DROP TABLE IF EXISTS public.ai_job;
 DROP FUNCTION IF EXISTS public.sync_ai_job_from_history();
 DROP PROCEDURE IF EXISTS public.sp_update_ai_job_status_v1(IN p_job_id character varying, IN p_status character varying, IN p_step_name character varying, IN p_message text, IN p_error_code character varying, IN p_error_message text, IN p_retryable boolean, IN p_steps_snapshot jsonb, IN p_metadata jsonb, IN p_actor_type character varying);
+DROP PROCEDURE IF EXISTS public.sp_save_stt_partial_result_v1(IN p_job_id character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb);
+DROP PROCEDURE IF EXISTS public.sp_reset_ai_job_for_retry_v1(IN p_job_id character varying, IN p_actor_type character varying);
 DROP PROCEDURE IF EXISTS public.sp_create_stt_live_recording_job_v1(IN p_job_id character varying, IN p_user_id uuid, IN p_service_code character varying, IN p_feature_code character varying, IN p_flow character varying, IN p_initial_status character varying, IN p_initial_message text, IN p_actor_type character varying, IN p_language_locale character varying, IN p_language_name character varying, IN p_audio_format character varying, IN p_sample_rate integer, IN p_duration_seconds numeric, IN p_blob_name text, IN p_blob_url text, IN p_upload_status character varying, IN p_request_payload jsonb);
 DROP PROCEDURE IF EXISTS public.sp_complete_stt_live_recording_job_v1(IN p_job_id character varying, IN p_final_status character varying, IN p_final_step character varying, IN p_completion_message text, IN p_actor_type character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb, IN p_raw_result_json jsonb);
 DROP FUNCTION IF EXISTS public.set_updated_at();
@@ -410,6 +412,141 @@ $$;
 
 
 ALTER PROCEDURE public.sp_create_stt_live_recording_job_v1(IN p_job_id character varying, IN p_user_id uuid, IN p_service_code character varying, IN p_feature_code character varying, IN p_flow character varying, IN p_initial_status character varying, IN p_initial_message text, IN p_actor_type character varying, IN p_language_locale character varying, IN p_language_name character varying, IN p_audio_format character varying, IN p_sample_rate integer, IN p_duration_seconds numeric, IN p_blob_name text, IN p_blob_url text, IN p_upload_status character varying, IN p_request_payload jsonb) OWNER TO champion_db_user;
+
+--
+-- Name: sp_reset_ai_job_for_retry_v1(character varying, character varying); Type: PROCEDURE; Schema: public; Owner: champion_db_user
+--
+
+CREATE PROCEDURE public.sp_reset_ai_job_for_retry_v1(IN p_job_id character varying, IN p_actor_type character varying DEFAULT 'backend'::character varying)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_current_status    VARCHAR(50);
+    v_failed_count      INT;
+    v_max_retries       CONSTANT INT := 3;
+    v_retry_number      INT;
+BEGIN
+    -- 1. Verificar que el job existe y obtener estado actual (lock de fila)
+    SELECT status INTO v_current_status
+    FROM ai_job
+    WHERE job_id = p_job_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'JOB_NOT_FOUND';
+    END IF;
+
+    IF v_current_status != 'failed' THEN
+        RAISE EXCEPTION 'JOB_NOT_RETRYABLE';
+    END IF;
+
+    -- 2. Contar cu├íntas veces ha fallado (= n├║mero de reintentos previos)
+    SELECT COUNT(*) INTO v_failed_count
+    FROM ai_job_status_history
+    WHERE job_id = p_job_id
+      AND status = 'failed';
+
+    IF v_failed_count >= v_max_retries THEN
+        RAISE EXCEPTION 'MAX_RETRIES_EXCEEDED';
+    END IF;
+
+    v_retry_number := v_failed_count + 1;
+
+    -- 3. Desactivar entrada vigente en historial
+    UPDATE ai_job_status_history
+    SET is_current = FALSE
+    WHERE job_id = p_job_id
+      AND is_current = TRUE;
+
+    -- 4. Registrar el reintento en historial
+    INSERT INTO ai_job_status_history (
+        job_id,
+        status,
+        step_name,
+        message,
+        is_current,
+        created_by_type,
+        created_at
+    ) VALUES (
+        p_job_id,
+        'queued',
+        'retry',
+        'Reintento #' || v_retry_number || ' solicitado manualmente',
+        TRUE,
+        p_actor_type,
+        NOW()
+    );
+
+    -- 5. Resetear ai_job a queued y limpiar errores
+    UPDATE ai_job
+    SET
+        status               = 'queued',
+        current_step         = 'retry',
+        last_error_code      = NULL,
+        last_error_message   = NULL,
+        last_error_retryable = NULL,
+        updated_at           = NOW()
+    WHERE job_id = p_job_id;
+
+END;
+$$;
+
+
+ALTER PROCEDURE public.sp_reset_ai_job_for_retry_v1(IN p_job_id character varying, IN p_actor_type character varying) OWNER TO champion_db_user;
+
+--
+-- Name: sp_save_stt_partial_result_v1(character varying, text, text, text, jsonb, jsonb); Type: PROCEDURE; Schema: public; Owner: champion_db_user
+--
+
+CREATE PROCEDURE public.sp_save_stt_partial_result_v1(IN p_job_id character varying, IN p_transcription_text text DEFAULT NULL::text, IN p_summary_text text DEFAULT NULL::text, IN p_notes_text text DEFAULT NULL::text, IN p_notes_json jsonb DEFAULT NULL::jsonb, IN p_mind_map_json jsonb DEFAULT NULL::jsonb)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_recording_id UUID;
+BEGIN
+    SELECT recording_id INTO v_recording_id
+    FROM stt_recording
+    WHERE job_id = p_job_id;
+
+    IF v_recording_id IS NULL THEN
+        RAISE EXCEPTION 'Recording no encontrado para job_id = %', p_job_id;
+    END IF;
+
+    INSERT INTO stt_recording_result (
+        recording_id,
+        job_id,
+        transcription_text,
+        summary_text,
+        notes_text,
+        notes_json,
+        mind_map_json,
+        generated_at,
+        created_at,
+        updated_at
+    ) VALUES (
+        v_recording_id,
+        p_job_id,
+        p_transcription_text,
+        p_summary_text,
+        p_notes_text,
+        p_notes_json,
+        p_mind_map_json,
+        NOW(),
+        NOW(),
+        NOW()
+    )
+    ON CONFLICT (recording_id) DO UPDATE SET
+        transcription_text = COALESCE(EXCLUDED.transcription_text, stt_recording_result.transcription_text),
+        summary_text       = COALESCE(EXCLUDED.summary_text,       stt_recording_result.summary_text),
+        notes_text         = COALESCE(EXCLUDED.notes_text,         stt_recording_result.notes_text),
+        notes_json         = COALESCE(EXCLUDED.notes_json,         stt_recording_result.notes_json),
+        mind_map_json      = COALESCE(EXCLUDED.mind_map_json,      stt_recording_result.mind_map_json),
+        updated_at         = NOW();
+END;
+$$;
+
+
+ALTER PROCEDURE public.sp_save_stt_partial_result_v1(IN p_job_id character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb) OWNER TO champion_db_user;
 
 --
 -- Name: sp_update_ai_job_status_v1(character varying, character varying, character varying, text, character varying, text, boolean, jsonb, jsonb, character varying); Type: PROCEDURE; Schema: public; Owner: champion_db_user
@@ -1153,5 +1290,5 @@ ALTER TABLE ONLY public.stt_recording
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 5RKtr5fnn5h4KaSaqlOQiXXtaDIsEniWIFVtLtOlSMjZaIdH4vIkFXwwzMeZy1Y
+\unrestrict N7NIRUODcnYYYLGqTTfAbLADaVBf6coC0seoRNb6FocnB9e76V4Kt5eE4KTukJ7
 

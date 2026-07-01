@@ -15,14 +15,15 @@ transcribe, resume, genera notas y un mapa mental → el cliente hace polling ha
 |---|---|
 | App móvil | React Native (Expo) |
 | Backend | Node.js + Express.js — puerto 5051 |
-| Procesamiento serverless | Azure Function Apps — Queue Trigger |
+| Procesamiento serverless | Azure Function Apps (Python) — Azure Durable Functions |
 | Base de datos | PostgreSQL 17.10 (Docker) — puerto 5432 |
 | Almacenamiento | Azure Blob Storage |
 | Cola de mensajes | Azure Queue Storage |
-| IA | Azure Speech + Azure OpenAI |
+| Transcripción | Azure AI Speech — Fast Transcription REST API |
+| Generación de contenido | Azure OpenAI (gpt-5-mini) |
 
 Base de datos: `champion_db`, usuario: `champion_db_user`.
-Queue de STT: `champion-ai-stt-live-recording`.
+Queue de STT: `championaiqueue`.
 
 ## Estructura del repositorio
 
@@ -31,7 +32,12 @@ Champion-AI/
   App/
     API/              ← Backend Node.js / Express
     Mobile/           ← App React Native / Expo
-    procesamiento/    ← Azure Function (Queue Trigger)
+    procesamiento/    ← Azure Function App (Durable Functions)
+      orchestrators/  ← Orquestadores Durable
+      activities/     ← Activities modulares por dominio
+      trigger/        ← Queue trigger (cliente Durable)
+      shared/         ← DB, servicios de IA, utils
+      prompts/        ← Prompts de Azure OpenAI
     SQL/              ← Migrations, Stored Procedures, Functions
     Knowledge/        ← Bóveda de conocimiento (fuente de verdad documental)
     rules/            ← Reglas reutilizables por Claude Code
@@ -123,6 +129,26 @@ Nunca se acepta `user_id` enviado por el cliente en el payload sin validación c
 - Compartir estado de jobs en memoria entre requests (todo va a PostgreSQL)
 - Hacer DML en `ai_job_status_history` sin seguir el protocolo `is_current`
 
+## Pipeline de procesamiento STT (Azure Function)
+
+```
+transcription (Fast Transcription REST API — sin conversión de formato)
+        ↓
+[transcript_cleanup — GPT-5 — planificado, próxima implementación]
+        ↓
+summary (gpt-5-mini)
+        ↓
+notes (gpt-5-mini)
+        ↓
+mind_map (gpt-5-mini)
+```
+
+**Azure AI Speech Fast Transcription:** reemplaza al SDK Continuous Recognition. HTTP POST multipart, formatos nativos (WebM/M4A/MP3/OGG/WAV/FLAC/AAC), sin conversión previa a WAV, ~10–50× real-time. Endpoint: `https://{SPEECH_REGION}.api.cognitive.microsoft.com/speechtotext/transcriptions:transcribe?api-version=2024-11-15`.
+
+**gpt-5-mini:** modelo de razonamiento. No acepta `temperature`. Parámetro correcto: `max_completion_tokens` (no `max_tokens`). Configurado con `max_completion_tokens: 16384` — los tokens de razonamiento interno cuentan contra el presupuesto.
+
+**Smart retry:** resultados parciales persistidos tras cada paso via `sp_save_stt_partial_result_v1` (COALESCE upsert). Un retry reanuda desde el paso fallido sin repetir los pasos exitosos anteriores.
+
 ## Estado actual del proyecto
 
 | Feature | Estado |
@@ -130,9 +156,12 @@ Nunca se acepta `user_id` enviado por el cliente en el payload sin validación c
 | Auth — register + login | Implementado |
 | STT — init upload (SAS URL) | Implementado |
 | STT — create job + enqueue | Implementado |
-| STT — Azure Function pipeline | Implementado |
-| STT — GET /jobs/{id}/status | **Pendiente** |
-| STT — GET /jobs/{id}/result | **Pendiente** |
+| STT — Azure Function pipeline (Durable Functions) | Implementado |
+| STT — GET /jobs/{id}/status | Implementado |
+| STT — GET /jobs/{id}/result | Implementado |
+| STT — retry de jobs fallidos | Implementado |
+| STT — Transcript Cleanup (GPT-5) | Planificado — próxima implementación |
+| STT — Topic Extraction | Roadmap |
 | Text to Speech (TTS) | Sin documentar |
 | Gestión de Archivos | Sin documentar |
 

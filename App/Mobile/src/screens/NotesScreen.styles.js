@@ -166,6 +166,13 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     flex: 1,
   },
+  stepLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#c2410c',
+    marginTop: 2,
+    letterSpacing: 0.3,
+  },
   cellDate: {
     width: 76,
     fontSize: 11,

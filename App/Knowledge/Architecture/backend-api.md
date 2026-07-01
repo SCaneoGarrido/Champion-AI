@@ -177,7 +177,7 @@ Registra el job en BD y lo encola para procesamiento.
 **Lógica interna:**
 1. Valida JWT y payload
 2. Ejecuta `sp_create_stt_live_recording_job_v1` — crea job en estado `queued`
-3. Publica `{ "job_id": "..." }` en la queue `champion-ai-stt-live-recording`
+3. Publica `{ "job_id": "..." }` en la queue `championaiqueue`
 4. Si la publicación falla: ejecuta `sp_update_ai_job_status_v1` con `status=failed, error_code=QUEUE_SEND_FAILED`
 
 **Respuesta exitosa:** `202 Accepted`

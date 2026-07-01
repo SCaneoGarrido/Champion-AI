@@ -13,9 +13,12 @@ import { useThemedScreenStyles } from '../hooks/useThemedScreenStyles';
 import { mergeNotesTheme } from '../theme/screenThemeMerges';
 import AppTopBar from '../components/AppTopBar';
 import ToastBanner from '../components/ToastBanner';
+import JobOptionsModal from '../components/JobOptionsModal';
+import NoteDetailScreen from './NoteDetailScreen';
 import { useToast } from '../hooks/useToast';
 import { getSession } from '../utils/session';
-import { getRecentJobs, getUserStats } from '../utils/api';
+import { getRecentJobs, getUserStats, getJobResult, retryJob } from '../utils/api';
+import { exportJobToPDF } from '../utils/pdfExport';
 
 const PAGE_SIZE = 5;
 
@@ -56,6 +59,14 @@ function serviceIcon(code) {
   return { name: 'auto-awesome', color: '#f59e0b' };
 }
 
+const STEP_LABELS = {
+  transcription: 'Transcribiendo…',
+  summary:       'Resumiendo…',
+  notes:         'Generando notas…',
+  mind_map:      'Mapa mental…',
+  retry:         'Reenviando…',
+};
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function NotesScreen({ navigation }) {
@@ -68,6 +79,12 @@ export default function NotesScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
+
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [showOptions, setShowOptions] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -89,6 +106,62 @@ export default function NotesScreen({ navigation }) {
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  const openOptions = (job) => {
+    setSelectedJob(job);
+    setShowOptions(true);
+  };
+
+  const handleRetry = async () => {
+    if (!selectedJob) return;
+    setRetrying(true);
+    try {
+      await retryJob(selectedJob.job_id);
+      setShowOptions(false);
+      setSelectedJob(null);
+      showToast('Job reenviado a procesar.');
+      load();
+    } catch (e) {
+      const code = e.message ?? '';
+      if (code.includes('MAX_RETRIES_EXCEEDED')) {
+        showToast('Límite de reintentos alcanzado (máx. 3).');
+      } else if (code.includes('JOB_NOT_RETRYABLE')) {
+        showToast('Este job no puede reintentarse.');
+      } else {
+        showToast('Error al reenviar el job.');
+      }
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  const closeOptions = () => {
+    setShowOptions(false);
+    setSelectedJob(null);
+  };
+
+  const handleView = () => {
+    setShowOptions(false);
+    setShowDetail(true);
+  };
+
+  const handleDownload = async () => {
+    if (!selectedJob) return;
+    setDownloading(true);
+    try {
+      const result = await getJobResult(selectedJob.job_id);
+      const jobName = selectedJob.blob_name ?? `Apunte ${selectedJob.job_id.slice(0, 8)}`;
+      await exportJobToPDF(jobName, result);
+    } catch (e) {
+      showToast(e.message?.includes('RESULT_NOT_READY')
+        ? 'El resultado aún no está disponible.'
+        : 'No se pudo generar el PDF.');
+    } finally {
+      setDownloading(false);
+      setShowOptions(false);
+      setSelectedJob(null);
+    }
+  };
 
   const totalPages = Math.max(1, Math.ceil(jobs.length / PAGE_SIZE));
   const pageJobs = jobs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -148,28 +221,49 @@ export default function NotesScreen({ navigation }) {
               {pageJobs.map(job => {
                 const ic = serviceIcon(job.service_code);
                 const dur = fmtDuration(job.duration_seconds);
+                const isCompleted = job.status === 'completed';
+                const isFailed    = job.status === 'failed';
+                const isActionable = isCompleted || isFailed;
                 return (
-                  <View key={job.job_id} style={styles.row}>
+                  <TouchableOpacity
+                    key={job.job_id}
+                    style={styles.row}
+                    activeOpacity={isActionable ? 0.7 : 1}
+                    onPress={isActionable ? () => openOptions(job) : undefined}
+                  >
                     <View style={styles.cellName}>
                       <MaterialIcons name={ic.name} size={20} color={ic.color} />
-                      <Text style={styles.fileName} numberOfLines={1}>
-                        {job.blob_name ?? job.job_id.slice(0, 14) + '…'}
-                      </Text>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={styles.fileName} numberOfLines={1}>
+                          {job.blob_name ?? job.job_id.slice(0, 14) + '…'}
+                        </Text>
+                        {job.status === 'processing' && STEP_LABELS[job.current_step] ? (
+                          <Text style={styles.stepLabel}>{STEP_LABELS[job.current_step]}</Text>
+                        ) : null}
+                      </View>
                     </View>
                     <Text style={styles.cellDate}>{fmtDate(job.requested_at)}</Text>
                     <View style={styles.cellStatus}>
                       <StatusBadge status={job.status} styles={styles} />
                     </View>
                     <View style={styles.cellActions}>
-                      <TouchableOpacity
-                        hitSlop={12}
-                        activeOpacity={0.7}
-                        onPress={() => showToast(dur ? `Duración: ${dur}` : `ID: ${job.job_id.slice(0, 8)}…`)}
-                      >
-                        <MaterialIcons name="info-outline" size={20} color="#827562" />
-                      </TouchableOpacity>
+                      {isCompleted && (
+                        <MaterialIcons name="chevron-right" size={20} color="#c9920a" />
+                      )}
+                      {isFailed && (
+                        <MaterialIcons name="replay" size={20} color="#ef4444" />
+                      )}
+                      {!isActionable && (
+                        <TouchableOpacity
+                          hitSlop={12}
+                          activeOpacity={0.7}
+                          onPress={() => showToast(dur ? `Duración: ${dur}` : `ID: ${job.job_id.slice(0, 8)}…`)}
+                        >
+                          <MaterialIcons name="info-outline" size={20} color="#827562" />
+                        </TouchableOpacity>
+                      )}
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
 
@@ -255,6 +349,23 @@ export default function NotesScreen({ navigation }) {
       >
         <MaterialIcons name="smart-toy" size={26} color="#fff" />
       </TouchableOpacity>
+
+      <JobOptionsModal
+        visible={showOptions}
+        job={selectedJob}
+        onClose={closeOptions}
+        onView={handleView}
+        onDownload={handleDownload}
+        downloading={downloading}
+        onRetry={handleRetry}
+        retrying={retrying}
+      />
+
+      <NoteDetailScreen
+        visible={showDetail}
+        job={selectedJob}
+        onClose={() => { setShowDetail(false); setSelectedJob(null); }}
+      />
 
       <ToastBanner visible={toastVisible} message={toastMsg} />
     </View>
