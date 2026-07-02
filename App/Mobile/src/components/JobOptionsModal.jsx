@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Modal,
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   Pressable,
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { patchJobName } from '../utils/api';
 
 function fmtDate(iso) {
   if (!iso) return '';
@@ -21,13 +23,52 @@ export default function JobOptionsModal({
   visible, job, onClose,
   onView, onDownload, downloading,
   onRetry, retrying,
+  onRenamed,
 }) {
+  const [renaming, setRenaming] = useState(false);
+  const [nameValue, setNameValue] = useState('');
+  const [nameSaving, setNameSaving] = useState(false);
+  const [nameError, setNameError] = useState('');
+  const nameInputRef = useRef(null);
+
+  useEffect(() => {
+    setRenaming(false);
+    setNameValue(job?.blob_name ?? '');
+    setNameError('');
+    setNameSaving(false);
+  }, [job?.job_id, visible]);
+
   if (!job) return null;
 
   const isFailed  = job.status === 'failed';
   const jobName   = job.blob_name ?? `Apunte ${job.job_id.slice(0, 8)}…`;
   const date      = fmtDate(job.requested_at);
   const errorCode = job.last_error_code ?? null;
+
+  const startRenaming = () => {
+    setNameValue(job.blob_name ?? '');
+    setNameError('');
+    setRenaming(true);
+  };
+
+  const handleSaveName = async () => {
+    const trimmed = nameValue.trim();
+    if (!trimmed) {
+      setNameError('Ingresa un nombre para continuar.');
+      return;
+    }
+    setNameSaving(true);
+    setNameError('');
+    try {
+      await patchJobName(job.job_id, trimmed);
+      onRenamed?.(job.job_id, trimmed);
+      setRenaming(false);
+    } catch (e) {
+      setNameError(e.message || 'No se pudo guardar el nombre.');
+    } finally {
+      setNameSaving(false);
+    }
+  };
 
   return (
     <Modal
@@ -58,11 +99,47 @@ export default function JobOptionsModal({
               <Text style={styles.errorCode}>{errorCode}</Text>
             ) : null}
           </View>
+          {!renaming && (
+            <TouchableOpacity style={styles.renameIconBtn} onPress={startRenaming} hitSlop={10} activeOpacity={0.7}>
+              <MaterialIcons name="edit" size={18} color="#827562" />
+            </TouchableOpacity>
+          )}
         </View>
 
-        <View style={styles.divider} />
+        {renaming && (
+          <View style={styles.renameBlock}>
+            <View style={styles.renameInputRow}>
+              <TextInput
+                ref={nameInputRef}
+                style={styles.renameInput}
+                value={nameValue}
+                onChangeText={t => { setNameValue(t); setNameError(''); }}
+                placeholder="Ej: Clase de Historia — 19 jun"
+                placeholderTextColor="#827562"
+                returnKeyType="done"
+                onSubmitEditing={handleSaveName}
+                autoFocus
+                maxLength={120}
+              />
+            </View>
+            {nameError ? <Text style={styles.errorCode}>{nameError}</Text> : null}
+            <View style={styles.renameActions}>
+              <TouchableOpacity style={styles.renameSaveBtn} onPress={handleSaveName} activeOpacity={0.85} disabled={nameSaving}>
+                {nameSaving
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={styles.optionPrimaryText}>Guardar</Text>
+                }
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.renameCancelBtn} onPress={() => setRenaming(false)} activeOpacity={0.8} disabled={nameSaving}>
+                <Text style={styles.renameCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
-        {isFailed ? (
+        {!renaming && <View style={styles.divider} />}
+
+        {!renaming && (isFailed ? (
           /* ── Job fallido: reintentar ── */
           <TouchableOpacity
             style={[styles.optionRetry, retrying && styles.optionDisabled]}
@@ -101,7 +178,7 @@ export default function JobOptionsModal({
               </Text>
             </TouchableOpacity>
           </>
-        )}
+        ))}
 
         <TouchableOpacity style={styles.cancelBtn} onPress={onClose} activeOpacity={0.7}>
           <Text style={styles.cancelText}>Cancelar</Text>
@@ -180,6 +257,59 @@ const styles = StyleSheet.create({
     color: '#ef4444',
     marginTop: 3,
     letterSpacing: 0.5,
+  },
+  renameIconBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(130,117,98,0.1)',
+    flexShrink: 0,
+  },
+  renameBlock: {
+    gap: 8,
+    marginBottom: 4,
+  },
+  renameInputRow: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(212,196,174,0.5)',
+    backgroundColor: '#faf8f4',
+    overflow: 'hidden',
+  },
+  renameInput: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  renameActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  renameSaveBtn: {
+    flex: 1,
+    backgroundColor: '#c9920a',
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  renameCancelBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 13,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(212,196,174,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  renameCancelText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#827562',
   },
   optionRetry: {
     flexDirection: 'row',

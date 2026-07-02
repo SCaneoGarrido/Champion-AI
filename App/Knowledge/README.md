@@ -32,6 +32,7 @@ graph TD
     STATES["🔄 Job States\nDatabase/job-states"]
     OPS["⚙️ Operations\nOperations/local-setup"]
     ROAD["🚀 Pipeline Roadmap\nRoadmap/pipeline-roadmap"]
+    PRES["🎨 Presentation Layer\nADR-008 · ADR-009"]
 
     VISION --> ARCH
     ARCH --> API
@@ -48,6 +49,9 @@ graph TD
     FUNC --> SCHEMA
     SCHEMA --> STATES
     OPS --> ARCH
+    MIND --> PRES
+    SUM --> PRES
+    NOTES --> PRES
 ```
 
 ---
@@ -93,6 +97,9 @@ graph TD
 - [[ADR-005-is-current-pattern]] — Flag `is_current` en historial de estados
 - [[ADR-006-idempotent-stored-procedures]] — Idempotencia ante redelivery de queue
 - [[ADR-007-fast-transcription]] — Por qué Fast Transcription en lugar de SDK Continuous Recognition
+- [[ADR-008-client-side-rendering]] — Renderizado cliente (WebView) para Mermaid/LaTeX, SVG cacheado en backend
+- [[ADR-009-expo-push-service]] — Expo Push Service como broker de push notifications
+- [[ADR-010-latex-rendering-fixes-and-block-renderer-architecture]] — Corrección del renderer LaTeX (superposición) y arquitectura de bloques Markdown/LaTeX/Mermaid
 
 ### Bugs — Problemas conocidos
 - [[known-issues]] — Vacíos, contradicciones y pendientes
@@ -119,8 +126,16 @@ graph TD
 | STT retry de jobs fallidos | Implementado |
 | STT Transcript Cleanup | Planificado |
 | STT Topic Extraction | Roadmap |
+| Presentation Layer (Markdown, LaTeX, Mermaid, UI enriquecida) | En implementación |
+| Push notifications (Expo Push Service) | En implementación |
 | Text to Speech | Sin documentar |
 | File Management | Sin documentar |
+
+---
+
+## Knowledge Pack — diseño de la próxima generación
+
+El pipeline STT está evolucionando hacia un objeto de conocimiento unificado y extensible, el **Knowledge Pack**. El diseño funcional completo (no implementado todavía) vive en `App/Docs/product/`, punto de entrada `App/Docs/product/README.md`. Este vault sigue documentando el sistema **implementado**; `App/Docs/product/` documenta el sistema **objetivo**. Ver [[pipeline-roadmap]] para cómo ambos se relacionan.
 
 ---
 

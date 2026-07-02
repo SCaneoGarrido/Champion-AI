@@ -219,6 +219,33 @@ const speechcontroller = {
             return sendError(res, 500, 'INTERNAL_ERROR', 'Error interno del servidor.');
         }
     },
+
+    // Presentation Layer — cachea el SVG del mapa mental renderizado por el cliente
+    // (Mermaid → SVG vía WebView). Ver App/Knowledge/ADR/ADR-008-client-side-rendering.md.
+    saveMindmapSvg: async (req, res) => {
+        try {
+            const userId = req.userId;
+            const { job_id } = req.params;
+            const svg = req.body?.svg;
+            if (!svg || typeof svg !== 'string' || !svg.trim()) {
+                return sendError(res, 400, 'VALIDATION_ERROR', 'Se requiere el SVG renderizado.');
+            }
+            const result = await job_repository.executeSaveMindmapSvg(job_id, userId, svg);
+            if (!result.success) {
+                if (result.error === 'JOB_NOT_FOUND' || result.error === 'NOT_FOUND') {
+                    return sendError(res, 404, 'NOT_FOUND', 'Job no encontrado.');
+                }
+                if (result.error === 'USER_MISMATCH') {
+                    return sendError(res, 403, 'USER_MISMATCH', 'El job no pertenece al usuario autenticado.');
+                }
+                return sendError(res, 500, 'INTERNAL_ERROR', 'Error interno del servidor.');
+            }
+            return sendSuccess(res, 200, { job_id, updated: true });
+        } catch (error) {
+            logger.error('[speech.controller][saveMindmapSvg] Error: ' + error.message);
+            return sendError(res, 500, 'INTERNAL_ERROR', 'Error interno del servidor.');
+        }
+    },
 };
 
 module.exports = speechcontroller;

@@ -14,7 +14,7 @@ transcribe, resume, genera notas y un mapa mental → el cliente hace polling ha
 | Capa | Tecnología |
 |---|---|
 | App móvil | React Native (Expo) |
-| Backend | Node.js + Express.js — puerto 5051 |
+| Backend | Node.js + Express.js — puerto 5000 (`PORT` en `App/.env`) |
 | Procesamiento serverless | Azure Function Apps (Python) — Azure Durable Functions |
 | Base de datos | PostgreSQL 17.10 (Docker) — puerto 5432 |
 | Almacenamiento | Azure Blob Storage |
@@ -76,10 +76,12 @@ Primera línea: `fn_can_process_ai_job` rechaza jobs ya terminados.
 Segunda línea: `ON CONFLICT DO UPDATE` en los SPs críticos.
 Esto protege ante redelivery de Azure Queue sin necesidad de tabla de deduplicación.
 
-### 7. El cliente hace polling
-No hay WebSocket ni push notifications. El cliente consulta periódicamente
+### 7. El cliente hace polling (con push notifications como complemento)
+El mecanismo primario sigue siendo polling: el cliente consulta periódicamente
 `GET /AIServices/Speechv2/jobs/{job_id}/status` hasta `completed` o `failed`,
-luego `GET /AIServices/Speechv2/jobs/{job_id}/result`.
+luego `GET /AIServices/Speechv2/jobs/{job_id}/result`. Push notifications (Expo Push Service)
+avisan al usuario cuando un job termina, pero no reemplazan el polling como fuente de verdad
+del estado — son un complemento de UX, no un mecanismo de sincronización.
 
 ### 8. Contrato de respuesta HTTP invariante
 Todas las respuestas de la API siguen esta estructura sin excepción:
@@ -149,6 +151,31 @@ mind_map (gpt-5-mini)
 
 **Smart retry:** resultados parciales persistidos tras cada paso via `sp_save_stt_partial_result_v1` (COALESCE upsert). Un retry reanuda desde el paso fallido sin repetir los pasos exitosos anteriores.
 
+## Knowledge Pack — próxima generación del pipeline
+
+Champion AI está diseñando la evolución del resultado STT hacia un objeto de conocimiento unificado y extensible: el **Knowledge Pack**. No es una feature nueva — es el marco conceptual bajo el cual toda capacidad futura de generación de conocimiento (topics, capítulos, flashcards, quiz, búsqueda semántica, chat) se diseña de forma consistente, sin romper los 10 principios arquitectónicos de este documento ni el contrato HTTP existente.
+
+Diseño funcional completo (visión, especificación de componentes, pipeline, arquitectura de datos, capacidades UX, roadmap y riesgos) en `App/Docs/product/` — punto de entrada: `App/Docs/product/README.md`.
+
+**Regla para trabajo futuro:** toda feature nueva de generación de conocimiento debe poder ubicarse dentro del modelo del Knowledge Pack antes de implementarse — ver criterio en `App/Docs/product/02-knowledge-pack-spec.md`.
+
+**Importante — no confundir con la Presentation Layer (sección siguiente):** el Knowledge Pack gobierna la generación de *datos nuevos* derivados de IA (topics, capítulos, flashcards...). La Presentation Layer gobierna cómo se *renderizan* datos que la IA ya generó (Markdown, LaTeX, mapas mentales). Si una tarea no agrega una etapa de IA nueva ni un campo nuevo derivado de razonamiento — es Presentation Layer, no Knowledge Pack, y no pasa por `App/agents/knowledge-pack-reviewer.md` ni por `App/commands/knowledge-pack.md`.
+
+## Presentation Layer — capa de renderizado de resultados
+
+El pipeline de IA (transcripción → resumen → notas → mapa mental) genera contenido correcto, pero hasta esta etapa se mostraba como texto plano en la app móvil. La **Presentation Layer** es la capa responsable de transformar ese contenido ya generado en una experiencia de lectura real — sin tocar el pipeline de IA, los prompts (salvo una excepción puntual documentada abajo) ni el contrato HTTP.
+
+**Capacidades:**
+
+| Capacidad | Cómo funciona |
+|---|---|
+| Markdown | `summary_text`/`notes_text` (ya son Markdown en el prompt) se renderizan de verdad en el cliente — headers, listas, tablas, checklists, citas, código, links, negrita/cursiva, separadores. Nunca se muestran caracteres Markdown sin procesar. |
+| Soporte matemático (LaTeX) | Único cambio de prompt de toda esta capa: `summary.md`/`notes.md` piden envolver notación matemática en `$...$`/`$$...$$` cuando corresponda. El cliente renderiza esas expresiones con KaTeX, nunca como texto plano. |
+| Mapas mentales reales (Mermaid) | El árbol `mind_map_json` (sin cambios, sigue siendo JSON puro, sin tocar el prompt `mind_map.md`) se convierte de forma **determinística** (no-IA) a sintaxis Mermaid `mindmap` dentro del orquestador, se persiste como `mind_map_mermaid_code`, y el cliente lo renderiza a SVG la primera vez que se ve, cacheando el SVG resultante (`mind_map_svg`) en el backend. |
+| Push notifications | Infraestructura basada en Expo Push Service — avisa cuando un job termina o falla. Ver principio 7. |
+
+**Mecanismo de renderizado (Mermaid + LaTeX):** 100% cliente, vía `react-native-webview` con mermaid.js/KaTeX embebidos como asset local (sin red, sin dependencias nuevas en la Azure Function). El SVG resultante se sube al backend una sola vez para cachearlo — nunca se trata una imagen como fuente de verdad; la fuente de verdad es siempre el texto/código (Markdown, LaTeX, Mermaid), la imagen es una proyección cacheada. Detalle completo en `App/rules/mobile-rendering.md` y `App/Knowledge/ADR/ADR-008-client-side-rendering.md`.
+
 ## Estado actual del proyecto
 
 | Feature | Estado |
@@ -162,12 +189,22 @@ mind_map (gpt-5-mini)
 | STT — retry de jobs fallidos | Implementado |
 | STT — Transcript Cleanup (GPT-5) | Planificado — próxima implementación |
 | STT — Topic Extraction | Roadmap |
+| Presentation Layer — Markdown rendering | Implementado |
+| Presentation Layer — Soporte matemático (LaTeX) | Implementado — bug de superposición corregido, **visualización mobile en revisión** (ver `Roadmap/pending-features.md`) |
+| Presentation Layer — Mind maps reales (Mermaid → SVG) | Implementado |
+| Presentation Layer — Mermaid embebido en Markdown | Roadmap — solo arquitectura preparada, sin implementar |
+| Presentation Layer — Resultado enriquecido (UI) | Pendiente — no iniciado |
+| Push notifications (Expo Push Service) — infraestructura | Pendiente — no iniciado |
+| Background sync hardening (AppState) | Pendiente — no iniciado |
 | Text to Speech (TTS) | Sin documentar |
 | Gestión de Archivos | Sin documentar |
 
 ## Referencias de contexto
 
 - Arquitectura detallada: `ARCHITECTURE.md`
+- Diseño del Knowledge Pack (próxima generación del pipeline): `App/Docs/product/`
+- Presentation Layer — reglas de renderizado: `App/rules/mobile-rendering.md`
+- Presentation Layer — decisiones de arquitectura: `App/Knowledge/ADR/ADR-008-client-side-rendering.md`, `App/Knowledge/ADR/ADR-009-expo-push-service.md`
 - Reglas por dominio: `App/rules/`
 - Agentes especializados: `App/agents/`
 - Prompts reutilizables: `App/commands/`

@@ -17,7 +17,7 @@ La primera feature implementada de extremo a extremo es **Speech-to-Text (STT) l
 | Capa | Tecnología |
 |---|---|
 | App móvil | React Native (Expo) |
-| Backend | Node.js + Express.js — puerto 5051 |
+| Backend | Node.js + Express.js — puerto 5000 (`PORT` en `App/.env`) |
 | Procesamiento serverless | Azure Function Apps (Python) — Azure Durable Functions |
 | Base de datos | PostgreSQL 17.10 (Docker) — puerto 5432 |
 | Almacenamiento | Azure Blob Storage |
@@ -84,7 +84,7 @@ Modelo de razonamiento utilizado para todos los pasos de generación de contenid
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    Champion API                             │
-│                Node.js + Express — :5051                    │
+│                Node.js + Express — :5000                    │
 │  Auth · Validación · SAS URL · Jobs · Polling               │
 └──────┬────────────────────┬───────────────────┬────────────┘
        │ via SP              │ Publica { job_id } │ Genera SAS URL
@@ -180,24 +180,40 @@ Champion-AI/
 | STT — retry de jobs fallidos | Implementado |
 | STT — Transcript Cleanup (GPT-5) | Planificado — próximo a implementar |
 | STT — Topic Extraction | Roadmap |
+| Presentation Layer — Markdown, LaTeX, Mind maps (Mermaid), UI enriquecida | En implementación |
+| Push notifications (Expo Push Service) | En implementación |
 | Text to Speech (TTS) | Sin documentar |
 | Gestión de Archivos | Sin documentar |
 
 ---
 
+## Presentation Layer — cómo se ve el resultado
+
+El pipeline de IA no cambia — lo que cambia es cómo se presenta lo que ya genera. `summary_text` y `notes_text` (ya son Markdown en el prompt) se renderizan de verdad en la app (headers, tablas, checklists, LaTeX para contenido matemático), y el mapa mental deja de ser una lista anidada: se convierte de forma determinística (sin IA) a sintaxis Mermaid y se renderiza como diagrama real (SVG), cacheado en el backend tras el primer render. El mecanismo de render (Mermaid + LaTeX) vive 100% en el cliente vía WebView, sin dependencias nuevas en la Azure Function. Detalle en `App/Knowledge/ADR/ADR-008-client-side-rendering.md` y `App/rules/mobile-rendering.md`.
+
+---
+
+## Knowledge Pack — la próxima generación del pipeline
+
+Champion AI está evolucionando el resultado del procesamiento STT hacia un objeto de conocimiento unificado y extensible: el **Knowledge Pack**. Es el marco de diseño bajo el cual crecen todas las capacidades futuras (topics, capítulos, flashcards, quiz, búsqueda semántica, chat) sin romper compatibilidad con lo ya implementado.
+
+Diseño funcional completo en `App/Docs/product/` — ver `App/Docs/product/README.md` como punto de entrada.
+
+> La Presentation Layer (sección anterior) es distinta del Knowledge Pack: renderiza datos que la IA ya generó, no agrega datos nuevos derivados de IA. No pasa por el flujo de revisión de Knowledge Pack.
+
 ## Roadmap del pipeline inteligente
 
-Ver `App/Knowledge/Roadmap/pipeline-roadmap.md` para el detalle completo.
+Ver `App/Knowledge/Roadmap/pipeline-roadmap.md` y `App/Docs/product/03-intelligent-pipeline-design.md` para el detalle completo.
 
 | Etapa | Estado | Descripción |
 |---|---|---|
 | Fast Transcription | Implementado | Transcripción via REST API |
-| Transcript Cleanup | Planificado | Limpieza de artefactos de voz con GPT-5 |
 | Summary + Notes + Mind Map | Implementado | Generación de contenido estructurado |
-| Topic Extraction | Roadmap | Detección de temas y capítulos con timestamps |
-| Study Mode | Roadmap | Modo de estudio basado en topics |
-| Búsqueda en audio | Roadmap | Búsqueda por contenido con citas temporales |
-| Flashcards / Quizzes | Roadmap | Generación automática desde topics |
+| Transcript Cleanup + Segmentos/Offsets | Próxima implementación | Limpieza de artefactos de voz + persistencia de timestamps (habilita reproducción sincronizada) |
+| Topic Extraction / Keywords / Named Entities | Roadmap | Enriquecimiento semántico — requiere migrar a modelo de componentes extensibles |
+| Chapters / Study Metadata / Flashcards / Quiz | Roadmap | Capa de estudio, basada en Topics |
+| Semantic Search (embeddings) | Roadmap avanzado | Requiere extensión `pgvector` |
+| AI Chat / búsqueda cross-pack | Visión | Conversar con una grabación pasada, buscar entre todas las grabaciones del usuario |
 
 ---
 
@@ -238,7 +254,7 @@ npm install
 npm start
 ```
 
-API disponible en `http://localhost:5051`. Configurar variables en `App/API/.env`.
+API disponible en `http://localhost:5000`. Configurar variables en `App/.env` (global — `require('dotenv').config()` en `App/API/src/index.js` apunta ahí, no a `App/API/.env`).
 
 ### 3. Azure Function (Python)
 
@@ -264,7 +280,7 @@ npx expo start
 
 Para dispositivo físico, crear `App/Mobile/.env`:
 ```env
-EXPO_PUBLIC_API_URL=http://TU_IP_LOCAL:5051
+EXPO_PUBLIC_API_URL=http://TU_IP_LOCAL:5000
 ```
 
 > El móvil y el PC deben estar en la misma red Wi-Fi.

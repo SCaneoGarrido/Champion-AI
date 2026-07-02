@@ -1,7 +1,7 @@
 /**
  * Contenido Speech to Text: grabación en vivo o subida de archivo.
  */
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -27,18 +27,18 @@ const HELP_LIVE =
   'Graba en vivo hasta 3 h. Obtendrás transcripción y resumen cuando el procesamiento termine.';
 const HELP_FILE = 'Sube MP3, WAV, M4A o MP4 para obtener SRT, VTT o PDF según tu plan.';
 
-export default function SpeechToTextPanel({ onClose, variant = 'modal' }) {
+export default function SpeechToTextPanel({ onClose, onBusyChange, variant = 'modal' }) {
   const insets = useSafeAreaInsets();
   const { darkMode, colors } = useTheme();
   const styles = useMemo(() => createSpeechToTextStyles(colors, darkMode), [colors, darkMode]);
   const [tab, setTab] = useState('record');
+  const [recordBusy, setRecordBusy] = useState(false);
+  const [uploadBusy, setUploadBusy] = useState(false);
+  const busy = recordBusy || uploadBusy;
 
-  const recorderColors = {
-    accentColor: '#3B82F6',
-    primaryColor: colors.primaryDark,
-    mutedColor: colors.textMuted,
-    errorColor: '#ba1a1a',
-  };
+  useEffect(() => {
+    onBusyChange?.(busy);
+  }, [busy]);
 
   return (
     <View style={variant === 'modal' ? styles.sheet : styles.screen}>
@@ -52,7 +52,12 @@ export default function SpeechToTextPanel({ onClose, variant = 'modal' }) {
       <View style={[styles.header, variant === 'screen' && { paddingTop: Math.max(insets.top, 8) }]}>
         <View style={styles.headerLeft}>
           {onClose ? (
-            <TouchableOpacity style={styles.iconBtn} onPress={onClose} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={[styles.iconBtn, busy && { opacity: 0.35 }]}
+              onPress={busy ? undefined : onClose}
+              disabled={busy}
+              activeOpacity={0.7}
+            >
               <MaterialIcons
                 name={variant === 'screen' ? 'arrow-back' : 'close'}
                 size={22}
@@ -99,8 +104,9 @@ export default function SpeechToTextPanel({ onClose, variant = 'modal' }) {
 
         <View style={styles.tabsRow}>
           <Pressable
-            style={[styles.tabBtn, tab === 'record' && styles.tabBtnActive]}
-            onPress={() => setTab('record')}
+            style={[styles.tabBtn, tab === 'record' && styles.tabBtnActive, busy && { opacity: 0.5 }]}
+            onPress={() => !busy && setTab('record')}
+            disabled={busy}
           >
             <MaterialIcons
               name="radio"
@@ -110,8 +116,9 @@ export default function SpeechToTextPanel({ onClose, variant = 'modal' }) {
             <Text style={[styles.tabText, tab === 'record' && styles.tabTextActive]}>Grabar</Text>
           </Pressable>
           <Pressable
-            style={[styles.tabBtn, tab === 'upload' && styles.tabBtnActive]}
-            onPress={() => setTab('upload')}
+            style={[styles.tabBtn, tab === 'upload' && styles.tabBtnActive, busy && { opacity: 0.5 }]}
+            onPress={() => !busy && setTab('upload')}
+            disabled={busy}
           >
             <MaterialIcons
               name="upload-file"
@@ -151,7 +158,7 @@ export default function SpeechToTextPanel({ onClose, variant = 'modal' }) {
                 <Text style={styles.chipText}>Resumen</Text>
               </View>
             </View>
-            <LiveSTTRecorder />
+            <LiveSTTRecorder onBusyChange={setRecordBusy} />
           </View>
         ) : (
           <View style={styles.card}>
@@ -178,7 +185,7 @@ export default function SpeechToTextPanel({ onClose, variant = 'modal' }) {
                 <Text style={styles.chipText}>PDF</Text>
               </View>
             </View>
-            <AudioFileUploader {...recorderColors} />
+            <AudioFileUploader onBusyChange={setUploadBusy} />
           </View>
         )}
 

@@ -74,10 +74,9 @@ npm install
 npm start
 ```
 
-La API queda disponible en `http://localhost:5051`.
+La API queda disponible en `http://localhost:5000`.
 
-**Variables de entorno:** Configurar en `App/API/.env` (ver `.env.example` si existe).
-Las variables necesarias incluyen al menos la conexión a PostgreSQL y las credenciales de Azure.
+**Variables de entorno:** Configurar en `App/.env` (global — `App/API/src/index.js` carga `dotenv` desde ahí, no desde `App/API/.env`). Incluye `PORT` (default 5000 si no está definido), la conexión a PostgreSQL y las credenciales de Azure.
 
 ---
 
@@ -133,7 +132,7 @@ Se muestra un QR en la terminal o en el navegador.
 1. En Windows: ejecutar `ipconfig` y anotar la IPv4 de la red local (ej. `192.168.1.10`)
 2. Crear `App/Mobile/.env`:
    ```env
-   EXPO_PUBLIC_API_URL=http://192.168.1.10:5051
+   EXPO_PUBLIC_API_URL=http://192.168.1.10:5000
    ```
 3. Reiniciar Expo (`Ctrl+C` y `npx expo start`)
 4. Escanear el QR nuevamente
@@ -151,7 +150,7 @@ Una vez todo iniciado, verificar con:
 docker exec -it postgres_db psql -U champion_db_user -d champion_db -c "\dt"
 
 # Verificar que la API responde
-curl http://localhost:5051/API/AUTH/login -X POST \
+curl http://localhost:5000/API/AUTH/login -X POST \
   -H "Content-Type: application/json" \
   -d '{"email":"test@test.com","password":"wrong"}'
 # Debe devolver 401 UNAUTHORIZED (no 500), lo que confirma que la API y la BD están conectadas

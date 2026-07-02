@@ -22,6 +22,7 @@ def complete_job_activity(completion_payload: dict) -> None:
         notes_text=completion_payload["notes_text"],
         notes_json=completion_payload["notes_json"],
         mind_map_json=completion_payload["mind_map_json"],
+        mind_map_mermaid_code=completion_payload.get("mind_map_mermaid_code"),
     )
     logger.info("Job %s completado y persistido", completion_payload["job_id"])
 
@@ -42,5 +43,6 @@ def save_partial_result_activity(partial_payload: dict) -> None:
         notes_text=partial_payload.get("notes_text"),
         notes_json=partial_payload.get("notes_json"),
         mind_map_json=partial_payload.get("mind_map_json"),
+        mind_map_mermaid_code=partial_payload.get("mind_map_mermaid_code"),
     )
     logger.info("Resultado parcial guardado — job %s, paso: %s", job_id, step)

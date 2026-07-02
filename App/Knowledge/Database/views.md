@@ -106,6 +106,8 @@ El `LEFT JOIN` a `stt_recording_result` permite que la vista devuelva datos incl
 | `recording_updated_at` | `stt_recording.updated_at` |
 | `result_created_at` | `stt_recording_result.created_at` |
 | `result_updated_at` | `stt_recording_result.updated_at` |
+| `mind_map_mermaid_code` | `stt_recording_result.mind_map_mermaid_code` (Presentation Layer — agregada al final de la lista, `CREATE OR REPLACE VIEW` no permite insertar columnas en medio) |
+| `mind_map_svg` | `stt_recording_result.mind_map_svg` (Presentation Layer — ídem) |
 
 **Usada por:** `GET /AIServices/Speechv2/jobs/{job_id}/result` (endpoint pendiente)
 

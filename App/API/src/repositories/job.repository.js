@@ -167,6 +167,7 @@ class JobRepository {
                     result_id,
                     transcription_text, summary_text,
                     notes_text, notes_json, mind_map_json,
+                    mind_map_mermaid_code, mind_map_svg,
                     generated_at
                 FROM vw_stt_recording_result
                 WHERE job_id = $1 AND user_id = $2
@@ -243,6 +244,22 @@ class JobRepository {
         } catch (error) {
             logger.error(`[JobRepository][getJobStatus] Error: ${error.message}`);
             return null;
+        }
+    }
+
+    // Presentation Layer — cachea el SVG del mapa mental renderizado por el cliente.
+    // Ver App/Knowledge/ADR/ADR-008-client-side-rendering.md.
+    async executeSaveMindmapSvg(job_id, user_id, svg) {
+        try {
+            const query = `CALL sp_save_mindmap_svg_v1($1, $2, $3)`;
+            const res = await database_service.query(query, [job_id, user_id, svg], false);
+            if (!res.success) {
+                return { success: false, error: res.error };
+            }
+            return { success: true };
+        } catch (error) {
+            logger.error(`[JobRepository][executeSaveMindmapSvg] Error: ${error.message}`);
+            return { success: false, error: error.message };
         }
     }
 }

@@ -10,7 +10,7 @@ La Champion API es el **orquestador** del sistema. Es el único punto de entrada
 
 ## Puerto y acceso
 
-Puerto: `5051` (configurable via `.env`)
+Puerto: `5000` (`PORT` en `App/.env` — global, no `App/API/.env`; ver `App/API/src/index.js`: `require('dotenv').config({ path: '../../.env' })`)
 Autenticación: JWT en todos los endpoints excepto `/API/AUTH/register` y `/API/AUTH/login`
 
 ## Contrato de respuesta — invariante
@@ -49,6 +49,14 @@ Nunca romper este contrato. Nunca devolver una estructura diferente por convenie
 | GET | `/AIServices/Speechv2/jobs/{job_id}/status` | JWT | Implementado | 200 |
 | GET | `/AIServices/Speechv2/jobs/{job_id}/result` | JWT | Implementado | 200 |
 | POST | `/AIServices/Speechv2/jobs/{job_id}/retry` | JWT | Implementado | 202 |
+| PATCH | `/AIServices/Speechv2/jobs/{job_id}/name` | JWT | Implementado | 200 |
+| PATCH | `/AIServices/Speechv2/jobs/{job_id}/mindmap-svg` | JWT | En implementación | 200 |
+
+### Devices — Push Notifications (Presentation Layer)
+
+| Método | Ruta | Auth | Status | Código HTTP |
+|---|---|---|---|---|
+| POST | `/AIServices/Devices/register` | JWT | En implementación | 201 |
 
 ## Detalle de cada endpoint
 
@@ -208,11 +216,67 @@ Devuelve resultado completo via vista `vw_stt_recording_result`.
 
 Vista a usar: `SELECT * FROM vw_stt_recording_result WHERE job_id = $1 AND user_id = $user_id`
 
+---
+
+### PATCH /AIServices/Speechv2/jobs/{job_id}/mindmap-svg
+
+Cachea el SVG del mapa mental una vez que el cliente lo renderizó (Mermaid → SVG vía WebView). Ver `App/rules/mobile-rendering.md`.
+
+**Body:** `{ "svg": "<svg>...</svg>" }`
+
+**Lógica:**
+1. Validar JWT → extraer `user_id`
+2. Verificar ownership del job (`ai_job.requested_by = user_id`)
+3. `CALL sp_save_mindmap_svg_v1(p_job_id, p_user_id, p_svg)`
+
+**Respuesta 200:**
+```json
+{ "success": true, "data": { "job_id": "job_...", "updated": true }, "error": null }
+```
+
+**Errores:**
+
+| HTTP | Código | Condición |
+|---|---|---|
+| 400 | `VALIDATION_ERROR` | `svg` ausente o vacío |
+| 401 | `INVALID_TOKEN` | JWT ausente |
+| 403 | `TOKEN_EXPIRED` | JWT inválido o expirado |
+| 404 | `NOT_FOUND` | Job no existe o no pertenece al usuario |
+| 500 | `INTERNAL_ERROR` | Error no clasificado |
+
+---
+
+### POST /AIServices/Devices/register
+
+Registra (o refresca) el Expo push token del dispositivo del usuario. Ver `App/Knowledge/ADR/ADR-009-expo-push-service.md`.
+
+**Body:** `{ "expo_push_token": "ExponentPushToken[...]", "platform": "ios" | "android" }`
+
+**Lógica:**
+1. Validar JWT → extraer `user_id`
+2. `CALL sp_register_device_token_v1(p_user_id, p_expo_push_token, p_platform)` — upsert por `(user_id, expo_push_token)`
+
+**Respuesta 201:**
+```json
+{ "success": true, "data": { "device_id": "...", "registered": true }, "error": null }
+```
+
+**Errores:**
+
+| HTTP | Código | Condición |
+|---|---|---|
+| 400 | `VALIDATION_ERROR` | `expo_push_token` o `platform` ausente/inválido |
+| 401 | `INVALID_TOKEN` | JWT ausente |
+| 403 | `TOKEN_EXPIRED` | JWT inválido o expirado |
+| 500 | `INTERNAL_ERROR` | Error no clasificado |
+
+---
+
 ## Acceso a base de datos
 
 La API accede a PostgreSQL mediante:
 
-- **Stored Procedures** para escritura: `sp_create_stt_live_recording_job_v1`, `sp_update_ai_job_status_v1`
+- **Stored Procedures** para escritura: `sp_create_stt_live_recording_job_v1`, `sp_update_ai_job_status_v1`, `sp_save_mindmap_svg_v1`, `sp_register_device_token_v1`
 - **Vistas** para lectura: `vw_ai_job_current_status`, `vw_stt_recording_result`
 - **DML directo** solo para auth (insert en `sec_user`, `sec_user_password`) — no existe SP de registro documentado
 

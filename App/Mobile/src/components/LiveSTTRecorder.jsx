@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -10,7 +10,7 @@ import { patchJobName } from '../utils/api';
 
 const DEFAULT_LANGUAGE = { locale: 'es-AR', locale_name: 'Spanish (Argentina)' };
 
-export default function LiveSTTRecorder() {
+export default function LiveSTTRecorder({ onBusyChange }) {
     const { colors, darkMode } = useTheme();
     const styles = useMemo(() => createLiveSTTRecorderStyles(colors, darkMode), [colors, darkMode]);
 
@@ -33,6 +33,12 @@ export default function LiveSTTRecorder() {
     const isAccepted = status === 'accepted';
     const isModalOpen = ['initializing', 'recording', 'processing'].includes(status);
     const canChangeLang = isIdle || isError || isAccepted;
+
+    // Ocupado: grabando/subiendo, o esperando que se guarde el nombre obligatorio
+    const busy = isModalOpen || (isAccepted && !nameSaved);
+    useEffect(() => {
+        onBusyChange?.(busy);
+    }, [busy]);
 
     const handleReset = () => {
         setAudioName('');
@@ -89,7 +95,7 @@ export default function LiveSTTRecorder() {
                         <Text style={styles.nameCardTitle}>Grabación enviada</Text>
                     </View>
                     <Text style={styles.nameCardHint}>
-                        Dale un nombre a tu grabación para encontrarla fácilmente.
+                        Ingresa un nombre para tu grabación antes de continuar — lo vas a necesitar para encontrarla en Mis Apuntes.
                     </Text>
                     <View style={styles.nameInputRow}>
                         <TextInput
@@ -112,9 +118,6 @@ export default function LiveSTTRecorder() {
                                 ? <ActivityIndicator color="#fff" size="small" />
                                 : <Text style={styles.nameSaveBtnText}>Guardar nombre</Text>
                             }
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.nameSkipBtn} onPress={handleReset} activeOpacity={0.8}>
-                            <Text style={styles.nameSkipBtnText}>Omitir</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

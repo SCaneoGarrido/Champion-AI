@@ -8,6 +8,10 @@ tags: #roadmap #pipeline #future #ai
 
 El pipeline de procesamiento STT de Champion AI está diseñado para evolucionar progresivamente desde una transcripción básica hacia un **motor de conocimiento estructurado y navegable**. Cada nueva etapa amplifica el valor de las anteriores sin reemplazarlas.
 
+> **Diseño funcional completo:** este documento describe la evolución técnica del pipeline. El diseño de producto completo (Knowledge Pack: especificación de componentes, arquitectura de datos, capacidades de UX, riesgos y recomendaciones) vive en `App/Docs/product/`, punto de entrada `App/Docs/product/README.md`. Ese diseño generaliza y detalla lo que aquí se describe como Fase 2/Fase 3/Fase 4.
+>
+> Un hallazgo relevante de ese diseño: los `phrases[]` con offsets que Fast Transcription ya devuelve hoy **se descartan** en `speech_service.py` (solo se extrae `combinedPhrases[0].text`). Persistirlos es un prerrequisito de bajo costo para Topic Extraction y para reproducción sincronizada — ver `App/Docs/product/06-roadmap-risks-recommendations.md` (riesgo R2).
+
 ---
 
 ## Estado actual del pipeline (implementado)

@@ -40,6 +40,8 @@ procesamiento/
       blob_service.py          ← descarga de audio desde Azure Blob
       speech_service.py        ← transcripción via Fast Transcription REST API
       openai_service.py        ← resumen, notas, mapa mental via OpenAI
+      mermaid_converter.py     ← mind_map_json → sintaxis Mermaid (determinístico, NO es IA)
+      push_service.py          ← envío de push notifications via Expo Push API
     utils/
       constants.py             ← JobStatus, ProcessingStep, ErrorCode, ACTOR_TYPE
       __init__.py              ← validate_job_payload
@@ -99,10 +101,18 @@ El pipeline corre como Durable Function `stt_live_recording`. Cada paso es una a
         ▼ ACTIVITY: generate_mind_map_activity(transcription_text) → mind_map_json
         │ error → set_job_status(failed, OPENAI_UNAVAILABLE) → return
         │
+        ▼ mind_map_json_to_mermaid(mind_map_json) → mind_map_mermaid_code
+        │   Código PURO/determinístico ejecutado DIRECTO en el orquestador (no es Activity,
+        │   no hay I/O, no llama a IA — ver App/procesamiento/shared/services/mermaid_converter.py)
+        │
         ▼ ACTIVITY: complete_job_activity (retry x3, intervalo 5s)
-            sp_complete_stt_live_recording_job_v1(...)
+            sp_complete_stt_live_recording_job_v1(..., p_mind_map_mermaid_code)
+        │ éxito → push_service.send_push_notification(...) "Tu clase ya está lista."
         │ error → set_job_status(failed, INTERNAL_ERROR)
+        │          → push_service.send_push_notification(...) "El audio no pudo procesarse."
 ```
+
+**Push notifications:** el envío es un efecto secundario posterior al resultado ya calculado — no forma parte del pipeline de IA ni lo condiciona. Si el envío falla (token inválido, Expo no disponible), no afecta el estado del job; se registra en logs y sigue.
 
 ## Regla absoluta de acceso a base de datos
 
@@ -175,17 +185,18 @@ Llamar en:
 
 ```sql
 CALL sp_complete_stt_live_recording_job_v1(
-  p_job_id              VARCHAR(100),
-  p_final_status        VARCHAR(50),      -- 'completed'
-  p_final_step          VARCHAR(100),     -- 'mind_map'
-  p_completion_message  TEXT,
-  p_actor_type          VARCHAR(30),      -- 'azure_function'
-  p_transcription_text  TEXT,
-  p_summary_text        TEXT,
-  p_notes_text          TEXT,
-  p_notes_json          JSONB,
-  p_mind_map_json       JSONB,
-  p_raw_result_json     JSONB DEFAULT NULL
+  p_job_id                  VARCHAR(100),
+  p_final_status            VARCHAR(50),      -- 'completed'
+  p_final_step              VARCHAR(100),     -- 'mind_map'
+  p_completion_message      TEXT,
+  p_actor_type              VARCHAR(30),      -- 'azure_function'
+  p_transcription_text      TEXT,
+  p_summary_text            TEXT,
+  p_notes_text              TEXT,
+  p_notes_json              JSONB,
+  p_mind_map_json           JSONB,
+  p_raw_result_json         JSONB DEFAULT NULL,
+  p_mind_map_mermaid_code   TEXT  DEFAULT NULL   -- Presentation Layer: sintaxis Mermaid derivada de mind_map_json
 )
 ```
 
@@ -232,7 +243,9 @@ Todo el resultado se almacena en `stt_recording_result`:
 | `summary_text` | TEXT | Resumen en formato texto |
 | `notes_text` | TEXT | Notas en formato texto |
 | `notes_json` | JSONB | Notas estructuradas (estructura no documentada) |
-| `mind_map_json` | JSONB | Mapa mental estructurado (estructura no documentada) |
+| `mind_map_json` | JSONB | Mapa mental estructurado — fuente de verdad, generado por IA (estructura no documentada) |
+| `mind_map_mermaid_code` | TEXT | Sintaxis Mermaid `mindmap` — proyección determinística de `mind_map_json`, generada por `mermaid_converter.py` (NO por IA) |
+| `mind_map_svg` | TEXT | SVG renderizado por el cliente y cacheado vía `PATCH .../mindmap-svg` — proyección del código Mermaid, nunca fuente de verdad |
 | `raw_result_json` | JSONB | Respuesta cruda de los servicios AI |
 
 **Nota:** La estructura interna de `notes_json` y `mind_map_json` no está documentada en las fuentes disponibles.
@@ -245,3 +258,5 @@ Todo el resultado se almacena en `stt_recording_result`:
 - Si se agrega un nuevo paso de procesamiento, crear o reutilizar un SP para la transición de estado
 - Cada paso del pipeline debe actualizar el estado en BD antes de comenzar el trabajo (no después)
 - Los errores de IA deben quedar registrados con un `error_code` específico — no solo `INTERNAL_ERROR`
+- Las transformaciones puramente determinísticas de datos ya generados (ej. `mind_map_json` → Mermaid) van directo en el orquestador, no como Activity — solo I/O o no-determinismo requiere Activity (ver R-AZURE-12 en `App/rules/azure.md`)
+- El envío de push notifications (`push_service.py`) nunca debe hacer fallar ni reintentar el pipeline — es un efecto posterior al resultado ya persistido, sus errores solo se loguean

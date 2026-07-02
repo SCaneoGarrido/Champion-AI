@@ -9,7 +9,7 @@ tags: #architecture #backend #api #nodejs
 La Champion API es el backend del sistema, desarrollado en **Node.js con Express.js**.
 Es el único punto de entrada para la app móvil y el coordinador de todos los recursos externos.
 
-Puerto: `http://localhost:5051` (configurable via `.env`)
+Puerto: `http://localhost:5000` (`PORT` en `App/.env` — global, no `App/API/.env`)
 
 ---
 

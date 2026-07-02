@@ -9,7 +9,7 @@ tags: #architecture #overview
 ```mermaid
 graph TD
     MOBILE["📱 App Móvil\nReact Native / Expo"]
-    API["🔧 Champion API\nNode.js / Express\nlocalhost:5051"]
+    API["🔧 Champion API\nNode.js / Express\nlocalhost:5000"]
     PG["🗄️ PostgreSQL\nlocalhost:5432"]
     QUEUE["📨 Azure Queue\nchampionaiqueue"]
     FUNC["⚡ Azure Function\nPython / Durable Functions"]
@@ -62,7 +62,7 @@ Ver [[backend-api]] para los contratos HTTP que consume.
 
 ### Backend API — Node.js / Express
 
-Puerto: `5051`
+Puerto: `5000` (`PORT` en `App/.env` — global, no `App/API/.env`)
 
 Responsable de:
 - Autenticación y autorización (JWT)

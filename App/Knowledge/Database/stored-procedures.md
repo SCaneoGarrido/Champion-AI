@@ -131,17 +131,18 @@ CALL sp_update_ai_job_status_v1(
 
 ```sql
 CALL sp_complete_stt_live_recording_job_v1(
-  p_job_id              VARCHAR(100),
-  p_final_status        VARCHAR(50),       -- 'completed'
-  p_final_step          VARCHAR(100),
-  p_completion_message  TEXT,
-  p_actor_type          VARCHAR(30),       -- 'azure_function'
-  p_transcription_text  TEXT,
-  p_summary_text        TEXT,
-  p_notes_text          TEXT,
-  p_notes_json          JSONB,
-  p_mind_map_json       JSONB,
-  p_raw_result_json     JSONB DEFAULT NULL
+  p_job_id                 VARCHAR(100),
+  p_final_status           VARCHAR(50),       -- 'completed'
+  p_final_step             VARCHAR(100),
+  p_completion_message     TEXT,
+  p_actor_type             VARCHAR(30),       -- 'azure_function'
+  p_transcription_text     TEXT,
+  p_summary_text           TEXT,
+  p_notes_text             TEXT,
+  p_notes_json             JSONB,
+  p_mind_map_json          JSONB,
+  p_raw_result_json        JSONB DEFAULT NULL,
+  p_mind_map_mermaid_code  TEXT  DEFAULT NULL  -- Presentation Layer
 )
 ```
 
@@ -176,6 +177,65 @@ Si llega dos veces por redelivery, el `ON CONFLICT (recording_id) DO UPDATE` en 
 
 ---
 
+## sp_save_mindmap_svg_v1 (Presentation Layer)
+
+**Ejecutado por:** Backend API (al recibir `PATCH /AIServices/Speechv2/jobs/{job_id}/mindmap-svg`)
+
+**Propósito:** Cachear el SVG del mapa mental renderizado por el cliente, verificando ownership.
+
+### Firma
+
+```sql
+CALL sp_save_mindmap_svg_v1(
+  p_job_id   VARCHAR(100),
+  p_user_id  UUID,
+  p_svg      TEXT
+)
+```
+
+### Operaciones internas
+
+```
+1. Verificar que ai_job.requested_by = p_user_id para p_job_id
+   - Si no coincide o el job no existe → RAISE EXCEPTION
+2. UPDATE stt_recording_result SET mind_map_svg = p_svg WHERE job_id = p_job_id
+```
+
+Simple `UPDATE` con verificación de ownership — no crea filas nuevas, `stt_recording_result` ya existe para cualquier job con resultado.
+
+---
+
+## sp_register_device_token_v1 (Presentation Layer — push notifications)
+
+**Ejecutado por:** Backend API (al recibir `POST /AIServices/Devices/register`)
+
+**Propósito:** Registrar o refrescar el Expo push token de un dispositivo.
+
+### Firma
+
+```sql
+CALL sp_register_device_token_v1(
+  p_user_id          UUID,
+  p_expo_push_token  TEXT,
+  p_platform         VARCHAR(10)   -- 'ios' | 'android'
+)
+```
+
+### Operaciones internas
+
+```
+INSERT INTO sec_user_device (user_id, expo_push_token, platform)
+VALUES (p_user_id, p_expo_push_token, p_platform)
+ON CONFLICT (user_id, expo_push_token)
+  DO UPDATE SET last_seen_at = now(), platform = EXCLUDED.platform
+```
+
+### Idempotencia
+
+Upsert por `(user_id, expo_push_token)` — llamar este SP repetidamente (ej. cada vez que la app abre) nunca duplica filas, solo refresca `last_seen_at`.
+
+---
+
 ## Resumen de SPs por actor
 
 | SP | Backend API | Azure Function |
@@ -183,6 +243,8 @@ Si llega dos veces por redelivery, el `ON CONFLICT (recording_id) DO UPDATE` en 
 | `sp_create_stt_live_recording_job_v1` | ✔ | — |
 | `sp_update_ai_job_status_v1` | ✔ (solo fallo queue) | ✔ (transiciones) |
 | `sp_complete_stt_live_recording_job_v1` | — | ✔ |
+| `sp_save_mindmap_svg_v1` | ✔ | — |
+| `sp_register_device_token_v1` | ✔ | — |
 
 ---
 
