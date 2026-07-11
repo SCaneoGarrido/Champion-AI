@@ -166,14 +166,3 @@ export async function patchJobName(jobId, name) {
   if (!res.ok) throw new Error(json?.error?.message || `HTTP ${res.status}`);
   return json.data;
 }
-
-// Presentation Layer — cachea el SVG del mapa mental tras el primer render (WebView + Mermaid).
-export async function saveMindmapSvg(jobId, svg) {
-  const res = await authenticatedFetch(`/AIServices/Speechv2/jobs/${jobId}/mindmap-svg`, {
-    method: 'PATCH',
-    body: JSON.stringify({ svg }),
-  });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json?.error?.message || `HTTP ${res.status}`);
-  return json.data;
-}

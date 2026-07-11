@@ -64,13 +64,6 @@ speech_router.patch(
     speech_controller.updateJobName
 );
 
-speech_router.patch(
-    '/jobs/:job_id/mindmap-svg',
-    verificarToken,
-    extractUserId,
-    speech_controller.saveMindmapSvg
-);
-
 speech_router.get(
     '/jobs/:job_id/status',
     verificarToken,

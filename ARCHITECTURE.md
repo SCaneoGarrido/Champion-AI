@@ -11,7 +11,7 @@
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    Champion API                             │
-│                Node.js + Express — :5000                    │
+│                Node.js + Express — :5051                    │
 │  Autenticación · Validación · SAS URL · Jobs · Polling      │
 └──────┬────────────────────┬───────────────────┬────────────┘
        │ UPSERT/SELECT       │ Publica            │ Genera
@@ -54,7 +54,7 @@
 
 ---
 
-### Champion API — Node.js / Express (:5000)
+### Champion API — Node.js / Express (:5051)
 
 **Qué hace:**
 - Autenticación JWT (registro y login)

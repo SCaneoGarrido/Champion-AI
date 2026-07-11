@@ -123,6 +123,21 @@ export function createLiveSTTRecorderStyles(colors = {}, darkMode = false) {
             fontSize: 13,
             fontWeight: '800',
         },
+        nameSkipBtn: {
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        nameSkipBtnText: {
+            fontSize: 13,
+            fontWeight: '700',
+            color: textMuted,
+        },
+
         // ── Botón ──
         btn: {
             borderRadius: 14,

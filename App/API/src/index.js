@@ -23,7 +23,7 @@ if (missingVars.length > 0) {
     process.exit(1);
 }
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5051;
 const app = express();
 
 app.use(cors());

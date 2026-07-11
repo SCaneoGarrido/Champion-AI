@@ -86,7 +86,6 @@ def complete_stt_job(
     notes_json: dict,
     mind_map_json: dict,
     raw_result_json: Optional[dict] = None,
-    mind_map_mermaid_code: Optional[str] = None,
 ) -> None:
     """
     Llama sp_complete_stt_live_recording_job_v1.
@@ -99,8 +98,7 @@ def complete_stt_job(
         CALL sp_complete_stt_live_recording_job_v1(
             %s, %s, %s, %s, %s,
             %s, %s, %s,
-            %s::jsonb, %s::jsonb, %s::jsonb,
-            %s
+            %s::jsonb, %s::jsonb, %s::jsonb
         )
         """,
         (
@@ -115,7 +113,6 @@ def complete_stt_job(
             json.dumps(notes_json, ensure_ascii=False),
             json.dumps(mind_map_json, ensure_ascii=False),
             json.dumps(raw_result_json, ensure_ascii=False) if raw_result_json else None,
-            mind_map_mermaid_code,
         ),
     )
 
@@ -145,7 +142,6 @@ def save_partial_result(
     notes_text: Optional[str] = None,
     notes_json: Optional[dict] = None,
     mind_map_json: Optional[dict] = None,
-    mind_map_mermaid_code: Optional[str] = None,
 ) -> None:
     """
     Llama sp_save_stt_partial_result_v1.
@@ -156,7 +152,7 @@ def save_partial_result(
     call_procedure(
         """
         CALL sp_save_stt_partial_result_v1(
-            %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s
+            %s, %s, %s, %s, %s::jsonb, %s::jsonb
         )
         """,
         (
@@ -166,6 +162,5 @@ def save_partial_result(
             notes_text,
             json.dumps(notes_json, ensure_ascii=False) if notes_json is not None else None,
             json.dumps(mind_map_json, ensure_ascii=False) if mind_map_json is not None else None,
-            mind_map_mermaid_code,
         ),
     )

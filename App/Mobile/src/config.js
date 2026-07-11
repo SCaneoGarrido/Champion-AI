@@ -1,9 +1,9 @@
 /**
  * config.js – Configuración de la API (backend Node/Express).
  *
- * - API_BASE_URL: base de la API. El servidor usa PORT de App/.env (global) — 5000 por
- *   defecto si no está definido. En Expo Go con dispositivo físico, en el móvil
- *   "localhost" es el propio teléfono. Para conectar al PC, crear en App/Mobile un .env con:
+ * - API_BASE_URL: base de la API. El servidor usa PORT del .env o 5051 por defecto.
+ *   En Expo Go con dispositivo físico, en el móvil "localhost" es el propio teléfono.
+ *   Para conectar al PC, crear en App/Mobile un .env con:
  *   EXPO_PUBLIC_API_URL=http://TU_IP:5000
  * - config: rutas y métodos para login y registro usados por src/utils/api.js.
  */

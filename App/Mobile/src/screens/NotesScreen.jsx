@@ -105,28 +105,7 @@ export default function NotesScreen({ navigation }) {
     }
   }, []);
 
-  // Refresco silencioso (sin spinner) usado por el polling
-  const refreshJobs = useCallback(async () => {
-    try {
-      const [j, st] = await Promise.all([getRecentJobs(50), getUserStats()]);
-      setJobs(j);
-      setStats(st);
-    } catch (_) {
-      // Falla silenciosa: el próximo tick o el próximo focus reintenta
-    }
-  }, []);
-
   useFocusEffect(useCallback(() => { load(); }, [load]));
-
-  // Mientras haya jobs en cola/procesando, refrescar cada 5s sin salir de la pantalla
-  const hasInFlightJobs = jobs.some(j => j.status === 'queued' || j.status === 'processing');
-  useFocusEffect(
-    useCallback(() => {
-      if (!hasInFlightJobs) return undefined;
-      const interval = setInterval(refreshJobs, 5000);
-      return () => clearInterval(interval);
-    }, [hasInFlightJobs, refreshJobs])
-  );
 
   const openOptions = (job) => {
     setSelectedJob(job);
@@ -159,12 +138,6 @@ export default function NotesScreen({ navigation }) {
   const closeOptions = () => {
     setShowOptions(false);
     setSelectedJob(null);
-  };
-
-  const handleRenamed = (jobId, newName) => {
-    setJobs(prev => prev.map(j => (j.job_id === jobId ? { ...j, blob_name: newName } : j)));
-    setSelectedJob(prev => (prev && prev.job_id === jobId ? { ...prev, blob_name: newName } : prev));
-    showToast('Nombre actualizado.');
   };
 
   const handleView = () => {
@@ -386,7 +359,6 @@ export default function NotesScreen({ navigation }) {
         downloading={downloading}
         onRetry={handleRetry}
         retrying={retrying}
-        onRenamed={handleRenamed}
       />
 
       <NoteDetailScreen

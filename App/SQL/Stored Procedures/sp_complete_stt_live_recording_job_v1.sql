@@ -9,8 +9,7 @@ CREATE OR REPLACE PROCEDURE sp_complete_stt_live_recording_job_v1(
     p_notes_text TEXT,
     p_notes_json JSONB,
     p_mind_map_json JSONB,
-    p_raw_result_json JSONB DEFAULT NULL,
-    p_mind_map_mermaid_code TEXT DEFAULT NULL  -- Presentation Layer: proyección determinística de p_mind_map_json, no generada por IA
+    p_raw_result_json JSONB DEFAULT NULL
 )
 LANGUAGE plpgsql
 AS $$
@@ -37,7 +36,6 @@ BEGIN
         notes_text,
         notes_json,
         mind_map_json,
-        mind_map_mermaid_code,
         raw_result_json,
         generated_at,
         created_at,
@@ -51,7 +49,6 @@ BEGIN
         p_notes_text,
         p_notes_json,
         p_mind_map_json,
-        p_mind_map_mermaid_code,
         p_raw_result_json,
         NOW(),
         NOW(),
@@ -64,7 +61,6 @@ BEGIN
         notes_text = EXCLUDED.notes_text,
         notes_json = EXCLUDED.notes_json,
         mind_map_json = EXCLUDED.mind_map_json,
-        mind_map_mermaid_code = EXCLUDED.mind_map_mermaid_code,
         raw_result_json = EXCLUDED.raw_result_json,
         generated_at = NOW(),
         updated_at = NOW();

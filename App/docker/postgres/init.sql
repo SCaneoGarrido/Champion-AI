@@ -1,8 +1,8 @@
---
+﻿--
 -- PostgreSQL database dump
 --
 
-\restrict FZlacDUVTabc8ZfoTG05Udf08v989LggHiGUkcIyN5EVPWNuz80x7hqlv5MtPqC
+\restrict N7NIRUODcnYYYLGqTTfAbLADaVBf6coC0seoRNb6FocnB9e76V4Kt5eE4KTukJ7
 
 -- Dumped from database version 17.10
 -- Dumped by pg_dump version 17.10
@@ -77,11 +77,10 @@ DROP TABLE IF EXISTS public.ai_job_status_history;
 DROP TABLE IF EXISTS public.ai_job;
 DROP FUNCTION IF EXISTS public.sync_ai_job_from_history();
 DROP PROCEDURE IF EXISTS public.sp_update_ai_job_status_v1(IN p_job_id character varying, IN p_status character varying, IN p_step_name character varying, IN p_message text, IN p_error_code character varying, IN p_error_message text, IN p_retryable boolean, IN p_steps_snapshot jsonb, IN p_metadata jsonb, IN p_actor_type character varying);
-DROP PROCEDURE IF EXISTS public.sp_save_stt_partial_result_v1(IN p_job_id character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb, IN p_mind_map_mermaid_code text);
-DROP PROCEDURE IF EXISTS public.sp_save_mindmap_svg_v1(IN p_job_id character varying, IN p_user_id uuid, IN p_svg text);
+DROP PROCEDURE IF EXISTS public.sp_save_stt_partial_result_v1(IN p_job_id character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb);
 DROP PROCEDURE IF EXISTS public.sp_reset_ai_job_for_retry_v1(IN p_job_id character varying, IN p_actor_type character varying);
 DROP PROCEDURE IF EXISTS public.sp_create_stt_live_recording_job_v1(IN p_job_id character varying, IN p_user_id uuid, IN p_service_code character varying, IN p_feature_code character varying, IN p_flow character varying, IN p_initial_status character varying, IN p_initial_message text, IN p_actor_type character varying, IN p_language_locale character varying, IN p_language_name character varying, IN p_audio_format character varying, IN p_sample_rate integer, IN p_duration_seconds numeric, IN p_blob_name text, IN p_blob_url text, IN p_upload_status character varying, IN p_request_payload jsonb);
-DROP PROCEDURE IF EXISTS public.sp_complete_stt_live_recording_job_v1(IN p_job_id character varying, IN p_final_status character varying, IN p_final_step character varying, IN p_completion_message text, IN p_actor_type character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb, IN p_raw_result_json jsonb, IN p_mind_map_mermaid_code text);
+DROP PROCEDURE IF EXISTS public.sp_complete_stt_live_recording_job_v1(IN p_job_id character varying, IN p_final_status character varying, IN p_final_step character varying, IN p_completion_message text, IN p_actor_type character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb, IN p_raw_result_json jsonb);
 DROP FUNCTION IF EXISTS public.set_updated_at();
 DROP FUNCTION IF EXISTS public.fn_get_stt_live_recording_job_context(p_job_id character varying);
 DROP FUNCTION IF EXISTS public.fn_can_process_ai_job(p_job_id character varying);
@@ -195,10 +194,10 @@ $$;
 ALTER FUNCTION public.set_updated_at() OWNER TO champion_db_user;
 
 --
--- Name: sp_complete_stt_live_recording_job_v1(character varying, character varying, character varying, text, character varying, text, text, text, jsonb, jsonb, jsonb, text); Type: PROCEDURE; Schema: public; Owner: champion_db_user
+-- Name: sp_complete_stt_live_recording_job_v1(character varying, character varying, character varying, text, character varying, text, text, text, jsonb, jsonb, jsonb); Type: PROCEDURE; Schema: public; Owner: champion_db_user
 --
 
-CREATE PROCEDURE public.sp_complete_stt_live_recording_job_v1(IN p_job_id character varying, IN p_final_status character varying, IN p_final_step character varying, IN p_completion_message text, IN p_actor_type character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb, IN p_raw_result_json jsonb DEFAULT NULL::jsonb, IN p_mind_map_mermaid_code text DEFAULT NULL::text)
+CREATE PROCEDURE public.sp_complete_stt_live_recording_job_v1(IN p_job_id character varying, IN p_final_status character varying, IN p_final_step character varying, IN p_completion_message text, IN p_actor_type character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb, IN p_raw_result_json jsonb DEFAULT NULL::jsonb)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -210,7 +209,7 @@ BEGIN
     FROM stt_recording
     WHERE job_id = p_job_id;
 
-    -- Validar si existe la grabación antes de continuar
+    -- Validar si existe la grabaci├│n antes de continuar
     IF v_recording_id IS NULL THEN
         RAISE EXCEPTION 'Recording no encontrado para job %', p_job_id;
     END IF;
@@ -224,7 +223,6 @@ BEGIN
         notes_text,
         notes_json,
         mind_map_json,
-        mind_map_mermaid_code,
         raw_result_json,
         generated_at,
         created_at,
@@ -238,7 +236,6 @@ BEGIN
         p_notes_text,
         p_notes_json,
         p_mind_map_json,
-        p_mind_map_mermaid_code,
         p_raw_result_json,
         NOW(),
         NOW(),
@@ -251,7 +248,6 @@ BEGIN
         notes_text = EXCLUDED.notes_text,
         notes_json = EXCLUDED.notes_json,
         mind_map_json = EXCLUDED.mind_map_json,
-        mind_map_mermaid_code = EXCLUDED.mind_map_mermaid_code,
         raw_result_json = EXCLUDED.raw_result_json,
         generated_at = NOW(),
         updated_at = NOW();
@@ -295,7 +291,7 @@ END;
 $$;
 
 
-ALTER PROCEDURE public.sp_complete_stt_live_recording_job_v1(IN p_job_id character varying, IN p_final_status character varying, IN p_final_step character varying, IN p_completion_message text, IN p_actor_type character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb, IN p_raw_result_json jsonb, IN p_mind_map_mermaid_code text) OWNER TO champion_db_user;
+ALTER PROCEDURE public.sp_complete_stt_live_recording_job_v1(IN p_job_id character varying, IN p_final_status character varying, IN p_final_step character varying, IN p_completion_message text, IN p_actor_type character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb, IN p_raw_result_json jsonb) OWNER TO champion_db_user;
 
 --
 -- Name: sp_create_stt_live_recording_job_v1(character varying, uuid, character varying, character varying, character varying, character varying, text, character varying, character varying, character varying, character varying, integer, numeric, text, text, character varying, jsonb); Type: PROCEDURE; Schema: public; Owner: champion_db_user
@@ -444,7 +440,7 @@ BEGIN
         RAISE EXCEPTION 'JOB_NOT_RETRYABLE';
     END IF;
 
-    -- 2. Contar cuántas veces ha fallado (= número de reintentos previos)
+    -- 2. Contar cu├íntas veces ha fallado (= n├║mero de reintentos previos)
     SELECT COUNT(*) INTO v_failed_count
     FROM ai_job_status_history
     WHERE job_id = p_job_id
@@ -499,46 +495,10 @@ $$;
 ALTER PROCEDURE public.sp_reset_ai_job_for_retry_v1(IN p_job_id character varying, IN p_actor_type character varying) OWNER TO champion_db_user;
 
 --
--- Name: sp_save_mindmap_svg_v1(character varying, uuid, text); Type: PROCEDURE; Schema: public; Owner: champion_db_user
+-- Name: sp_save_stt_partial_result_v1(character varying, text, text, text, jsonb, jsonb); Type: PROCEDURE; Schema: public; Owner: champion_db_user
 --
 
-CREATE PROCEDURE public.sp_save_mindmap_svg_v1(IN p_job_id character varying, IN p_user_id uuid, IN p_svg text)
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-    v_owner UUID;
-BEGIN
-    SELECT requested_by INTO v_owner
-    FROM ai_job
-    WHERE job_id = p_job_id;
-
-    IF v_owner IS NULL THEN
-        RAISE EXCEPTION 'JOB_NOT_FOUND';
-    END IF;
-
-    IF v_owner != p_user_id THEN
-        RAISE EXCEPTION 'USER_MISMATCH';
-    END IF;
-
-    UPDATE stt_recording_result
-    SET mind_map_svg = p_svg,
-        updated_at   = NOW()
-    WHERE job_id = p_job_id;
-
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'NOT_FOUND';
-    END IF;
-END;
-$$;
-
-
-ALTER PROCEDURE public.sp_save_mindmap_svg_v1(IN p_job_id character varying, IN p_user_id uuid, IN p_svg text) OWNER TO champion_db_user;
-
---
--- Name: sp_save_stt_partial_result_v1(character varying, text, text, text, jsonb, jsonb, text); Type: PROCEDURE; Schema: public; Owner: champion_db_user
---
-
-CREATE PROCEDURE public.sp_save_stt_partial_result_v1(IN p_job_id character varying, IN p_transcription_text text DEFAULT NULL::text, IN p_summary_text text DEFAULT NULL::text, IN p_notes_text text DEFAULT NULL::text, IN p_notes_json jsonb DEFAULT NULL::jsonb, IN p_mind_map_json jsonb DEFAULT NULL::jsonb, IN p_mind_map_mermaid_code text DEFAULT NULL::text)
+CREATE PROCEDURE public.sp_save_stt_partial_result_v1(IN p_job_id character varying, IN p_transcription_text text DEFAULT NULL::text, IN p_summary_text text DEFAULT NULL::text, IN p_notes_text text DEFAULT NULL::text, IN p_notes_json jsonb DEFAULT NULL::jsonb, IN p_mind_map_json jsonb DEFAULT NULL::jsonb)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -560,7 +520,6 @@ BEGIN
         notes_text,
         notes_json,
         mind_map_json,
-        mind_map_mermaid_code,
         generated_at,
         created_at,
         updated_at
@@ -572,24 +531,22 @@ BEGIN
         p_notes_text,
         p_notes_json,
         p_mind_map_json,
-        p_mind_map_mermaid_code,
         NOW(),
         NOW(),
         NOW()
     )
     ON CONFLICT (recording_id) DO UPDATE SET
-        transcription_text     = COALESCE(EXCLUDED.transcription_text,     stt_recording_result.transcription_text),
-        summary_text           = COALESCE(EXCLUDED.summary_text,           stt_recording_result.summary_text),
-        notes_text              = COALESCE(EXCLUDED.notes_text,             stt_recording_result.notes_text),
-        notes_json              = COALESCE(EXCLUDED.notes_json,             stt_recording_result.notes_json),
-        mind_map_json           = COALESCE(EXCLUDED.mind_map_json,          stt_recording_result.mind_map_json),
-        mind_map_mermaid_code   = COALESCE(EXCLUDED.mind_map_mermaid_code,  stt_recording_result.mind_map_mermaid_code),
-        updated_at              = NOW();
+        transcription_text = COALESCE(EXCLUDED.transcription_text, stt_recording_result.transcription_text),
+        summary_text       = COALESCE(EXCLUDED.summary_text,       stt_recording_result.summary_text),
+        notes_text         = COALESCE(EXCLUDED.notes_text,         stt_recording_result.notes_text),
+        notes_json         = COALESCE(EXCLUDED.notes_json,         stt_recording_result.notes_json),
+        mind_map_json      = COALESCE(EXCLUDED.mind_map_json,      stt_recording_result.mind_map_json),
+        updated_at         = NOW();
 END;
 $$;
 
 
-ALTER PROCEDURE public.sp_save_stt_partial_result_v1(IN p_job_id character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb, IN p_mind_map_mermaid_code text) OWNER TO champion_db_user;
+ALTER PROCEDURE public.sp_save_stt_partial_result_v1(IN p_job_id character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb) OWNER TO champion_db_user;
 
 --
 -- Name: sp_update_ai_job_status_v1(character varying, character varying, character varying, text, character varying, text, boolean, jsonb, jsonb, character varying); Type: PROCEDURE; Schema: public; Owner: champion_db_user
@@ -886,8 +843,6 @@ CREATE TABLE public.stt_recording_result (
     generated_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    mind_map_mermaid_code text,
-    mind_map_svg text,
     CONSTRAINT chk_stt_recording_result_has_content CHECK (((transcription_text IS NOT NULL) OR (summary_text IS NOT NULL) OR (notes_text IS NOT NULL) OR (notes_json IS NOT NULL) OR (mind_map_json IS NOT NULL) OR (raw_result_json IS NOT NULL)))
 );
 
@@ -965,9 +920,7 @@ CREATE VIEW public.vw_stt_recording_result AS
     r.created_at AS recording_created_at,
     r.updated_at AS recording_updated_at,
     result.created_at AS result_created_at,
-    result.updated_at AS result_updated_at,
-    result.mind_map_mermaid_code,
-    result.mind_map_svg
+    result.updated_at AS result_updated_at
    FROM ((public.stt_recording r
      JOIN public.ai_job j ON (((j.job_id)::text = (r.job_id)::text)))
      LEFT JOIN public.stt_recording_result result ON (((result.recording_id = r.recording_id) AND ((result.job_id)::text = (r.job_id)::text))));
@@ -1337,5 +1290,5 @@ ALTER TABLE ONLY public.stt_recording
 -- PostgreSQL database dump complete
 --
 
-\unrestrict FZlacDUVTabc8ZfoTG05Udf08v989LggHiGUkcIyN5EVPWNuz80x7hqlv5MtPqC
+\unrestrict N7NIRUODcnYYYLGqTTfAbLADaVBf6coC0seoRNb6FocnB9e76V4Kt5eE4KTukJ7
 

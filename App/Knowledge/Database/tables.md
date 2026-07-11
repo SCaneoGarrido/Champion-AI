@@ -165,32 +165,13 @@ Resultado consolidado del procesamiento AI de un recording.
 | `summary_text` | TEXT | | Resumen generado |
 | `notes_text` | TEXT | | Notas en texto |
 | `notes_json` | JSONB | | Notas estructuradas |
-| `mind_map_json` | JSONB | | Mapa mental — fuente de verdad, generado por IA |
-| `mind_map_mermaid_code` | TEXT | Presentation Layer | Sintaxis Mermaid `mindmap` — proyección determinística de `mind_map_json`, no generada por IA |
-| `mind_map_svg` | TEXT | Presentation Layer | SVG renderizado y cacheado por el cliente — proyección de `mind_map_mermaid_code`, nunca fuente de verdad |
+| `mind_map_json` | JSONB | | Mapa mental |
 | `raw_result_json` | JSONB | | Respuesta cruda AI |
 | `generated_at` | TIMESTAMPTZ | | Cuando se generó |
 | `created_at` | TIMESTAMPTZ | DEFAULT now() | |
 | `updated_at` | TIMESTAMPTZ | DEFAULT now() | |
 
 **CHECK:** Al menos uno de los campos de contenido debe ser NOT NULL.
-
----
-
-## sec_user_device (Presentation Layer — push notifications)
-
-Dispositivos registrados de un usuario para recibir push notifications vía Expo Push Service. Ver `App/Knowledge/ADR/ADR-009-expo-push-service.md`.
-
-| Columna | Tipo | Restricción | Descripción |
-|---|---|---|---|
-| `device_id` | UUID | PK, DEFAULT `gen_random_uuid()` | Identificador único |
-| `user_id` | UUID | FK → sec_user (CASCADE DELETE), NOT NULL | Usuario dueño del dispositivo |
-| `expo_push_token` | TEXT | NOT NULL | Token de Expo Push Service |
-| `platform` | VARCHAR(10) | CHECK (`ios`\|`android`) | Plataforma del dispositivo |
-| `created_at` | TIMESTAMPTZ | DEFAULT now() | Fecha de primer registro |
-| `last_seen_at` | TIMESTAMPTZ | DEFAULT now() | Última vez que se refrescó el token |
-
-**Índice/restricción clave:** `UNIQUE (user_id, expo_push_token)` — el registro es un upsert vía `sp_register_device_token_v1`.
 
 ---
 

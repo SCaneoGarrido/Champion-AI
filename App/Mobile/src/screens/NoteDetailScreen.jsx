@@ -12,9 +12,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import styles from './NoteDetailScreen.styles';
 import { getJobResult } from '../utils/api';
 import { exportJobToPDF } from '../utils/pdfExport';
-import MarkdownRenderer from '../components/MarkdownRenderer';
-import MermaidRenderer from '../components/MermaidRenderer';
-import { normalizeMathText } from '../utils/normalizeMathText';
 
 // ── Secciones ──────────────────────────────────────────────────────────────────
 
@@ -25,26 +22,56 @@ const SECTIONS = [
   { key: 'mind_map',      label: 'Mapa Mental',    icon: 'account-tree',      bg: 'rgba(168,85,247,0.1)', color: '#9333ea' },
 ];
 
+// ── Mapa Mental ────────────────────────────────────────────────────────────────
+
+function MindMapNode({ node, depth = 0 }) {
+  if (!node?.name) return null;
+
+  const isRoot   = depth === 0;
+  const isChild  = depth === 1;
+
+  const nodeStyle   = isRoot ? styles.mindMapNode       : isChild ? styles.mindMapChildNode       : styles.mindMapGrandchildNode;
+  const bulletStyle = isRoot ? styles.mindMapBullet     : isChild ? styles.mindMapChildBullet     : styles.mindMapGrandchildBullet;
+  const labelStyle  = isRoot ? styles.mindMapLabel      : isChild ? styles.mindMapChildLabel      : styles.mindMapGrandchildLabel;
+  const bullet      = isRoot ? '◆'                     : isChild ? '▸'                           : '–';
+  const childrenStyle = isRoot ? styles.mindMapChildren : styles.mindMapGrandchildren;
+
+  return (
+    <View>
+      <View style={nodeStyle}>
+        <Text style={bulletStyle}>{bullet}</Text>
+        <Text style={labelStyle}>{node.name}</Text>
+      </View>
+      {node.children?.length > 0 && depth < 3 && (
+        <View style={childrenStyle}>
+          {node.children.map((child, i) => (
+            <MindMapNode key={i} node={child} depth={depth + 1} />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+function MindMapSection({ data }) {
+  if (!data?.nodes?.length) {
+    return <Text style={styles.emptyText}>Sin datos.</Text>;
+  }
+  return (
+    <View style={styles.mindMapRoot}>
+      {data.nodes.map((node, i) => (
+        <MindMapNode key={i} node={node} depth={0} />
+      ))}
+    </View>
+  );
+}
+
 // ── Sección colapsable ─────────────────────────────────────────────────────────
 
-// summary_text/notes_text ya son Markdown (ver App/procesamiento/prompts/summary.md, notes.md).
-// transcription_text es salida literal de STT — nunca pasa por GPT, así que ningún prompt
-// puede agregarle LaTeX. normalizeMathText() cubre el único caso en que igual conviene
-// renderizarla como Markdown: patrones matemáticos simples e inequívocos que puedan
-// aparecer literalmente en el texto transcripto. Ver ADR-010 en el Knowledge Vault.
-const MARKDOWN_SECTIONS = new Set(['summary', 'notes']);
-
-function CollapsibleSection({ section, result, jobId, expanded, onToggle }) {
+function CollapsibleSection({ section, result, expanded, onToggle }) {
   const renderBody = () => {
     if (section.key === 'mind_map') {
-      return (
-        <MermaidRenderer
-          jobId={jobId}
-          mindMapJson={result.mind_map_json}
-          mermaidCode={result.mind_map_mermaid_code}
-          svg={result.mind_map_svg}
-        />
-      );
+      return <MindMapSection data={result.mind_map_json} />;
     }
     const fieldMap = {
       transcription: result.transcription_text,
@@ -52,10 +79,9 @@ function CollapsibleSection({ section, result, jobId, expanded, onToggle }) {
       notes:         result.notes_text,
     };
     const text = fieldMap[section.key];
-    if (!text) return <Text style={styles.emptyText}>Sin datos.</Text>;
-    if (MARKDOWN_SECTIONS.has(section.key)) return <MarkdownRenderer content={text} />;
-    if (section.key === 'transcription') return <MarkdownRenderer content={normalizeMathText(text)} />;
-    return <Text style={styles.sectionText}>{text}</Text>;
+    return text
+      ? <Text style={styles.sectionText}>{text}</Text>
+      : <Text style={styles.emptyText}>Sin datos.</Text>;
   };
 
   return (
@@ -198,7 +224,6 @@ export default function NoteDetailScreen({ visible, job, onClose }) {
                 key={section.key}
                 section={section}
                 result={result}
-                jobId={job?.job_id}
                 expanded={expanded[section.key]}
                 onToggle={() => toggleSection(section.key)}
               />

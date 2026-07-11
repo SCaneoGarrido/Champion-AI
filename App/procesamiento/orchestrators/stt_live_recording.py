@@ -2,7 +2,6 @@ import logging
 
 import azure.durable_functions as df
 
-from shared.services.mermaid_converter import mind_map_json_to_mermaid
 from shared.utils.constants import ErrorCode, JobStatus, ProcessingStep
 
 logger = logging.getLogger(__name__)
@@ -132,15 +131,8 @@ def stt_live_recording(context: df.DurableOrchestrationContext):
     # ── 5. Mapa mental ───────────────────────────────────────────────────────────
     mind_map_json = partial.get("mind_map_json")
 
-    # Presentation Layer: proyección determinística de mind_map_json → sintaxis Mermaid.
-    # Código puro/sin I/O — corre directo en el orquestador, NO es una Activity ni una
-    # etapa de IA (ver R-AZURE-12 en App/rules/azure.md y ADR-008 en el Knowledge Vault).
-    # Es una transformación gratuita: no vale la pena cachearla por separado del árbol,
-    # se recalcula tanto si mind_map_json es nuevo como si se reutiliza de un reintento.
-
     if mind_map_json:
         logger.info("Job %s — mapa mental reutilizado (salto de paso)", job_id)
-        mind_map_mermaid_code = mind_map_json_to_mermaid(mind_map_json)
     else:
         yield context.call_activity("set_job_status", {
             "job_id": job_id,
@@ -158,14 +150,10 @@ def stt_live_recording(context: df.DurableOrchestrationContext):
                 "error_message": str(exc),
             })
             return
-
-        mind_map_mermaid_code = mind_map_json_to_mermaid(mind_map_json)
-
         try:
             yield context.call_activity("save_partial_result_activity", {
                 "job_id": job_id,
                 "mind_map_json": mind_map_json,
-                "mind_map_mermaid_code": mind_map_mermaid_code,
                 "step": ProcessingStep.MIND_MAP,
             })
         except Exception as exc:
@@ -188,7 +176,6 @@ def stt_live_recording(context: df.DurableOrchestrationContext):
                 "notes_text": notes_result["notes_text"],
                 "notes_json": notes_result["notes_json"],
                 "mind_map_json": mind_map_json,
-                "mind_map_mermaid_code": mind_map_mermaid_code,
             },
         )
     except Exception as exc:

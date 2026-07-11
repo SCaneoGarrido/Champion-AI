@@ -62,14 +62,6 @@ La arquitectura desacoplada (API + Queue + Function) permite agregar nuevas capa
 
 ---
 
-## Knowledge Pack — hacia dónde evoluciona el producto
-
-Champion AI está diseñando la evolución de su resultado de procesamiento hacia un objeto de conocimiento unificado: el **Knowledge Pack**. La transcripción, el resumen, las notas y el mapa mental de hoy son el primer subconjunto de un objeto que crecerá con topics, capítulos, flashcards, quiz y búsqueda semántica — convirtiendo cada audio procesado en un objeto de estudio navegable, no solo en un resultado de transcripción.
-
-Diseño funcional completo: `App/Docs/product/` (fuera de este vault — documenta el sistema objetivo, no el implementado). Ver especialmente `App/Docs/product/01-knowledge-pack-vision.md`.
-
----
-
 ## Equipo
 
 | Integrante | Rol |

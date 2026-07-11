@@ -42,37 +42,6 @@ def _parse_duration_secs(iso: str) -> float:
     return int(h) * 3600 + int(min_) * 60 + float(s)
 
 
-def _detect_audio_format(audio_bytes: bytes) -> str:
-    """Detecta el formato real del audio por magic bytes y codec interno."""
-    if len(audio_bytes) < 12:
-        return "unknown (too short)"
-    h = audio_bytes[:12]
-    if h[4:8] == b"ftyp":
-        brand = h[8:12]
-        # Scan first 256 KB for codec atom
-        sample = audio_bytes[:262144]
-        if b"alac" in sample:
-            codec = "ALAC"
-        elif b"mp4a" in sample:
-            codec = "AAC/mp4a"
-        else:
-            codec = "codec-unknown"
-        return f"mp4/m4a (brand={brand} codec={codec})"
-    if h[:4] == b"caff":
-        return "caf (Apple Core Audio)"
-    if h[:4] == b"RIFF" and h[8:12] == b"WAVE":
-        return "wav"
-    if h[:3] == b"ID3" or (h[0] == 0xFF and h[1] & 0xE0 == 0xE0):
-        return "mp3"
-    if h[:4] == b"fLaC":
-        return "flac"
-    if h[:4] == b"OggS":
-        return "ogg"
-    if h[:4] == b"\x1aE\xdf\xa3":
-        return "webm/mkv"
-    return f"unknown (hex={h[:8].hex()})"
-
-
 def fast_transcribe(audio_bytes: bytes, audio_format: str, language_locale: str) -> str:
     """
     Transcribe audio usando Azure AI Speech Fast Transcription REST API.
@@ -85,17 +54,14 @@ def fast_transcribe(audio_bytes: bytes, audio_format: str, language_locale: str)
     Lanza RuntimeError en caso de error HTTP, timeout o respuesta vacía.
     """
     content_type = _CONTENT_TYPES.get(audio_format.lower(), "application/octet-stream")
-    # channels omitido: la Fast Transcription API activa separación por canal de speaker
-    # cuando channels está presente, lo que rompe grabaciones de micrófono estándar (mono/stereo mixto).
     definition = json.dumps(
-        {"locales": [language_locale], "profanityFilterMode": "None"},
+        {"locales": [language_locale], "profanityFilterMode": "None", "channels": [0]},
         ensure_ascii=False,
     )
 
-    detected = _detect_audio_format(audio_bytes)
     logger.info(
-        "Fast Transcription iniciada — idioma: %s | formato declarado: %s | formato real: %s | %.2f MB",
-        language_locale, audio_format, detected, len(audio_bytes) / 1_048_576,
+        "Fast Transcription iniciada — idioma: %s | formato: %s | %.2f MB",
+        language_locale, audio_format, len(audio_bytes) / 1_048_576,
     )
     t0 = time.monotonic()
 

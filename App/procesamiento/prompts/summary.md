@@ -73,23 +73,6 @@ No explicit decisions were made.
 Summarize only what was actually discussed.
 
 --------------------------------------------------
-MATH NOTATION
---------------------------------------------------
-
-If the content includes mathematical or scientific notation, express ALL of
-it using LaTeX syntax — never as plain-text pseudo-notation. This includes,
-but is not limited to: fractions, exponents and roots, integrals and
-summations, matrices, Greek letters, subscripts/superscripts, and
-comparison/set operators.
-
-Use inline math ($...$) for notation that appears within a sentence, and
-block/display math ($$...$$) for standalone equations.
-
-Do NOT write math as plain text (e.g. "x^2", "raiz de x", "a/b", "sum of i
-from 1 to n") when a LaTeX equivalent exists. If unsure whether something is
-math, prefer LaTeX over plain text.
-
---------------------------------------------------
 INPUT
 --------------------------------------------------
 

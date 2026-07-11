@@ -33,10 +33,6 @@ La app móvil es la interfaz de usuario del sistema. Su única responsabilidad e
 
 El estado de la aplicación debe reflejar el estado del servidor (los jobs son la fuente de verdad en PostgreSQL). No existe estado local de procesamiento independiente del servidor.
 
-**Dependencias de la Presentation Layer:** `react-native-webview`, `react-native-svg`, `react-native-markdown-display`, `markdown-it` + `markdown-it-multimd-table` + `markdown-it-task-lists` + `markdown-it-katex`, `katex` (el cálculo LaTeX→HTML corre en JS puro, sin WebView), `mermaid` (solo su bundle `dist/mermaid.min.js`, embebido — corre dentro del WebView, no en el JS thread de RN), `expo-notifications`. Todas verificadas compatibles con Expo Go (sin requerir dev client) — ver riesgos en el plan de implementación si esto cambia.
-
-**Assets generados (no editar a mano):** `src/assets/katexEmbedded.js` (~360 KB, CSS+fuentes woff2 en base64) y `src/assets/mermaidEmbedded.js` (~3.5 MB, bundle IIFE completo de mermaid.js) — regenerables con `scripts/generate-katex-css.js` y `scripts/generate-mermaid-js.js` cuando se actualicen esas dependencias. El tamaño de `mermaidEmbedded.js` es significativamente mayor a lo estimado originalmente en ADR-008 porque el bundle de mermaid incluye todos los tipos de diagrama (solo se usa `mindmap`) — ver riesgo correspondiente en el ADR.
-
 ## Flujo completo que la app orquesta
 
 ```
@@ -110,27 +106,7 @@ La app puede tener un interceptor HTTP único para manejar errores por `error.co
 6. GET /jobs/{job_id}/result → mostrar resultados
 ```
 
-`NotesScreen.jsx` hace polling activo (cada 5s) mientras hay jobs `queued`/`processing` y la pantalla está en foco (`useFocusEffect` + `setInterval`), y se detiene automáticamente cuando no hay jobs en vuelo o la pantalla pierde el foco. `useAppForegroundRefresh` complementa esto: al volver del background (`AppState`), fuerza un refresh de jobs sin importar en qué pantalla esté el usuario. No existe WebSocket. Push notifications (Expo Push Service) complementan el polling avisando cuando un job termina/falla, pero el polling sigue siendo la fuente de verdad del estado — ver `App/Mobile/src/utils/pushNotifications.js`.
-
-## Presentation Layer — renderizado de resultados
-
-El resultado de un job (`summary_text`, `notes_text`, `mind_map_json`/`mind_map_mermaid_code`/`mind_map_svg`) ya no se muestra como texto plano. Componentes nuevos en `App/Mobile/src/components/`:
-
-| Componente | Responsabilidad |
-|---|---|
-| `MarkdownRenderer.jsx` | Envuelve `react-native-markdown-display` (con plugins `markdown-it-multimd-table` para tablas y `markdown-it-task-lists` para checklists) con los estilos del tema (`useTheme()`). Usado para `summary_text`/`notes_text`, y para `transcription_text` tras pasar por `normalizeMathText()` (ver abajo) — ya no es `<Text>` plano. Tiene una regla `fence` que detecta ` ```mermaid ` (`node.info === 'mermaid'`) como punto de extensión preparado — hoy delega al renderer de código por defecto, sin implementar el diagrama (ver [[ADR-010-latex-rendering-fixes-and-block-renderer-architecture]]). |
-| `LatexView.jsx` | `katex.renderToString()` no necesita DOM — corre directo en el JS thread de RN, produce HTML+CSS. El WebView solo se usa para *mostrar* ese HTML ya calculado (layout CSS real de fracciones/raíces/matrices, imposible con flexbox/Text). El CSS de KaTeX con las fuentes woff2 embebidas como data URI vive en `src/assets/katexEmbedded.js` (generado por `scripts/generate-katex-css.js`, no se edita a mano) — HTML 100% autocontenido, offline. `MarkdownRenderer` delega a este componente los tokens `math_inline`/`math_block` (`markdown-it-katex`) en vez de intentar renderizar HTML arbitrario, que RN no soporta. |
-| `MermaidRenderer.jsx` | Si el job ya tiene `mind_map_svg` cacheado, renderiza directo con `SvgXml` (`react-native-svg`), sin WebView. Si no, monta un WebView **invisible** (a diferencia de KaTeX, mermaid.js sí necesita un DOM real para calcular layout — no se puede precomputar en el JS thread) que corre `mermaid.render()` una sola vez, recibe el SVG por `postMessage`, lo muestra con `SvgXml` y lo sube vía `PATCH /AIServices/Speechv2/jobs/{job_id}/mindmap-svg` para cachearlo. Si `mermaid.render()` falla o el job es anterior a esta capa (sin `mind_map_mermaid_code`), cae a `MindMapListView.jsx` (el renderer de lista original, extraído a componente propio) — nunca debe quedar la pantalla en blanco. |
-
-**Regla:** el WebView es el único mecanismo de renderizado compartido para Mermaid y LaTeX — no se agregan librerías nativas adicionales por capacidad. Nunca se persiste una imagen como fuente de verdad: el SVG cacheado es siempre una proyección de un código (Mermaid) o texto (Markdown/LaTeX) que sigue siendo la fuente real. Ver `App/rules/mobile-rendering.md`.
-
-**`utils/normalizeMathText.js`:** `transcription_text` es salida literal de Fast Transcription — nunca pasa por GPT, así que ningún cambio de prompt puede agregarle LaTeX. Esta función detecta, de forma determinística y deliberadamente acotada (para minimizar falsos positivos sobre habla transcripta normal), un conjunto pequeño de patrones matemáticos inequívocos (ej. exponentes simples `x^2`) y los envuelve en `$...$` antes de pasar el texto por `MarkdownRenderer`. Ver [[ADR-010-latex-rendering-fixes-and-block-renderer-architecture]] para el diseño completo y por qué se mantiene acotado a propósito.
-
-`pdfExport.js` reutiliza el mismo motor `markdown-it` (con los mismos plugins) para construir el HTML del PDF — no hay dos implementaciones de Markdown divergentes entre pantalla y PDF. El math en PDF usa `markdown-it-katex` directo (HTML+CSS estático, sin WebView, ya que `expo-print` renderiza HTML server-side-in-client).
-
-## Push notifications
-
-`App/Mobile/src/utils/pushNotifications.js` — `registerForPushNotificationsAsync()` pide permisos y obtiene el Expo push token via `expo-notifications`, y lo registra en `POST /AIServices/Devices/register` tras el login. El toggle "Notificaciones" de `SettingsScreen.jsx` controla si el dispositivo se registra/da de baja. Broker: Expo Push Service (no Firebase/APNs directos, no Azure Notification Hub) — ver `App/Knowledge/ADR/ADR-009-expo-push-service.md`.
+El intervalo de polling no está documentado en la arquitectura. No existe WebSocket ni push notification en el sistema actual.
 
 ## Upload directo a Azure Blob
 

@@ -16,13 +16,6 @@ tags: #roadmap #pending #future
 | STT — Smart retry (resume desde paso fallido) | Implementado |
 | STT — Transcript Cleanup (GPT-5) | **Planificado — próxima implementación** |
 | STT — Topic Extraction | **Roadmap** |
-| Presentation Layer — Markdown rendering | Implementado |
-| Presentation Layer — Soporte matemático LaTeX | Implementado — **bug de superposición no corregido, visualización mobile en revisión (ver sección abajo)** |
-| Presentation Layer — Mind maps reales (Mermaid → SVG) | Implementado |
-| Presentation Layer — Resultado enriquecido (UI de estudio) | **Pendiente — no iniciado** |
-| Presentation Layer — Background sync hardening (`AppState`) | **Pendiente — no iniciado** |
-| Presentation Layer — Mermaid embebido en Markdown | **Roadmap — solo arquitectura preparada (seam en `MarkdownRenderer.jsx`), sin implementar** |
-| Push notifications (Expo Push Service) | **Pendiente — no iniciado** (infraestructura diseñada en ADR-009, sin código) |
 | Text to Speech (TTS) | Sin documentar |
 | Gestión de Archivos | Sin documentar |
 
@@ -30,7 +23,7 @@ tags: #roadmap #pending #future
 
 ## Pipeline inteligente — evolución
 
-Ver [[pipeline-roadmap]] para el detalle técnico de la evolución del pipeline, y `App/Docs/product/README.md` para el diseño funcional completo del **Knowledge Pack** — el objeto de conocimiento unificado hacia el que evoluciona el resultado de STT (transcripción → conocimiento estructurado y navegable: topics, capítulos, flashcards, quiz, búsqueda semántica).
+Ver [[pipeline-roadmap]] para el detalle técnico completo de la evolución del pipeline.
 
 Resumen:
 
@@ -107,42 +100,16 @@ Requiere diseñar:
 
 ---
 
-## Presentation Layer — estado detallado (sesión 2026-07-02, pausa de trabajo)
-
-Ver `App/Knowledge/ADR/ADR-008-client-side-rendering.md` (decisión original) y `App/Knowledge/ADR/ADR-010-latex-rendering-fixes-and-block-renderer-architecture.md` (fix de superposición + arquitectura de bloques). Capa de renderizado sobre resultados ya generados — no agrega etapas de IA, salvo la excepción puntual de formato matemático en `summary.md`/`notes.md`.
-
-### Hecho
-
-- **Markdown rendering** (`MarkdownRenderer.jsx`) — headers, listas, tablas, checklists, citas, código, links, negrita/cursiva, separadores. Usado en `summary_text`/`notes_text` y (con `normalizeMathText()`) en `transcription_text`.
-- **LaTeX** (`LatexView.jsx`) — KaTeX vía WebView, cálculo en JS puro. Bug de superposición de ecuaciones corregido (causa raíz: medición de tamaño síncrona antes de que cargaran las fuentes web — ver ADR-010). Scroll horizontal automático para ecuaciones en modo bloque que exceden el ancho disponible.
-- **Mind maps reales** (`MermaidRenderer.jsx`) — conversión determinística `mind_map_json` → Mermaid (`mermaid_converter.py`, no toca `mind_map.md`), render a SVG vía WebView, cacheado server-side (`PATCH .../mindmap-svg`), fallback a lista (`MindMapListView.jsx`) para jobs sin este campo.
-- `normalizeMathText.js` — normalizador acotado (exponentes ASCII/unicode) para matemática simple en `transcription_text`.
-- Seam preparado (no implementado) para Mermaid embebido en Markdown — regla `fence` en `MarkdownRenderer.jsx` que detecta ` ```mermaid ` y por ahora delega al renderer de código por defecto.
-
-### ⚠️ Pendiente de verificar — reportado como sin resolver del todo
-
-**La visualización en dispositivos móviles de contenido matemático sigue sin ser buena**, según el último reporte del usuario, incluso después del fix de superposición de ADR-010. No se confirmó en dispositivo real que el fix haya resuelto el problema por completo — quedó pendiente de prueba al pausar la sesión. Antes de seguir con features nuevas, **retomar acá**:
-1. Verificar en dispositivo real (no solo análisis estático) si persiste algún problema de layout/legibilidad con LaTeX tras el fix de `LatexView.jsx`.
-2. Si persiste, revisar específicamente: tamaño de fuente en pantallas de alta densidad, comportamiento del `ScrollView` horizontal en Android vs iOS, y si el `onLayout` del contenedor está midiendo el ancho real disponible (ver limitación conocida para ecuaciones inline, documentada en ADR-010).
-
-### No iniciado
-
-- **Feature 6 — Resultado enriquecido (UI de estudio)**: reemplazar el acordeón de `NoteDetailScreen.jsx` por un selector tipo segmented-control. No se empezó.
-- **Feature 5 — Background sync hardening**: hook `useAppForegroundRefresh` (`AppState`) para refrescar jobs al volver del background sin importar la pantalla activa. No se empezó.
-- **Feature 4 — Push notifications**: tabla `sec_user_device`, endpoint `POST /AIServices/Devices/register`, `push_service.py`, registro en `SettingsScreen.jsx`. Diseño completo en ADR-009, cero código todavía.
-- **Mermaid embebido en Markdown**: generalizar `MermaidRenderer.jsx` para resolver caché por bloque dentro de un documento arbitrario y activar el seam ya preparado.
-
 ## Mejoras arquitectónicas identificadas
 
-### Notificaciones push — pendiente (complementa polling, no lo reemplaza)
+### Notificaciones push (reemplaza polling)
 
-El cliente sigue haciendo polling como fuente de verdad del estado. Se agrega infraestructura de push notifications (Expo Push Service — ver `App/Knowledge/ADR/ADR-009-expo-push-service.md`) como complemento de UX: avisa cuando un job termina o falla, sin eliminar el polling.
+El cliente actualmente hace polling cada N segundos.
+Una mejora natural sería notificaciones push (FCM/APNs) cuando el job completa.
 
 Beneficios:
-- Reduce la necesidad de que el usuario revise manualmente el estado
-- Reduce latencia percibida entre finalización y notificación al usuario
-
-Infraestructura diseñada (no implementada): tabla `sec_user_device`, endpoint `POST /AIServices/Devices/register`, envío desde `push_service.py` en `completion_activity.py` (éxito y fallo).
+- Elimina la carga de polling sobre la API
+- Reduce latencia entre finalización y notificación al usuario
 
 ### Soporte multi-idioma
 

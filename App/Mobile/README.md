@@ -39,7 +39,7 @@ npm install
 npm start
 ```
 
-La API debe quedar en **http://localhost:5000** (o el `PORT` definido en `App/.env`, el `.env` global — no `App/API/.env`).
+La API debe quedar en **http://localhost:5051** (o el puerto definido en su `.env`).
 
 ### 2. Levantar Expo
 
@@ -69,7 +69,7 @@ En el móvil, `localhost` es el propio dispositivo. Para que la app se conecte a
 1. En el PC ejecuta `ipconfig` (Windows) o `ifconfig` (Mac/Linux) y anota la **IPv4** (ej. `192.168.1.10`).
 2. En la carpeta **App/Mobile** crea un archivo **`.env`** con:
    ```env
-   EXPO_PUBLIC_API_URL=http://TU_IP:5000
+   EXPO_PUBLIC_API_URL=http://TU_IP:5051
    ```
    (reemplaza `TU_IP` por tu IPv4).
 3. Reinicia Expo (`Ctrl+C` y luego `npx expo start`) y vuelve a escanear el QR.
@@ -136,4 +136,4 @@ Servicios de voz (STT), con token:
 - **POST** `/AIServices/Speechv2/init`
 - **POST** `/AIServices/Speechv2/SpeechToTextv2`
 
-El backend está en **App/API** (Express, puerto 5000 — `PORT` en `App/.env`, con 5000 como default en el código si no está definido).
+El backend está en **App/API** (Express, puerto 5051 por defecto).
