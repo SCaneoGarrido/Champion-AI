@@ -1,8 +1,8 @@
-﻿--
+--
 -- PostgreSQL database dump
 --
 
-\restrict N7NIRUODcnYYYLGqTTfAbLADaVBf6coC0seoRNb6FocnB9e76V4Kt5eE4KTukJ7
+\restrict twV2dWaQPzNla7CdoFNbnNb72x8xWsorB7Xu1GfSt7Xyr37J97MU9yqe5Ww8Ztx
 
 -- Dumped from database version 17.10
 -- Dumped by pg_dump version 17.10
@@ -209,7 +209,7 @@ BEGIN
     FROM stt_recording
     WHERE job_id = p_job_id;
 
-    -- Validar si existe la grabaci├│n antes de continuar
+    -- Validar si existe la grabación antes de continuar
     IF v_recording_id IS NULL THEN
         RAISE EXCEPTION 'Recording no encontrado para job %', p_job_id;
     END IF;
@@ -440,7 +440,7 @@ BEGIN
         RAISE EXCEPTION 'JOB_NOT_RETRYABLE';
     END IF;
 
-    -- 2. Contar cu├íntas veces ha fallado (= n├║mero de reintentos previos)
+    -- 2. Contar cuántas veces ha fallado (= número de reintentos previos)
     SELECT COUNT(*) INTO v_failed_count
     FROM ai_job_status_history
     WHERE job_id = p_job_id
@@ -1290,5 +1290,5 @@ ALTER TABLE ONLY public.stt_recording
 -- PostgreSQL database dump complete
 --
 
-\unrestrict N7NIRUODcnYYYLGqTTfAbLADaVBf6coC0seoRNb6FocnB9e76V4Kt5eE4KTukJ7
+\unrestrict twV2dWaQPzNla7CdoFNbnNb72x8xWsorB7Xu1GfSt7Xyr37J97MU9yqe5Ww8Ztx
 
