@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  Modal,
   View,
   Text,
   ScrollView,
@@ -116,22 +115,23 @@ function CollapsibleSection({ section, result, expanded, onToggle }) {
 
 // ── Pantalla principal ─────────────────────────────────────────────────────────
 
-export default function NoteDetailScreen({ visible, job, onClose }) {
+export default function NoteDetailScreen({ navigation, route }) {
+  const { jobId, blobName } = route.params;
+
   const [result, setResult]   = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
   const [expanded, setExpanded] = useState({ transcription: true, summary: false, notes: false, mind_map: false });
   const [downloading, setDownloading] = useState(false);
 
-  const jobName = job?.blob_name ?? (job ? `Apunte ${job.job_id.slice(0, 8)}…` : '');
+  const jobName = result?.blob_name ?? blobName ?? `Apunte ${jobId.slice(0, 8)}…`;
 
   const fetchResult = useCallback(async () => {
-    if (!job) return;
     setLoading(true);
     setError('');
     setResult(null);
     try {
-      const data = await getJobResult(job.job_id);
+      const data = await getJobResult(jobId);
       setResult(data);
     } catch (e) {
       const msg = e.message ?? '';
@@ -143,11 +143,11 @@ export default function NoteDetailScreen({ visible, job, onClose }) {
     } finally {
       setLoading(false);
     }
-  }, [job]);
+  }, [jobId]);
 
   useEffect(() => {
-    if (visible && job) fetchResult();
-  }, [visible, job]);
+    fetchResult();
+  }, [fetchResult]);
 
   const toggleSection = (key) =>
     setExpanded(prev => ({ ...prev, [key]: !prev[key] }));
@@ -165,73 +165,65 @@ export default function NoteDetailScreen({ visible, job, onClose }) {
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-      style={styles.modal}
-    >
-      <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={styles.screen}>
 
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.headerBtn} onPress={onClose} activeOpacity={0.7}>
-            <MaterialIcons name="arrow-back" size={20} color="#1a1a1a" />
-          </TouchableOpacity>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+          <MaterialIcons name="arrow-back" size={20} color="#1a1a1a" />
+        </TouchableOpacity>
 
-          <Text style={styles.headerTitle} numberOfLines={1}>{jobName}</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>{jobName}</Text>
 
-          <TouchableOpacity
-            style={[styles.headerBtn, downloading && { opacity: 0.5 }]}
-            onPress={handleDownload}
-            disabled={!result || downloading}
-            activeOpacity={0.7}
-          >
-            {downloading
-              ? <ActivityIndicator size="small" color="#c9920a" />
-              : <MaterialIcons name="picture-as-pdf" size={20} color="#c9920a" />
-            }
+        <TouchableOpacity
+          style={[styles.headerBtn, downloading && { opacity: 0.5 }]}
+          onPress={handleDownload}
+          disabled={!result || downloading}
+          activeOpacity={0.7}
+        >
+          {downloading
+            ? <ActivityIndicator size="small" color="#c9920a" />
+            : <MaterialIcons name="picture-as-pdf" size={20} color="#c9920a" />
+          }
+        </TouchableOpacity>
+      </View>
+
+      {/* Cuerpo */}
+      {loading && (
+        <View style={styles.centered}>
+          <ActivityIndicator color="#c9920a" size="large" />
+          <Text style={styles.loadingText}>Cargando apunte…</Text>
+        </View>
+      )}
+
+      {!loading && error ? (
+        <View style={styles.centered}>
+          <MaterialIcons name="error-outline" size={36} color="#ef4444" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={fetchResult}>
+            <Text style={styles.retryText}>Reintentar</Text>
           </TouchableOpacity>
         </View>
+      ) : null}
 
-        {/* Cuerpo */}
-        {loading && (
-          <View style={styles.centered}>
-            <ActivityIndicator color="#c9920a" size="large" />
-            <Text style={styles.loadingText}>Cargando apunte…</Text>
-          </View>
-        )}
+      {!loading && !error && result && (
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {SECTIONS.map(section => (
+            <CollapsibleSection
+              key={section.key}
+              section={section}
+              result={result}
+              expanded={expanded[section.key]}
+              onToggle={() => toggleSection(section.key)}
+            />
+          ))}
+        </ScrollView>
+      )}
 
-        {!loading && error ? (
-          <View style={styles.centered}>
-            <MaterialIcons name="error-outline" size={36} color="#ef4444" />
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity style={styles.retryBtn} onPress={fetchResult}>
-              <Text style={styles.retryText}>Reintentar</Text>
-            </TouchableOpacity>
-          </View>
-        ) : null}
-
-        {!loading && !error && result && (
-          <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {SECTIONS.map(section => (
-              <CollapsibleSection
-                key={section.key}
-                section={section}
-                result={result}
-                expanded={expanded[section.key]}
-                onToggle={() => toggleSection(section.key)}
-              />
-            ))}
-          </ScrollView>
-        )}
-
-      </SafeAreaView>
-    </Modal>
+    </SafeAreaView>
   );
 }

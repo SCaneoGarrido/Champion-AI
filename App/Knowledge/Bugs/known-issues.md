@@ -74,28 +74,37 @@ Profundidad máxima del árbol: 4 niveles.
 
 ---
 
-## Issues activos
+## Issues retirados del roadmap activo
 
-### ISSUE-004: Text to Speech (TTS) — Sin contrato ni implementación documentada
+### ~~ISSUE-005: Gestión de Archivos — Sin documentación técnica~~ ⛔ RETIRADO (2026-07-13)
 
-El README menciona "Conversión de texto a voz" como capacidad del sistema.
-No existe:
-- Endpoint HTTP documentado
-- Schema de BD para TTS
-- Azure Function o queue para TTS
-- Cualquier archivo de arquitectura sobre TTS
+El README y `vision.md` (retirado) mencionaban "Gestión de Archivos" (subir audios, textos y documentos como archivos sueltos) como capacidad del sistema.
 
-Ver [[text-to-speech]].
+**Resolución:** con la reorganización del roadmap hacia el Knowledge Workspace, esta capacidad genérica **se retira del roadmap activo**. No forma parte de ninguna versión V1–V5 (ver [[ROADMAP]]). El concepto se reemplaza por **Knowledge Packs**: el sistema no gestiona archivos sueltos, genera y organiza unidades de conocimiento a partir del contenido procesado. Si en el futuro se requiere gestión de archivos genérica, debe evaluarse como una versión nueva fuera de V1–V5, no reincorporarse silenciosamente.
+
+Ver [[PROJECT_VISION]].
 
 ---
 
-### ISSUE-005: Gestión de Archivos — Sin documentación técnica
+## Issues activos
 
-El README menciona "Gestión de Archivos" (audios, textos, documentos).
-No existe documentación de:
-- Endpoints para CRUD de archivos
-- Tabla de BD para gestión de archivos
-- Diferencia entre "archivo" y "recording" en el modelo
+### ISSUE-004: Text to Speech (TTS) — Reencuadrado bajo EPIC V4
+
+El README mencionaba "Conversión de texto a voz" como capacidad genérica del sistema, sin contrato ni implementación.
+
+**Estado actual:** TTS deja de ser una feature genérica sin alcance definido. Vive ahora, con alcance acotado, dentro de **EPIC V4 — Intelligent Audio Learning** (ver [[EPICS]]): narración de `summary_text` y `notes_text` ya generados por el Workspace, con selección de voz, SSML y caché — no conversión de texto arbitrario a voz.
+
+Sigue pendiente de implementación. Ver [[text-to-speech]] y [[EPICS#EPIC V4 — Intelligent Audio Learning]].
+
+---
+
+### ISSUE-012: Riesgo de regresión visual al reintroducir Mermaid en el Knowledge Workspace
+
+La Presentation Layer (Markdown, LaTeX, Mermaid mind maps) se implementó de punta a punta y se **revirtió por completo** (código + BD) el 2026-07-11 por bugs visuales persistentes en mobile.
+
+El nuevo roadmap (EPIC V1 — Knowledge Workspace, ver [[EPICS]]) reintroduce el renderizado Mermaid del mapa mental, esta vez como un componente encapsulado dentro del Workspace en lugar de una vista Markdown standalone. El riesgo de repetir los mismos bugs visuales sigue vigente si el componente no se prueba de forma aislada antes de integrarlo.
+
+**Mitigación documentada:** ver criterios de aceptación y riesgos del EPIC V1 en [[EPICS]], y [[ADR-008-knowledge-workspace]].
 
 ---
 
@@ -143,11 +152,12 @@ No está documentado el límite de requests por minuto o por hora de la API de F
 | ISSUE-001 | Contradicción | ✅ Resuelto | — |
 | ISSUE-002 | Pendiente de impl | ✅ Resuelto | — |
 | ISSUE-003 | Pendiente de impl | ✅ Resuelto | — |
-| ISSUE-004 | Feature sin doc | Activo | Medio |
-| ISSUE-005 | Feature sin doc | Activo | Medio |
+| ISSUE-004 | Feature reencuadrada (EPIC V4) | Activo — roadmapeado | Medio |
+| ISSUE-005 | Feature retirada del roadmap | ⛔ Retirado | — |
 | ISSUE-006 | Vacío de info | ✅ Parcialmente resuelto | — |
 | ISSUE-007 | Vacío de info | ✅ Resuelto | — |
 | ISSUE-008 | Vacío de info | Activo | Bajo |
 | ISSUE-009 | Vacío de info | Activo | Bajo |
 | ISSUE-010 | Vacío de info | Activo | Bajo |
 | ISSUE-011 | Vacío de info | Activo | Informativo |
+| ISSUE-012 | Riesgo de regresión (Mermaid en Workspace) | Activo | Alto |

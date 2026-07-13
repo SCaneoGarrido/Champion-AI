@@ -219,6 +219,66 @@ const speechcontroller = {
             return sendError(res, 500, 'INTERNAL_ERROR', 'Error interno del servidor.');
         }
     },
+
+    deleteJob: async (req, res) => {
+        try {
+            const userId = req.userId;
+            const { job_id } = req.params;
+
+            const result = await job_repository.softDeleteJob(job_id, userId);
+            if (!result.ok) {
+                if (result.code === 'JOB_NOT_FOUND') {
+                    return sendError(res, 404, 'JOB_NOT_FOUND', 'Job no encontrado.');
+                }
+                return sendError(res, 500, result.code, 'No se pudo eliminar el Knowledge Pack.');
+            }
+
+            return sendSuccess(res, 200, { job_id, deleted: true });
+        } catch (error) {
+            logger.error('[speech.controller][deleteJob] Error: ' + error.message);
+            return sendError(res, 500, 'INTERNAL_ERROR', 'Error interno del servidor.');
+        }
+    },
+
+    reprocessJobStep: async (req, res) => {
+        try {
+            const userId = req.userId;
+            const { job_id } = req.params;
+            const step = req.body?.step;
+            const customInstructions = req.body?.custom_instructions?.trim() || null;
+
+            if (!['summary', 'notes', 'mind_map'].includes(step)) {
+                return sendError(res, 400, 'INVALID_STEP', 'El step debe ser summary, notes o mind_map.');
+            }
+
+            const result = await job_repository.requestStepReprocess(job_id, userId, step, customInstructions);
+            if (!result.ok) {
+                if (result.code === 'JOB_NOT_FOUND') {
+                    return sendError(res, 404, 'JOB_NOT_FOUND', 'Job no encontrado.');
+                }
+                if (result.code === 'JOB_NOT_COMPLETED') {
+                    return sendError(res, 409, 'JOB_NOT_COMPLETED', 'Solo se puede reprocesar un Knowledge Pack ya completado.');
+                }
+                if (result.code === 'INVALID_STEP') {
+                    return sendError(res, 400, 'INVALID_STEP', 'El step debe ser summary, notes o mind_map.');
+                }
+                return sendError(res, 500, result.code, 'No se pudo solicitar el reprocesamiento.');
+            }
+
+            await azure_storage_service.uploadToQueue({ job_id });
+
+            return sendSuccess(res, 202, {
+                job_id,
+                step,
+                status: 'queued',
+                polling_url: `/AIServices/Speechv2/jobs/${job_id}/status`,
+                requested_at: new Date().toISOString(),
+            });
+        } catch (error) {
+            logger.error('[speech.controller][reprocessJobStep] Error: ' + error.message);
+            return sendError(res, 500, 'INTERNAL_ERROR', 'Error interno del servidor.');
+        }
+    },
 };
 
 module.exports = speechcontroller;

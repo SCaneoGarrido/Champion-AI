@@ -1,7 +1,6 @@
 import { StyleSheet } from 'react-native';
 
 const styles = StyleSheet.create({
-  modal: { flex: 1 },
   screen: {
     flex: 1,
     backgroundColor: '#fcf9f8',

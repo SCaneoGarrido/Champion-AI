@@ -14,11 +14,12 @@ import { mergeNotesTheme } from '../theme/screenThemeMerges';
 import AppTopBar from '../components/AppTopBar';
 import ToastBanner from '../components/ToastBanner';
 import JobOptionsModal from '../components/JobOptionsModal';
-import NoteDetailScreen from './NoteDetailScreen';
+import EditJobModal from '../components/EditJobModal';
+import ReprocessStepModal from '../components/ReprocessStepModal';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { useToast } from '../hooks/useToast';
 import { getSession } from '../utils/session';
-import { getRecentJobs, getUserStats, getJobResult, retryJob } from '../utils/api';
-import { exportJobToPDF } from '../utils/pdfExport';
+import { getRecentJobs, getUserStats, retryJob, deleteJob } from '../utils/api';
 
 const PAGE_SIZE = 5;
 
@@ -82,9 +83,12 @@ export default function NotesScreen({ navigation }) {
 
   const [selectedJob, setSelectedJob] = useState(null);
   const [showOptions, setShowOptions] = useState(false);
-  const [showDetail, setShowDetail] = useState(false);
-  const [downloading, setDownloading] = useState(false);
   const [retrying, setRetrying] = useState(false);
+
+  const [showEdit, setShowEdit] = useState(false);
+  const [reprocessStep, setReprocessStep] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -105,7 +109,25 @@ export default function NotesScreen({ navigation }) {
     }
   }, []);
 
+  // Refresco silencioso (sin spinner de pantalla completa) — mantiene el
+  // estado/step de cada job al día mientras el usuario se queda mirando la
+  // lista, sin esperar a que vuelva a enfocar la pantalla.
+  const refreshSilently = useCallback(async () => {
+    try {
+      const [j, st] = await Promise.all([getRecentJobs(50), getUserStats()]);
+      setJobs(j);
+      setStats(st);
+    } catch {
+      // silencioso — el próximo tick reintenta, no se pisa el error visible (si hay)
+    }
+  }, []);
+
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  useFocusEffect(useCallback(() => {
+    const intervalId = setInterval(refreshSilently, 8000);
+    return () => clearInterval(intervalId);
+  }, [refreshSilently]));
 
   const openOptions = (job) => {
     setSelectedJob(job);
@@ -142,24 +164,69 @@ export default function NotesScreen({ navigation }) {
 
   const handleView = () => {
     setShowOptions(false);
-    setShowDetail(true);
+    navigation.navigate('KnowledgePackViewer', {
+      jobId: selectedJob.job_id,
+      blobName: selectedJob.blob_name,
+    });
+    setSelectedJob(null);
   };
 
-  const handleDownload = async () => {
+  const handleEdit = () => {
+    setShowOptions(false);
+    setShowEdit(true);
+  };
+
+  const closeEdit = () => {
+    setShowEdit(false);
+    setSelectedJob(null);
+  };
+
+  const handleRenamed = (newName) => {
+    setJobs(prev => prev.map(j => (j.job_id === selectedJob?.job_id ? { ...j, blob_name: newName } : j)));
+    setSelectedJob(prev => (prev ? { ...prev, blob_name: newName } : prev));
+    showToast('Nombre actualizado.');
+  };
+
+  const handlePickStep = (step) => {
+    setShowEdit(false);
+    setReprocessStep(step);
+  };
+
+  const closeReprocess = () => {
+    setReprocessStep(null);
+    setSelectedJob(null);
+  };
+
+  const handleReprocessSubmitted = () => {
+    setReprocessStep(null);
+    setSelectedJob(null);
+    showToast('Reprocesamiento enviado.');
+    load();
+  };
+
+  const handleDeleteRequest = () => {
+    setShowOptions(false);
+    setShowDeleteConfirm(true);
+  };
+
+  const closeDeleteConfirm = () => {
+    setShowDeleteConfirm(false);
+    setSelectedJob(null);
+  };
+
+  const handleDeleteConfirm = async () => {
     if (!selectedJob) return;
-    setDownloading(true);
+    setDeleting(true);
     try {
-      const result = await getJobResult(selectedJob.job_id);
-      const jobName = selectedJob.blob_name ?? `Apunte ${selectedJob.job_id.slice(0, 8)}`;
-      await exportJobToPDF(jobName, result);
-    } catch (e) {
-      showToast(e.message?.includes('RESULT_NOT_READY')
-        ? 'El resultado aún no está disponible.'
-        : 'No se pudo generar el PDF.');
-    } finally {
-      setDownloading(false);
-      setShowOptions(false);
+      await deleteJob(selectedJob.job_id);
+      setShowDeleteConfirm(false);
       setSelectedJob(null);
+      showToast('Knowledge Pack eliminado.');
+      load();
+    } catch (e) {
+      showToast('No se pudo eliminar el Knowledge Pack.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -355,16 +422,37 @@ export default function NotesScreen({ navigation }) {
         job={selectedJob}
         onClose={closeOptions}
         onView={handleView}
-        onDownload={handleDownload}
-        downloading={downloading}
+        onEdit={handleEdit}
+        onDelete={handleDeleteRequest}
         onRetry={handleRetry}
         retrying={retrying}
       />
 
-      <NoteDetailScreen
-        visible={showDetail}
+      <EditJobModal
+        visible={showEdit}
         job={selectedJob}
-        onClose={() => { setShowDetail(false); setSelectedJob(null); }}
+        onClose={closeEdit}
+        onRenamed={handleRenamed}
+        onPickStep={handlePickStep}
+      />
+
+      <ReprocessStepModal
+        visible={!!reprocessStep}
+        job={selectedJob}
+        step={reprocessStep}
+        onClose={closeReprocess}
+        onSubmitted={handleReprocessSubmitted}
+      />
+
+      <ConfirmDialog
+        visible={showDeleteConfirm}
+        title="Eliminar Knowledge Pack"
+        message={`¿Eliminar "${selectedJob?.blob_name ?? 'este apunte'}"? Dejará de aparecer en tus apuntes. Esta acción no se puede deshacer desde la app.`}
+        confirmLabel="Eliminar"
+        destructive
+        loading={deleting}
+        onConfirm={handleDeleteConfirm}
+        onCancel={closeDeleteConfirm}
       />
 
       <ToastBanner visible={toastVisible} message={toastMsg} />

@@ -86,23 +86,32 @@ El pipeline corre como Durable Function `stt_live_recording`. Cada paso es una a
         │
         ▼ ACTIVITY: set_job_status → processing / summary
         │
-        ▼ ACTIVITY: generate_summary_activity(transcription_text) → summary_text
+        ▼ ACTIVITY: generate_summary_activity({transcription, custom_instructions}) → summary_text
         │ error → set_job_status(failed, OPENAI_UNAVAILABLE) → return
         │
         ▼ ACTIVITY: set_job_status → processing / notes
         │
-        ▼ ACTIVITY: generate_notes_activity(transcription_text) → { notes_text, notes_json }
+        ▼ ACTIVITY: generate_notes_activity({transcription, custom_instructions}) → { notes_text, notes_json }
         │ error → set_job_status(failed, OPENAI_UNAVAILABLE) → return
         │
         ▼ ACTIVITY: set_job_status → processing / mind_map
         │
-        ▼ ACTIVITY: generate_mind_map_activity(transcription_text) → mind_map_json
+        ▼ ACTIVITY: generate_mind_map_activity({transcription, custom_instructions}) → mind_map_json
         │ error → set_job_status(failed, OPENAI_UNAVAILABLE) → return
         │
         ▼ ACTIVITY: complete_job_activity (retry x3, intervalo 5s)
             sp_complete_stt_live_recording_job_v1(...)
         │ error → set_job_status(failed, INTERNAL_ERROR)
 ```
+
+`custom_instructions` es `None` en una ejecución normal (primera vez). Solo lleva valor cuando el
+job fue reencolado por `POST /jobs/{id}/reprocess` (ver ADR-010) — y solo para la activity del step
+pedido; las otras dos siempre reciben `None` porque ese caso ni siquiera entra a su rama `else`
+(el resultado ya está en caché y se reutiliza). `generate_summary_activity`,
+`generate_notes_activity` y `generate_mind_map_activity` reciben un dict
+`{"transcription": str, "custom_instructions": str | None}` — antes recibían el string de
+transcripción directamente; `openai_service.py` agrega las instrucciones al final del
+`user_message` solo si vienen presentes, sin modificar los archivos `.md` de prompts.
 
 ## Regla absoluta de acceso a base de datos
 
@@ -122,7 +131,7 @@ Conexión directa a PostgreSQL en `:5432`. **No pasa por la Champion API.**
 
 ## Pipeline planificado (próxima implementación)
 
-El siguiente paso a implementar es **Transcript Cleanup** entre `transcription` y `summary`:
+Este paso ahora vive dentro de **EPIC V2 — Intelligent Study** del roadmap oficial (`App/Knowledge/Roadmap/EPICS.md`). El siguiente paso a implementar es **Transcript Cleanup** entre `transcription` y `summary`:
 
 ```
 transcription → transcript_cleanup → summary → notes → mind_map
@@ -206,8 +215,13 @@ Siempre llamar como **primer paso**. Si `can_process = false` → no continuar.
 SELECT * FROM fn_get_stt_live_recording_job_context(p_job_id VARCHAR(100))
 -- Devuelve: job_id, user_id, service_code, feature_code, flow, status, current_step,
 --           recording_id, language_locale, audio_format, sample_rate, duration_seconds,
---           blob_name, blob_url, upload_status, request_payload, job_metadata
+--           blob_name, blob_url, upload_status, request_payload, job_metadata,
+--           pending_reprocess_step, pending_reprocess_instructions
 ```
+
+`pending_reprocess_step` / `pending_reprocess_instructions` solo vienen con valor cuando el job fue
+reencolado por `POST /jobs/{id}/reprocess` (ver ADR-010) — el orquestador se los pasa exclusivamente
+a la activity del step que coincide, el resto de los steps generan sin instrucciones como siempre.
 
 ## Manejo de errores
 

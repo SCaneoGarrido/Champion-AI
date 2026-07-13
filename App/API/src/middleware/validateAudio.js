@@ -43,6 +43,13 @@ const validateAudio = (req, res, next) => {
         return sendError(res, 400, "INVALID_PAYLOAD", "blob_url requerido.");
     }
 
+    // agregar logica de validacion de estado de salud del audio en general
+    /**
+     * - Se puede hacer reparaciones ? 
+     * - Esta corrumpto ? 
+     * - La codificacion es valida con el STT_ENGINE ?
+     * 
+     */
     // La URL del blob es la URL permanente (sin SAS); solo validar expiración si incluye token SAS
     const hasSasToken = audio_info.blob_url.includes('se=');
     if (hasSasToken) {

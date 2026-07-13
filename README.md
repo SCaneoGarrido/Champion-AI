@@ -6,9 +6,15 @@
 
 ## Descripción
 
-**Champion AI** es un hub de servicios de Inteligencia Artificial accesible desde una app móvil. Permite procesar contenido (audio, texto) usando IA de Azure de forma simple y sin conocimiento técnico.
+**Champion AI** es una plataforma de aprendizaje asistida por Inteligencia Artificial, organizada alrededor del concepto de **Knowledge Workspace**:
 
-La primera feature implementada de extremo a extremo es **Speech-to-Text (STT) live_recording**: el usuario graba audio → la app lo sube a Azure Blob → la API lo encola → una Azure Function transcribe, resume, genera notas y un mapa mental → el cliente hace polling hasta obtener el resultado.
+```
+Champion AI → Knowledge Packs → Knowledge Workspace → Herramientas Inteligentes de Aprendizaje
+```
+
+El usuario graba audio → la app lo sube a Azure Blob → la API lo encola → una Azure Function transcribe, resume, genera notas y un mapa mental → el resultado (un **Knowledge Pack**) se consume desde el **Knowledge Workspace**, la superficie principal de la app. Ver la visión completa en `App/Knowledge/Product/PROJECT_VISION.md`.
+
+La primera feature implementada de extremo a extremo es el pipeline **Speech-to-Text (STT) live_recording**, que hoy es la base de datos sobre la que se construye el Knowledge Workspace (ver Roadmap más abajo).
 
 ---
 
@@ -178,26 +184,41 @@ Champion-AI/
 | STT — GET /jobs/{id}/status | Implementado |
 | STT — GET /jobs/{id}/result | Implementado |
 | STT — retry de jobs fallidos | Implementado |
-| STT — Transcript Cleanup (GPT-5) | Planificado — próximo a implementar |
-| STT — Topic Extraction | Roadmap |
-| Text to Speech (TTS) | Sin documentar |
-| Gestión de Archivos | Sin documentar |
+| Knowledge Workspace (V1) | Próximo — ver Roadmap |
+| Intelligent Study — Transcript Cleanup, Topics (V2) | Roadmap |
+| Knowledge Enrichment (V2.5) | Roadmap |
+| AI Learning Platform — Flashcards, Quiz, Chat (V3) | Roadmap |
+| Intelligent Audio Learning — narración (V4) | Roadmap |
+| Knowledge Platform — grafo, búsqueda semántica (V5) | Roadmap |
+
+> Gestión de Archivos genérica fue retirada del roadmap activo (reemplazada conceptualmente por Knowledge Packs). Ver `App/Knowledge/Bugs/known-issues.md`.
 
 ---
 
-## Roadmap del pipeline inteligente
+## Roadmap oficial
 
-Ver `App/Knowledge/Roadmap/pipeline-roadmap.md` para el detalle completo.
+El roadmap completo, organizado por versiones (V1–V5) y EPICs, vive en la Knowledge Vault:
 
-| Etapa | Estado | Descripción |
+| Documento | Contenido |
+|---|---|
+| [`App/Knowledge/Product/PROJECT_VISION.md`](App/Knowledge/Product/PROJECT_VISION.md) | Visión de producto — Champion AI → Knowledge Packs → Knowledge Workspace |
+| [`App/Knowledge/Product/PRODUCT_STRATEGY.md`](App/Knowledge/Product/PRODUCT_STRATEGY.md) | Por qué este orden de versiones, qué reemplaza a la vista Markdown |
+| [`App/Knowledge/Roadmap/ROADMAP.md`](App/Knowledge/Roadmap/ROADMAP.md) | Tabla maestra de versiones V1–V5 |
+| [`App/Knowledge/Roadmap/EPICS.md`](App/Knowledge/Roadmap/EPICS.md) | Cada versión desglosada en EPIC (objetivo, historias, subtareas, dependencias, criterios de aceptación, riesgos, prioridad, estimación) |
+| [`App/Knowledge/Roadmap/BACKLOG.md`](App/Knowledge/Roadmap/BACKLOG.md) | Issues listos para GitHub, labels, jerarquía epic/issue/sub-issue |
+| [`App/Knowledge/Roadmap/MILESTONES.md`](App/Knowledge/Roadmap/MILESTONES.md) | Mapeo de versiones a GitHub Milestones |
+| [`App/Knowledge/Roadmap/SPRINT_PLANNING.md`](App/Knowledge/Roadmap/SPRINT_PLANNING.md) | Marco Scrum y propuesta de Sprint 1 |
+
+Resumen de versiones:
+
+| Versión | Nombre | Estado |
 |---|---|---|
-| Fast Transcription | Implementado | Transcripción via REST API |
-| Transcript Cleanup | Planificado | Limpieza de artefactos de voz con GPT-5 |
-| Summary + Notes + Mind Map | Implementado | Generación de contenido estructurado |
-| Topic Extraction | Roadmap | Detección de temas y capítulos con timestamps |
-| Study Mode | Roadmap | Modo de estudio basado en topics |
-| Búsqueda en audio | Roadmap | Búsqueda por contenido con citas temporales |
-| Flashcards / Quizzes | Roadmap | Generación automática desde topics |
+| V1 | Knowledge Workspace | Próximo |
+| V2 | Intelligent Study | Roadmap |
+| V2.5 | Knowledge Enrichment | Roadmap |
+| V3 | AI Learning Platform | Roadmap |
+| V4 | Intelligent Audio Learning | Roadmap |
+| V5 | Knowledge Platform | Roadmap |
 
 ---
 

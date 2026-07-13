@@ -91,12 +91,17 @@ BEGIN
         NOW()
     );
 
-    -- 5. Actualizar la tabla principal marcando la fecha de completado
+    -- 5. Actualizar la tabla principal marcando la fecha de completado.
+    --    Limpia pending_reprocess_step/instructions: si este ciclo vino de un
+    --    reprocesamiento parcial (sp_request_stt_step_reprocess_v1), ya se
+    --    consumió — no debe quedar pendiente para la próxima ejecución.
     UPDATE ai_job
     SET
         status = p_final_status,
         current_step = p_final_step,
         completed_at = NOW(),
+        pending_reprocess_step = NULL,
+        pending_reprocess_instructions = NULL,
         updated_at = NOW()
     WHERE job_id = p_job_id;
 

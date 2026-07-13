@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 import azure.durable_functions as df
 
@@ -27,6 +28,15 @@ def stt_live_recording(context: df.DurableOrchestrationContext):
 
     ctx     = check["job_context"]
     partial = check.get("partial_results", {})
+
+    # Reprocesamiento parcial de un step (ver sp_request_stt_step_reprocess_v1 /
+    # ADR-010): solo el step pendiente recibe las instrucciones del usuario.
+    # Para una ejecución normal (primera vez) ambos valores son None.
+    pending_reprocess_step        = ctx.get("pending_reprocess_step")
+    pending_reprocess_instructions = ctx.get("pending_reprocess_instructions")
+
+    def _custom_instructions_for(step_name: str) -> Optional[str]:
+        return pending_reprocess_instructions if pending_reprocess_step == step_name else None
 
     # ── 2. Transcripción ─────────────────────────────────────────────────────────
     transcription_text = partial.get("transcription_text")
@@ -75,7 +85,10 @@ def stt_live_recording(context: df.DurableOrchestrationContext):
             "step": ProcessingStep.SUMMARY,
         })
         try:
-            summary_text = yield context.call_activity("generate_summary_activity", transcription_text)
+            summary_text = yield context.call_activity("generate_summary_activity", {
+                "transcription": transcription_text,
+                "custom_instructions": _custom_instructions_for(ProcessingStep.SUMMARY),
+            })
         except Exception as exc:
             yield context.call_activity("set_job_status", {
                 "job_id": job_id,
@@ -108,7 +121,10 @@ def stt_live_recording(context: df.DurableOrchestrationContext):
             "step": ProcessingStep.NOTES,
         })
         try:
-            notes_result = yield context.call_activity("generate_notes_activity", transcription_text)
+            notes_result = yield context.call_activity("generate_notes_activity", {
+                "transcription": transcription_text,
+                "custom_instructions": _custom_instructions_for(ProcessingStep.NOTES),
+            })
         except Exception as exc:
             yield context.call_activity("set_job_status", {
                 "job_id": job_id,
@@ -140,7 +156,10 @@ def stt_live_recording(context: df.DurableOrchestrationContext):
             "step": ProcessingStep.MIND_MAP,
         })
         try:
-            mind_map_json = yield context.call_activity("generate_mind_map_activity", transcription_text)
+            mind_map_json = yield context.call_activity("generate_mind_map_activity", {
+                "transcription": transcription_text,
+                "custom_instructions": _custom_instructions_for(ProcessingStep.MIND_MAP),
+            })
         except Exception as exc:
             yield context.call_activity("set_job_status", {
                 "job_id": job_id,

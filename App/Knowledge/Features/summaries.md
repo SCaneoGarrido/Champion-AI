@@ -27,7 +27,7 @@ El paso `summary` es el segundo en la cadena de procesamiento:
 transcription → summary → notes → mind_map → completed
 ```
 
-**Próxima etapa planificada:** se insertará `transcript_cleanup` entre `transcription` y `summary`. Ver [[pipeline-roadmap]].
+**Próxima etapa planificada:** se insertará `transcript_cleanup` entre `transcription` y `summary` (EPIC V2 — Intelligent Study). Ver [[EPICS]].
 
 ---
 
@@ -94,6 +94,6 @@ Respuesta:
 - [[azure-function]] — Componente que ejecuta la generación
 - [[notes]] — Otro output del mismo flujo
 - [[mind-maps]] — Otro output del mismo flujo
-- [[pipeline-roadmap]] — Evolución futura del pipeline
+- [[EPICS]] — Evolución futura del pipeline (EPIC V2 — Intelligent Study)
 - [[tables]] — Tabla `stt_recording_result`
 - [[polling]] — Cómo obtener el resultado

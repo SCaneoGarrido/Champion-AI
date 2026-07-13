@@ -101,7 +101,7 @@ flowchart TD
 | 4 | `mind_map` | gpt-5-mini | Texto → árbol jerárquico JSON |
 | — | `completed` | — | Guarda todo en `stt_recording_result` |
 
-**Próxima etapa planificada:** `transcript_cleanup` entre `transcription` y `summary`. Ver [[pipeline-roadmap]].
+**Próxima etapa planificada:** `transcript_cleanup` entre `transcription` y `summary` (EPIC V2 — Intelligent Study). Ver [[EPICS]].
 
 ---
 
@@ -208,7 +208,7 @@ Todo el resultado se almacena en `stt_recording_result`:
 - [[stt-processing]] — Flujo de procesamiento completo
 - [[stored-procedures]] — SPs que usa la Function
 - [[job-states]] — Máquina de estados del job
-- [[pipeline-roadmap]] — Evolución futura del pipeline
+- [[EPICS]] — Evolución futura del pipeline (EPIC V2 — Intelligent Study)
 - [[ADR-002-stored-procedures-only]] — Por qué solo SPs
 - [[ADR-006-idempotent-stored-procedures]] — Idempotencia
 - [[ADR-007-fast-transcription]] — Por qué Fast Transcription

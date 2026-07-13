@@ -49,6 +49,9 @@ Nunca romper este contrato. Nunca devolver una estructura diferente por convenie
 | GET | `/AIServices/Speechv2/jobs/{job_id}/status` | JWT | Implementado | 200 |
 | GET | `/AIServices/Speechv2/jobs/{job_id}/result` | JWT | Implementado | 200 |
 | POST | `/AIServices/Speechv2/jobs/{job_id}/retry` | JWT | Implementado | 202 |
+| PATCH | `/AIServices/Speechv2/jobs/{job_id}/name` | JWT | Implementado | 200 |
+| DELETE | `/AIServices/Speechv2/jobs/{job_id}` | JWT | Implementado | 200 |
+| POST | `/AIServices/Speechv2/jobs/{job_id}/reprocess` | JWT | Implementado | 202 |
 
 ## Detalle de cada endpoint
 
@@ -208,6 +211,51 @@ Devuelve resultado completo via vista `vw_stt_recording_result`.
 
 Vista a usar: `SELECT * FROM vw_stt_recording_result WHERE job_id = $1 AND user_id = $user_id`
 
+---
+
+### PATCH /AIServices/Speechv2/jobs/{job_id}/name
+
+Renombra el Knowledge Pack (columna `blob_name` en `stt_recording`) — es el nombre que ve el usuario en "Mis Apuntes", no el path real del blob en Azure Storage.
+
+**Body:** `{ "blob_name": "Clase de historia 3" }`
+
+**Lógica:** `UPDATE stt_recording SET blob_name = $1 WHERE job_id = $2 AND user_id = $3` directo (no hay SP — es un campo puramente descriptivo, no forma parte del estado del pipeline ni del contrato de dominio que protegen los SPs).
+
+**Respuesta 200:** `{ "job_id": "...", "blob_name": "Clase de historia 3" }`
+
+**Errores:** `400 MISSING_NAME` (nombre vacío) · `404 NOT_FOUND` (job no existe o no es del usuario) · `500 INTERNAL_ERROR`
+
+---
+
+### DELETE /AIServices/Speechv2/jobs/{job_id}
+
+Elimina (soft delete) un Knowledge Pack. Ver ADR-010.
+
+**Lógica:** `CALL sp_soft_delete_stt_job_v1(job_id, user_id)` — marca `ai_job.is_deleted = TRUE`. No borra filas ni el audio en Blob Storage; un pipeline en curso no se detiene, solo deja de ser visible. Idempotente: eliminar dos veces no falla. `vw_ai_job_current_status` y `vw_stt_recording_result` filtran `is_deleted = FALSE`, así que un job eliminado desaparece automáticamente de todos los endpoints de lectura (`/jobs`, `/jobs/stats`, `/jobs/{id}/status`, `/jobs/{id}/result`) sin cambios adicionales en sus queries.
+
+**Respuesta 200:** `{ "job_id": "...", "deleted": true }`
+
+**Errores:** `404 JOB_NOT_FOUND` · `500 INTERNAL_ERROR`
+
+---
+
+### POST /AIServices/Speechv2/jobs/{job_id}/reprocess
+
+Reprocesa un único step de contenido (`summary`, `notes` o `mind_map`) de un Knowledge Pack ya completado, opcionalmente con instrucciones propias del usuario. Ver ADR-010.
+
+**Body:** `{ "step": "summary", "custom_instructions": "Hazlo más breve y en primera persona" }` (`custom_instructions` es opcional)
+
+**Lógica:**
+1. Validar `step ∈ { summary, notes, mind_map }` — `transcription` no es reprocesable (es audio→texto, no texto→texto)
+2. `CALL sp_request_stt_step_reprocess_v1(job_id, user_id, step, custom_instructions)` — solo permitido si el job está `completed`; anula únicamente la(s) columna(s) de `stt_recording_result` del step solicitado y deja el job en `queued`
+3. Publicar `{ "job_id": "..." }` en `championaiqueue` — exactamente el mismo publish que usa `retryJob`
+
+La Azure Function no necesita un mensaje de queue distinto: al recibir el mismo `job_id`, el orquestador Durable relee `stt_recording_result` y regenera solo el campo que quedó en `NULL`, sirviendo el resto desde caché (mismo mecanismo del smart retry).
+
+**Respuesta 202:** `{ "job_id": "...", "step": "summary", "status": "queued", "polling_url": "...", "requested_at": "..." }`
+
+**Errores:** `400 INVALID_STEP` · `404 JOB_NOT_FOUND` · `409 JOB_NOT_COMPLETED` (el job no está `completed`) · `500 INTERNAL_ERROR`
+
 ## Acceso a base de datos
 
 La API accede a PostgreSQL mediante:
@@ -236,3 +284,7 @@ Ver `App/rules/security.md` y `App/Knowledge/Operations/error-codes.md`.
 - La API no debe esperar el resultado de procesamiento IA — responder `202` y encolar
 - Si falla el encolamiento, marcar el job como `failed` en BD antes de responder error al cliente
 - No hardcodear valores de validación: los formatos de audio y sample rates válidos están en la BD (`chk_stt_recording_audio_format`, `chk_stt_recording_sample_rate`)
+
+## Roadmap
+
+Los próximos endpoints de este componente (topics, favoritos/highlights, reprocesamiento parcial, narración) están desglosados por versión en `App/Knowledge/Roadmap/EPICS.md` (EPICs V2 a V5).

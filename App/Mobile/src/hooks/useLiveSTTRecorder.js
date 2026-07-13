@@ -1,10 +1,18 @@
 /**
- * Hook que gestiona el ciclo completo de grabación STT con carga por chunks:
- * idle → initializing → recording → processing → accepted | error
+ * Hook que gestiona la grabación STT en vivo:
+ * idle → initializing → recording → processing (deteniendo mic) → confirming → idle
+ *
+ * A partir de 'confirming' el audio ya está en disco local — el upload real
+ * (uploadBlobInChunks + submitSTTJob) NO ocurre acá: se delega a
+ * UploadManagerContext vía confirmAndUpload(name), que sigue corriendo aunque
+ * este componente se desmonte (ej. el usuario navega a otra pantalla).
+ * Ver ADR-012.
  */
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Audio } from 'expo-av';
-import { initSTTJob, uploadBlobInChunks, submitSTTJob } from '../utils/speechApi';
+import { deleteAsync } from 'expo-file-system/legacy';
+import { initSTTJob } from '../utils/speechApi';
+import { useUploadManager } from '../context/UploadManagerContext';
 
 const FORMAT = 'm4a';
 const SAMPLE_RATE = 44100;
@@ -13,16 +21,15 @@ const SAMPLE_RATE = 44100;
  * @param {{ locale?: string, localeName?: string }} [opts]
  */
 export function useLiveSTTRecorder({ locale = 'es-AR', localeName = 'Spanish (Argentina)' } = {}) {
-    const [status, setStatus] = useState('idle');       // idle|initializing|recording|processing|accepted|error
-    const [step, setStep] = useState('');               // descripción del paso actual
+    const [status, setStatus] = useState('idle'); // idle|initializing|recording|processing|confirming|error
+    const [step, setStep] = useState('');
     const [error, setError] = useState('');
-    const [jobResult, setJobResult] = useState(null);   // respuesta de /SpeechToTextv2
-    const [acceptedJobId, setAcceptedJobId] = useState(null); // job_id disponible al aceptarse
-    const [uploadProgress, setUploadProgress] = useState(null); // { blocks, total, uploaded, fileSize }
-    const [elapsed, setElapsed] = useState(0);          // segundos grabados
+    const [elapsed, setElapsed] = useState(0);
+    const [pendingRecording, setPendingRecording] = useState(null); // { fileUri, durationSeconds }
 
     const ctxRef = useRef(null);   // { recording, jobId, uploadUrl, blobName }
     const timerRef = useRef(null);
+    const { startUpload } = useUploadManager();
 
     const clearTimer = () => {
         if (timerRef.current) {
@@ -31,7 +38,8 @@ export function useLiveSTTRecorder({ locale = 'es-AR', localeName = 'Spanish (Ar
         }
     };
 
-    // Limpieza si el componente se desmonta mientras graba
+    // Limpieza si el componente se desmonta mientras graba (no afecta un
+    // upload ya delegado — ese vive en UploadManagerContext, fuera de acá).
     useEffect(() => {
         return () => {
             clearTimer();
@@ -42,8 +50,7 @@ export function useLiveSTTRecorder({ locale = 'es-AR', localeName = 'Spanish (Ar
     const start = useCallback(async () => {
         clearTimer();
         setError('');
-        setJobResult(null);
-        setUploadProgress(null);
+        setPendingRecording(null);
         setElapsed(0);
         setStatus('initializing');
         setStep('Preparando job...');
@@ -86,7 +93,6 @@ export function useLiveSTTRecorder({ locale = 'es-AR', localeName = 'Spanish (Ar
                 blobName: initData.blob_name,
             };
 
-            // Temporizador de duración visible
             const startTs = Date.now();
             timerRef.current = setInterval(() => {
                 setElapsed(Math.floor((Date.now() - startTs) / 1000));
@@ -100,7 +106,8 @@ export function useLiveSTTRecorder({ locale = 'es-AR', localeName = 'Spanish (Ar
         }
     }, []);
 
-    const stop = useCallback(async () => {
+    /** Detiene el micrófono y deja el audio listo, a la espera de confirmación. */
+    const stopRecording = useCallback(async () => {
         clearTimer();
 
         const ctx = ctxRef.current;
@@ -108,14 +115,13 @@ export function useLiveSTTRecorder({ locale = 'es-AR', localeName = 'Spanish (Ar
             setStatus('idle');
             return;
         }
-        const { recording, jobId, uploadUrl, blobName } = ctx; // extraer antes de nullear
+        const { recording, jobId, uploadUrl, blobName } = ctx;
         ctxRef.current = null;
 
         setStatus('processing');
+        setStep('Deteniendo grabación...');
 
         try {
-            // 3. Detener grabación y obtener URI del archivo
-            setStep('Deteniendo grabación...');
             const statusBefore = await recording.getStatusAsync();
             const durationMs = statusBefore.durationMillis || 0;
             await recording.stopAndUnloadAsync();
@@ -123,37 +129,42 @@ export function useLiveSTTRecorder({ locale = 'es-AR', localeName = 'Spanish (Ar
             if (!fileUri) throw new Error('No se obtuvo el archivo de audio.');
             const durationSeconds = Math.max(durationMs / 1000, 1);
 
-            // 4. Subir a Azure Blob Storage por bloques
-            setStep('Subiendo audio...');
-            setUploadProgress({ blocks: 0, total: 1, uploaded: 0, fileSize: 0 });
-
-            const blobUrl = await uploadBlobInChunks(uploadUrl, fileUri, (prog) => {
-                setUploadProgress(prog);
-                setStep(`Subiendo bloque ${prog.blocks}/${prog.total}...`);
-            });
-
-            // 5. Enviar job a /SpeechToTextv2
-            setStep('Enviando a procesar...');
-            const result = await submitSTTJob({
-                jobId,
-                blobUrl,
-                blobName,
-                format: FORMAT,
-                sampleRate: SAMPLE_RATE,
-                durationSeconds,
-                locale,
-                localeName,
-            });
-
-            setJobResult(result?.data ?? result);
-            setAcceptedJobId(jobId);
-            setStatus('accepted');
+            setPendingRecording({ fileUri, durationSeconds, jobId, uploadUrl, blobName });
+            setStatus('confirming');
             setStep('');
         } catch (e) {
             setStatus('error');
-            setError(e.message || 'Error al procesar el audio.');
+            setError(e.message || 'Error al detener la grabación.');
         }
-    }, [locale, localeName]);
+    }, []);
+
+    /** Usuario confirmó nombre + subida — se delega a UploadManagerContext. */
+    const confirmAndUpload = useCallback((name) => {
+        if (!pendingRecording) return;
+        startUpload({
+            name,
+            fileUri: pendingRecording.fileUri,
+            jobId: pendingRecording.jobId,
+            uploadUrl: pendingRecording.uploadUrl,
+            blobName: pendingRecording.blobName,
+            format: FORMAT,
+            sampleRate: SAMPLE_RATE,
+            durationSeconds: pendingRecording.durationSeconds,
+            locale,
+            localeName,
+        });
+        setPendingRecording(null);
+        setStatus('idle');
+    }, [pendingRecording, startUpload, locale, localeName]);
+
+    /** Usuario descartó la grabación — no se sube nada. */
+    const discardRecording = useCallback(() => {
+        if (pendingRecording?.fileUri) {
+            deleteAsync(pendingRecording.fileUri, { idempotent: true }).catch(() => {});
+        }
+        setPendingRecording(null);
+        setStatus('idle');
+    }, [pendingRecording]);
 
     const reset = useCallback(() => {
         clearTimer();
@@ -161,12 +172,13 @@ export function useLiveSTTRecorder({ locale = 'es-AR', localeName = 'Spanish (Ar
         ctxRef.current = null;
         setStatus('idle');
         setError('');
-        setJobResult(null);
-        setAcceptedJobId(null);
-        setUploadProgress(null);
+        setPendingRecording(null);
         setElapsed(0);
         setStep('');
     }, []);
 
-    return { status, step, error, jobResult, acceptedJobId, uploadProgress, elapsed, start, stop, reset };
+    return {
+        status, step, error, elapsed, pendingRecording,
+        start, stopRecording, confirmAndUpload, discardRecording, reset,
+    };
 }

@@ -21,7 +21,8 @@ def check_and_get_context(job_id: str) -> dict:
 
     Retorna:
       can_process (bool)
-      job_context (dict | None)  — blob_url, audio_format, language_locale
+      job_context (dict | None)  — blob_url, audio_format, language_locale,
+                                   pending_reprocess_step, pending_reprocess_instructions
       partial_results (dict)     — pasos ya completados en intentos anteriores
                                    (transcription_text, summary_text, notes_text,
                                     notes_json, mind_map_json) — solo campos con valor
@@ -50,6 +51,8 @@ def check_and_get_context(job_id: str) -> dict:
             "blob_url": str(ctx["blob_url"]),
             "audio_format": str(ctx["audio_format"]),
             "language_locale": str(ctx["language_locale"]),
+            "pending_reprocess_step": ctx.get("pending_reprocess_step"),
+            "pending_reprocess_instructions": ctx.get("pending_reprocess_instructions"),
         },
         "partial_results": partial,
     }

@@ -306,19 +306,23 @@ UPDATE ai_job SET status = '...', current_step = '...';
 | ADR-006 | SPs idempotentes ante redelivery | Azure Queue garantiza at-least-once, no exactly-once |
 | ADR-007 | Fast Transcription en lugar de SDK Continuous Recognition | 10–50× más rápido, sin conversión de formato, menos dependencias |
 
-## Roadmap del pipeline inteligente
+## Roadmap del producto
 
-Ver `App/Knowledge/Roadmap/pipeline-roadmap.md` para el detalle completo.
+El roadmap del pipeline STT ahora se planifica dentro del roadmap general del producto (Champion AI → Knowledge Packs → Knowledge Workspace → Herramientas Inteligentes de Aprendizaje). Ver `App/Knowledge/Roadmap/ROADMAP.md` y `App/Knowledge/Roadmap/EPICS.md` para el detalle completo — reemplazan por completo al antiguo `pipeline-roadmap.md`.
 
 ```
-Etapa actual:
+Etapa actual (implementada):
   transcription → summary → notes → mind_map
 
-Próxima etapa (planificada):
-  transcription → transcript_cleanup → summary → notes → mind_map
+EPIC V2 — Intelligent Study (próxima etapa técnica):
+  transcription → transcript_cleanup → summary → notes → mind_map → topic_extraction
 
-Roadmap futuro:
-  ... → topic_extraction → [chapters | study_mode | search | citations | flashcards | quizzes]
+EPIC V1 — Knowledge Workspace:
+  el resultado de este pipeline se consume desde el Workspace, no desde una vista Markdown
+
+EPICs V2.5 → V5:
+  enriquecimiento semántico, aprendizaje activo (flashcards/quiz/chat), narración inteligente,
+  plataforma de conocimiento (grafo, búsqueda semántica)
 ```
 
 ## Principios de diseño
@@ -337,5 +341,6 @@ Roadmap futuro:
 - Transiciones completas de `upload_status` en `stt_recording`
 - Lógica de bloqueo de cuenta (`failed_attempts`, `locked_until` en `sec_user_password`)
 - Rate limits de Fast Transcription por región
-- Documentación de Text to Speech (TTS)
-- Documentación de Gestión de Archivos
+- Diseño técnico de la narración inteligente (EPIC V4 — Intelligent Audio Learning), ver `App/Knowledge/Roadmap/EPICS.md`
+
+> Gestión de Archivos genérica fue retirada del roadmap activo — ver `App/Knowledge/Bugs/known-issues.md`.

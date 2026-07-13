@@ -19,7 +19,9 @@ function fmtDate(iso) {
 
 export default function JobOptionsModal({
   visible, job, onClose,
-  onView, onDownload, downloading,
+  onView,
+  onEdit,
+  onDelete,
   onRetry, retrying,
 }) {
   if (!job) return null;
@@ -63,42 +65,44 @@ export default function JobOptionsModal({
         <View style={styles.divider} />
 
         {isFailed ? (
-          /* ── Job fallido: reintentar ── */
-          <TouchableOpacity
-            style={[styles.optionRetry, retrying && styles.optionDisabled]}
-            onPress={onRetry}
-            activeOpacity={0.82}
-            disabled={retrying}
-          >
-            {retrying
-              ? <ActivityIndicator size="small" color="#ffffff" />
-              : <MaterialIcons name="replay" size={22} color="#ffffff" />
-            }
-            <Text style={styles.optionPrimaryText}>
-              {retrying ? 'Reenviando…' : 'Reintentar procesamiento'}
-            </Text>
-          </TouchableOpacity>
-        ) : (
-          /* ── Job completado: visualizar + PDF ── */
+          /* ── Job fallido: reintentar + eliminar ── */
           <>
-            <TouchableOpacity style={styles.optionPrimary} onPress={onView} activeOpacity={0.82}>
-              <MaterialIcons name="chrome-reader-mode" size={22} color="#ffffff" />
-              <Text style={styles.optionPrimaryText}>Visualizar apunte</Text>
+            <TouchableOpacity
+              style={[styles.optionRetry, retrying && styles.optionDisabled]}
+              onPress={onRetry}
+              activeOpacity={0.82}
+              disabled={retrying}
+            >
+              {retrying
+                ? <ActivityIndicator size="small" color="#ffffff" />
+                : <MaterialIcons name="replay" size={22} color="#ffffff" />
+              }
+              <Text style={styles.optionPrimaryText}>
+                {retrying ? 'Reenviando…' : 'Reintentar procesamiento'}
+              </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.optionSecondary, downloading && styles.optionDisabled]}
-              onPress={onDownload}
-              activeOpacity={0.82}
-              disabled={downloading}
-            >
-              {downloading
-                ? <ActivityIndicator size="small" color="#c9920a" />
-                : <MaterialIcons name="picture-as-pdf" size={22} color="#c9920a" />
-              }
-              <Text style={styles.optionSecondaryText}>
-                {downloading ? 'Generando PDF…' : 'Descargar PDF'}
-              </Text>
+            <TouchableOpacity style={styles.optionDestructive} onPress={onDelete} activeOpacity={0.82}>
+              <MaterialIcons name="delete-outline" size={22} color="#ef4444" />
+              <Text style={styles.optionDestructiveText}>Eliminar</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          /* ── Job completado: administrar el Knowledge Pack ── */
+          <>
+            <TouchableOpacity style={styles.optionPrimary} onPress={onView} activeOpacity={0.82}>
+              <MaterialIcons name="auto-awesome" size={22} color="#ffffff" />
+              <Text style={styles.optionPrimaryText}>Knowledge Workspace</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.optionSecondary} onPress={onEdit} activeOpacity={0.82}>
+              <MaterialIcons name="edit" size={22} color="#c9920a" />
+              <Text style={styles.optionSecondaryText}>Editar</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.optionDestructive} onPress={onDelete} activeOpacity={0.82}>
+              <MaterialIcons name="delete-outline" size={22} color="#ef4444" />
+              <Text style={styles.optionDestructiveText}>Eliminar</Text>
             </TouchableOpacity>
           </>
         )}
@@ -220,6 +224,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
     color: '#c9920a',
+  },
+  optionDestructive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: 'rgba(239,68,68,0.08)',
+    borderRadius: 18,
+    paddingVertical: 17,
+    paddingHorizontal: 22,
+    borderWidth: 1.5,
+    borderColor: 'rgba(239,68,68,0.2)',
+  },
+  optionDestructiveText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#ef4444',
   },
   cancelBtn: {
     alignItems: 'center',

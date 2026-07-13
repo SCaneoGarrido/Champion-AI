@@ -223,6 +223,55 @@ class JobRepository {
         }
     }
 
+    async softDeleteJob(job_id, user_id) {
+        const _parseCode = (msg = '') => {
+            if (msg.includes('JOB_NOT_FOUND')) return 'JOB_NOT_FOUND';
+            return null;
+        };
+        try {
+            const query = `CALL sp_soft_delete_stt_job_v1($1, $2)`;
+            const res = await database_service.query(query, [job_id, user_id], false);
+            if (!res.success) {
+                const code = _parseCode(String(res.error ?? ''));
+                if (code) return { ok: false, code };
+                logger.error(`[JobRepository][softDeleteJob] SP error: ${res.error}`);
+                return { ok: false, code: 'INTERNAL_ERROR' };
+            }
+            return { ok: true };
+        } catch (error) {
+            const code = _parseCode(error.message ?? '');
+            if (code) return { ok: false, code };
+            logger.error(`[JobRepository][softDeleteJob] Error: ${error.message}`);
+            return { ok: false, code: 'INTERNAL_ERROR' };
+        }
+    }
+
+    async requestStepReprocess(job_id, user_id, step, customInstructions) {
+        const _parseCode = (msg = '') => {
+            if (msg.includes('INVALID_STEP'))     return 'INVALID_STEP';
+            if (msg.includes('JOB_NOT_COMPLETED')) return 'JOB_NOT_COMPLETED';
+            if (msg.includes('JOB_NOT_FOUND'))     return 'JOB_NOT_FOUND';
+            return null;
+        };
+        try {
+            const query = `CALL sp_request_stt_step_reprocess_v1($1, $2, $3, $4, $5)`;
+            const values = [job_id, user_id, step, customInstructions ?? null, JOB_ACTOR_TYPES.USER];
+            const res = await database_service.query(query, values, false);
+            if (!res.success) {
+                const code = _parseCode(String(res.error ?? ''));
+                if (code) return { ok: false, code };
+                logger.error(`[JobRepository][requestStepReprocess] SP error: ${res.error}`);
+                return { ok: false, code: 'INTERNAL_ERROR' };
+            }
+            return { ok: true };
+        } catch (error) {
+            const code = _parseCode(error.message ?? '');
+            if (code) return { ok: false, code };
+            logger.error(`[JobRepository][requestStepReprocess] Error: ${error.message}`);
+            return { ok: false, code: 'INTERNAL_ERROR' };
+        }
+    }
+
     async getJobStatus(job_id, user_id) {
         try {
             const query = `

@@ -166,3 +166,20 @@ export async function patchJobName(jobId, name) {
   if (!res.ok) throw new Error(json?.error?.message || `HTTP ${res.status}`);
   return json.data;
 }
+
+export async function deleteJob(jobId) {
+  const res = await authenticatedFetch(`/AIServices/Speechv2/jobs/${jobId}`, { method: 'DELETE' });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error?.code ?? `HTTP ${res.status}`);
+  return json.data ?? null;
+}
+
+export async function reprocessJobStep(jobId, step, customInstructions) {
+  const res = await authenticatedFetch(`/AIServices/Speechv2/jobs/${jobId}/reprocess`, {
+    method: 'POST',
+    body: JSON.stringify({ step, custom_instructions: customInstructions || undefined }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error?.code ?? `HTTP ${res.status}`);
+  return json.data ?? null;
+}

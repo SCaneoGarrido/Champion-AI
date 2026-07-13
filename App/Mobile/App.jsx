@@ -1,7 +1,7 @@
 /**
  * App.jsx – Componente raíz de Champion AI (Expo + React Native).
  *
- * Stack de autenticación + tabs principales + pantallas modales (SpeechToText).
+ * Stack de autenticación + tabs principales + pantallas modales (SpeechToText, KnowledgePackViewer).
  */
 import React from 'react';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
@@ -15,7 +15,10 @@ import LoginScreen from './src/screens/LoginScreen';
 import SignUpScreen from './src/screens/SignUpScreen';
 import MainTabNavigator from './src/navigation/MainTabNavigator';
 import { ThemeProvider } from './src/context/ThemeContext';
+import { UploadManagerProvider } from './src/context/UploadManagerContext';
+import UploadStatusBar from './src/components/UploadStatusBar';
 import SpeechToTextScreen from './src/screens/SpeechToTextScreen';
+import NoteDetailScreen from './src/screens/NoteDetailScreen';
 import { setSessionExpiredHandler } from './src/utils/authFetch';
 
 export const navigationRef = createNavigationContainerRef();
@@ -42,6 +45,7 @@ export default function App() {
     <>
       <StatusBar style="dark" />
       <SafeAreaProvider>
+      <UploadManagerProvider>
       <NavigationContainer ref={navigationRef}>
         <Stack.Navigator
           initialRouteName="Splash"
@@ -66,8 +70,15 @@ export default function App() {
             component={SpeechToTextWithTheme}
             options={{ headerShown: false }}
           />
+          <Stack.Screen
+            name="KnowledgePackViewer"
+            component={NoteDetailScreen}
+            options={{ headerShown: false, presentation: 'modal' }}
+          />
         </Stack.Navigator>
       </NavigationContainer>
+      <UploadStatusBar />
+      </UploadManagerProvider>
       </SafeAreaProvider>
     </>
   );

@@ -2,12 +2,19 @@
 
 ## Qué es este proyecto
 
-Champion AI es un hub de servicios de Inteligencia Artificial accesible desde una app móvil.
-Permite procesar contenido (audio, texto) usando IA de Azure, de forma simple y sin conocimiento técnico.
+Champion AI es una **plataforma de aprendizaje asistida por Inteligencia Artificial**, organizada
+alrededor del concepto de **Knowledge Workspace**:
+
+```
+Champion AI → Knowledge Packs → Knowledge Workspace → Herramientas Inteligentes de Aprendizaje
+```
 
 La primera feature implementada de extremo a extremo es **Speech-to-Text (STT) live_recording**:
 el usuario graba audio → la app lo sube a Azure Blob → la API lo encola → una Azure Function
-transcribe, resume, genera notas y un mapa mental → el cliente hace polling hasta obtener el resultado.
+transcribe, resume, genera notas y un mapa mental → el resultado (un **Knowledge Pack**) se
+consume desde el **Knowledge Workspace**, la superficie principal de la app (reemplaza a la
+antigua vista Markdown). Ver `App/Knowledge/Product/PROJECT_VISION.md` para la visión completa
+y `App/Knowledge/Roadmap/ROADMAP.md` para las versiones V1–V5 planificadas.
 
 ## Stack tecnológico
 
@@ -77,9 +84,16 @@ Segunda línea: `ON CONFLICT DO UPDATE` en los SPs críticos.
 Esto protege ante redelivery de Azure Queue sin necesidad de tabla de deduplicación.
 
 ### 7. El cliente hace polling
-No hay WebSocket ni push notifications. El cliente consulta periódicamente
+No hay WebSocket ni push notifications **del servidor**. El cliente consulta periódicamente
 `GET /AIServices/Speechv2/jobs/{job_id}/status` hasta `completed` o `failed`,
 luego `GET /AIServices/Speechv2/jobs/{job_id}/result`.
+
+> Nota: la app móvil sí dispara notificaciones locales del SO (100% cliente, sin canal push del
+> servidor) cuando detecta — vía este mismo polling, generalizado a nivel global — que un job
+> propio terminó. Esto no es una excepción a este principio: sigue siendo el cliente quien consulta
+> periódicamente, solo que la superficie de polling se generalizó más allá de una sola pantalla.
+> Push real (iniciado por el servidor) seguiría siendo una excepción a este principio y requeriría
+> su propio ADR. Ver `App/Knowledge/ADR/ADR-011-local-job-completion-notifications.md`.
 
 ### 8. Contrato de respuesta HTTP invariante
 Todas las respuestas de la API siguen esta estructura sin excepción:
@@ -160,14 +174,22 @@ mind_map (gpt-5-mini)
 | STT — GET /jobs/{id}/status | Implementado |
 | STT — GET /jobs/{id}/result | Implementado |
 | STT — retry de jobs fallidos | Implementado |
-| STT — Transcript Cleanup (GPT-5) | Planificado — próxima implementación |
-| STT — Topic Extraction | Roadmap |
-| Text to Speech (TTS) | Sin documentar |
-| Gestión de Archivos | Sin documentar |
+| Knowledge Workspace (V1) | Próximo — ver Roadmap |
+| Intelligent Study — Transcript Cleanup, Topics (V2) | Roadmap |
+| Knowledge Enrichment (V2.5) | Roadmap |
+| AI Learning Platform — Flashcards, Quiz, Chat (V3) | Roadmap |
+| Intelligent Audio Learning — narración (V4) | Roadmap |
+| Knowledge Platform — grafo, búsqueda semántica (V5) | Roadmap |
+
+> Gestión de Archivos genérica fue retirada del roadmap activo. Ver `App/Knowledge/Bugs/known-issues.md`.
 
 ## Referencias de contexto
 
 - Arquitectura detallada: `ARCHITECTURE.md`
+- Visión de producto: `App/Knowledge/Product/PROJECT_VISION.md`
+- Estrategia de producto: `App/Knowledge/Product/PRODUCT_STRATEGY.md`
+- Roadmap oficial (V1–V5): `App/Knowledge/Roadmap/ROADMAP.md`
+- Epics, backlog, milestones, sprint planning: `App/Knowledge/Roadmap/EPICS.md`, `BACKLOG.md`, `MILESTONES.md`, `SPRINT_PLANNING.md`
 - Reglas por dominio: `App/rules/`
 - Agentes especializados: `App/agents/`
 - Prompts reutilizables: `App/commands/`

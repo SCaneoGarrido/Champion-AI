@@ -2,6 +2,12 @@
 
 Contexto de componente. Ver `CLAUDE.md` en la raíz del proyecto para principios globales.
 
+## Dirección de producto (Roadmap)
+
+La interfaz principal a futuro **deja de ser una vista Markdown / pantallas separadas de resultado** y pasa a ser el **Knowledge Workspace**: una superficie única donde el usuario consume audio, resumen, notas y mapa mental integrados (EPIC V1 — ver `App/Knowledge/Roadmap/EPICS.md` y `App/Knowledge/Roadmap/ROADMAP.md`).
+
+Esta sección documenta la implementación **actual** (previa al Workspace) — no ha cambiado con esta reorganización de roadmap. El trabajo de construcción del Workspace se planifica en el EPIC V1, no está implementado todavía. Un intento previo de superficie de presentación (Markdown/LaTeX/Mermaid) se implementó y se revirtió por completo por bugs visuales en mobile — el Workspace se construye con ese aprendizaje incorporado (componentes encapsulados y probados antes de integrarse). Ver `App/Knowledge/Bugs/known-issues.md`.
+
 ## Responsabilidad de este componente
 
 La app móvil es la interfaz de usuario del sistema. Su única responsabilidad es:
@@ -130,6 +136,105 @@ La API no valida que el audio exista en Blob antes de crear el job — la app de
 - El usuario ve tres pasos: cargar contenido → procesar → obtener resultado
 - El estado de procesamiento se muestra como: `queued` (en cola) / `processing` (procesando) / `completed` (listo) / `failed` (error)
 - El `current_step` puede usarse para mostrar progreso más granular (transcripción → resumen → notas → mapa mental)
+
+## Navegación interna: manager ("Mis Apuntes") ↔ viewer
+
+"Mis Apuntes" (`src/screens/NotesScreen.jsx`) es el **administrador de Knowledge Packs**: lista,
+estado, y — vía `JobOptionsModal` — las acciones de administración: `Knowledge Workspace` (abre el
+viewer), `Editar` (renombrar + reprocesar un step con instrucciones propias) y `Eliminar` (soft
+delete). Para un job fallido, el menú muestra `Reintentar` + `Eliminar`. No es dueño de la pantalla
+que muestra el resultado — la relación entre ambos está desacoplada vía navegación, no vía
+composición de componentes. Ver
+`App/Knowledge/ADR/ADR-009-mobile-navigation-manager-viewer-seam.md` para el razonamiento de la
+navegación y `App/Knowledge/ADR/ADR-010-knowledge-pack-lifecycle-actions.md` para Editar/Eliminar.
+
+- La ruta `KnowledgePackViewer` está registrada en el `Stack.Navigator` raíz (`App.jsx`), como
+  hermana de `Main` y `SpeechToText` — no anidada dentro del tab `Notes`.
+- `NotesScreen.jsx` **nunca** debe importar ni acoplarse a la implementación concreta del viewer.
+  Solo navega: `navigation.navigate('KnowledgePackViewer', { jobId, blobName })`.
+- Contrato de parámetros: `jobId` (obligatorio, clave opaca) + `blobName` (opcional, solo
+  decorativo — el viewer nunca debe ramificar lógica sobre su presencia). El viewer es dueño de su
+  propio fetch de datos vía `getJobResult(jobId)`.
+- Hoy la ruta `KnowledgePackViewer` apunta a `src/screens/NoteDetailScreen.jsx`. Cuando se construya
+  el Knowledge Workspace (EPIC V1, ver `App/Knowledge/Roadmap/EPICS.md`), el único cambio necesario
+  es reasignar el `component={...}` de esa ruta en `App.jsx` — `NotesScreen.jsx` no se modifica.
+- **Gotcha de theming:** las pantallas del stack raíz viven fuera del `<ThemeProvider>` que
+  `MainTabNavigator` envuelve alrededor de los tabs. `NoteDetailScreen` hoy no usa `useTheme()`, así
+  que no necesita envoltura propia — pero si el futuro componente del Workspace sí la usa, debe
+  auto-envolverse en su propio `<ThemeProvider>` en `App.jsx` (mismo patrón que
+  `SpeechToTextWithTheme`), o fallará en tiempo de ejecución.
+
+## Acciones de administración de un Knowledge Pack (Editar / Eliminar)
+
+Componentes en `src/components/`, todos orquestados por `NotesScreen.jsx` (nunca se importan entre
+sí — mismo patrón atomizado que `JobOptionsModal`):
+
+- **`ConfirmDialog.jsx`** — diálogo de confirmación genérico y reutilizable (`title`, `message`,
+  `confirmLabel`, `destructive`, `loading`, `onConfirm`, `onCancel`). Usado hoy para confirmar
+  `Eliminar`; reutilizable para cualquier acción destructiva futura.
+- **`EditJobModal.jsx`** — abierto por `Editar`. Contiene el campo de renombrado (llama
+  `patchJobName` directo) y la lista de steps reprocesables (`Resumen` / `Notas` / `Mapa Mental`).
+  Tocar un step cierra este modal y dispara `onPickStep(step)`.
+- **`ReprocessStepModal.jsx`** — abierto tras elegir un step. Textarea opcional de instrucciones
+  propias + confirmación → llama `reprocessJobStep(jobId, step, customInstructions)`. Al enviarse,
+  el job vuelve a `queued` — el usuario lo ve reflejado en el badge de estado de la lista tras el
+  siguiente `load()`.
+- `Eliminar` es soft delete (`deleteJob(jobId)`) — el job desaparece de la lista tras refrescar; no
+  hay acción de "restaurar" en la UI (ver ADR-010).
+
+`Descargar PDF` ya no está en `JobOptionsModal` — el viewer (`NoteDetailScreen`, futuro Knowledge
+Workspace) tiene su propio botón de PDF en el header; `pdfExport.js` no se duplica.
+
+## Notificaciones de job terminado
+
+`src/hooks/useJobCompletionNotifier.js`, montado una sola vez en `MainTabNavigator.jsx` (recibe
+`navigation` como prop de su `Stack.Screen` padre — no importa `navigationRef` desde `App.jsx`,
+evita el import circular que `authFetch.js` ya evita con su patrón de handler registrado). Hace
+polling de `getRecentJobs` cada 15s mientras la app está en primer plano y dispara una notificación
+local (`expo-notifications`, sin push del servidor) la primera vez que detecta que un job propio
+pasó de `queued`/`processing` a `completed`/`failed` — cualquier tipo de solicitud (grabación
+nueva, retry, reprocesamiento de un step), mismo mecanismo. Ver
+`App/Knowledge/ADR/ADR-011-local-job-completion-notifications.md`: no funciona con la app cerrada
+(eso requeriría push real, explícitamente diferido — no hay EAS ni credenciales Apple/Firebase en
+el proyecto hoy).
+
+Cada transición detectada también se registra en `NotificationsContext`
+(`src/context/NotificationsContext.jsx` — `useNotifications()`, mismo patrón estricto que
+`useTheme()`, lanza si se usa fuera de `NotificationsProvider`). `AppTopBar.jsx` muestra un badge
+rojo "!" superpuesto al avatar cuando hay notificaciones no vistas; tocarlo abre
+`NotificationsPanel.jsx` (lista de recientes, navega a "Mis Apuntes" al tocar un item) y marca todo
+como visto. El avatar en sí sigue navegando a Profile sin cambios — el badge es un touchable
+separado. `MainTabNavigator` necesitó reestructurarse (`TabsWithJobNotifier` como componente
+interno) porque un componente no puede consumir un contexto que él mismo declara — el hook que
+llama `useNotifications()` debe renderizarse como hijo de `NotificationsProvider`, no en el mismo
+nivel.
+
+`NotesScreen` además hace un refresco silencioso (sin spinner) cada 8s mientras tiene foco —
+antes solo refrescaba al reenfocar la pantalla, así que el estado/step de un job en curso no se
+actualizaba si el usuario se quedaba mirando la lista.
+
+## Subida de audio en segundo plano (grabar en vivo / subir archivo)
+
+`src/context/UploadManagerContext.jsx` — `useUploadManager()`, montado en la **raíz de `App.jsx`**
+(envuelve todo `NavigationContainer`, no solo `MainTabNavigator` — necesario porque
+`SpeechToTextScreen` es una pantalla del stack raíz, fuera del árbol de tabs; ver
+`App/Knowledge/ADR/ADR-012-background-upload-manager.md`). Owns una lista de tareas de subida en
+memoria; la subida (`uploadBlobInChunks` + `submitSTTJob`) corre ahí, no en el componente de la
+pantalla — sobrevive a que el usuario navegue a otra sección. `UploadStatusBar.jsx`, también
+montado una sola vez en `App.jsx` como overlay sobre `NavigationContainer`, muestra el progreso sin
+importar el tab activo.
+
+`useLiveSTTRecorder.js`: `stop()` (que antes hacía todo: detener mic + subir + enviar) se partió en
+`stopRecording()` (solo detiene el mic) y `confirmAndUpload(name)` / `discardRecording()`. Entre
+ambas se muestra `ConfirmUploadModal.jsx` — pide nombre obligatorio antes de cualquier llamada de
+red, no después. El mismo modal lo usa `AudioFileUploader.jsx` (pestaña "Subir"), que además se
+migró del pipeline legado (`submitRecordingToSpeechPipeline`, un solo PUT) al mismo pipeline que
+`LiveSTTRecorder` (`initSTTJob` + `uploadBlobInChunks` + `submitSTTJob`) — un solo pipeline de
+subida para ambas entradas.
+
+**Límite conocido** (igual que las notificaciones locales, ADR-011): esto sobrevive a la
+navegación dentro de la app, no a que el proceso se cierre — no hay background fetch nativo ni
+persistencia entre reinicios. Requeriría la misma infraestructura EAS ya diferida.
 
 ## Restricciones de desarrollo
 

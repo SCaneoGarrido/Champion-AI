@@ -1,19 +1,28 @@
 /**
  * Selección de archivo de audio y envío al pipeline STT.
+ * Usa el mismo pipeline que LiveSTTRecorder (initSTTJob + UploadManagerContext)
+ * y la misma confirmación obvia + nombre antes de subir. Ver ADR-012.
  */
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { Audio } from 'expo-av';
 import { MaterialIcons } from '@expo/vector-icons';
-import { submitRecordingToSpeechPipeline } from '../utils/speechApi';
+import { initSTTJob } from '../utils/speechApi';
+import { useUploadManager } from '../context/UploadManagerContext';
+import ConfirmUploadModal from './ConfirmUploadModal';
 import { createAudioRecorderStyles } from './AudioRecorder.styles';
 
 const ALLOWED = ['mp3', 'wav', 'm4a', 'mp4', 'webm', 'ogg'];
+const SAMPLE_RATE = 44100;
 
 function detectFormat(name) {
   const ext = String(name || '').split('.').pop()?.toLowerCase();
   return ALLOWED.includes(ext) ? ext : 'm4a';
+}
+
+function stripExtension(name) {
+  return String(name || '').replace(/\.[^./]+$/, '');
 }
 
 async function getAudioDurationSeconds(uri) {
@@ -28,14 +37,15 @@ async function getAudioDurationSeconds(uri) {
 
 export default function AudioFileUploader({ accentColor, mutedColor, errorColor }) {
   const styles = createAudioRecorderStyles({ accentColor, errorColor, mutedColor });
-  const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState('');
-  const [lastJob, setLastJob] = useState(null);
-  const [pickedName, setPickedName] = useState('');
+  const { startUpload } = useUploadManager();
 
-  const pickAndUpload = async () => {
+  const [isPicking, setIsPicking] = useState(false);
+  const [error, setError] = useState('');
+  const [pendingFile, setPendingFile] = useState(null); // { fileUri, format, durationSeconds, defaultName }
+
+  const pickFile = async () => {
     setError('');
-    setLastJob(null);
+    setIsPicking(true);
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: ['audio/*', 'video/mp4'],
@@ -51,43 +61,52 @@ export default function AudioFileUploader({ accentColor, mutedColor, errorColor 
         return;
       }
 
-      setPickedName(asset.name || 'archivo');
-      setIsUploading(true);
       const durationSeconds = await getAudioDurationSeconds(asset.uri);
-      const pipelineResult = await submitRecordingToSpeechPipeline({
+      setPendingFile({
         fileUri: asset.uri,
-        durationSeconds,
         format,
-        sampleRate: 44100,
+        durationSeconds,
+        defaultName: stripExtension(asset.name),
       });
-      setLastJob(pipelineResult);
     } catch (e) {
-      setError(e?.message || 'No se pudo subir el archivo.');
+      setError(e?.message || 'No se pudo seleccionar el archivo.');
     } finally {
-      setIsUploading(false);
+      setIsPicking(false);
+    }
+  };
+
+  const handleConfirm = async (name) => {
+    const file = pendingFile;
+    setPendingFile(null);
+    if (!file) return;
+    try {
+      const initData = await initSTTJob(file.format);
+      startUpload({
+        name,
+        fileUri: file.fileUri,
+        jobId: initData.job_id,
+        uploadUrl: initData.upload_url,
+        blobName: initData.blob_name,
+        format: file.format,
+        sampleRate: SAMPLE_RATE,
+        durationSeconds: file.durationSeconds,
+      });
+    } catch (e) {
+      setError(e?.message || 'No se pudo iniciar la subida.');
     }
   };
 
   return (
     <View style={styles.wrap}>
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      {pickedName && !error ? (
-        <Text style={styles.ok} numberOfLines={1}>
-          Archivo: {pickedName}
-        </Text>
-      ) : null}
-      {lastJob?.job_id ? (
-        <Text style={styles.ok} numberOfLines={2}>
-          Trabajo aceptado: {lastJob.job_id}
-        </Text>
-      ) : null}
+
       <TouchableOpacity
-        style={[styles.primaryBtn, isUploading && styles.btnDisabled]}
-        onPress={pickAndUpload}
-        disabled={isUploading}
+        style={[styles.primaryBtn, isPicking && styles.btnDisabled]}
+        onPress={pickFile}
+        disabled={isPicking}
         activeOpacity={0.9}
       >
-        {isUploading ? (
+        {isPicking ? (
           <ActivityIndicator color="#fff" />
         ) : (
           <>
@@ -96,6 +115,14 @@ export default function AudioFileUploader({ accentColor, mutedColor, errorColor 
           </>
         )}
       </TouchableOpacity>
+
+      <ConfirmUploadModal
+        visible={!!pendingFile}
+        durationSeconds={pendingFile?.durationSeconds}
+        defaultName={pendingFile?.defaultName}
+        onCancel={() => setPendingFile(null)}
+        onConfirm={handleConfirm}
+      />
     </View>
   );
 }

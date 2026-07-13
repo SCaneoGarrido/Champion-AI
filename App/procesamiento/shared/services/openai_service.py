@@ -40,6 +40,23 @@ def _inject_transcription(prompt_template: str, transcription: str) -> str:
     return prompt_template.replace("{{TRANSCRIPTION}}", transcription)
 
 
+def _append_custom_instructions(user_message: str, custom_instructions: Optional[str]) -> str:
+    """
+    Agrega instrucciones propias del usuario al final del prompt, cuando el
+    step se está reprocesando desde /jobs/{job_id}/reprocess (ver ADR-010).
+    No modifica los archivos .md de prompts — se agrega como sección extra.
+    """
+    if not custom_instructions:
+        return user_message
+    return (
+        f"{user_message}\n\n"
+        "--------------------------------------------------\n"
+        "INSTRUCCIONES ADICIONALES DEL USUARIO\n"
+        "--------------------------------------------------\n"
+        f"{custom_instructions}"
+    )
+
+
 def _call(system_prompt: str, user_message: str, max_tokens: int) -> str:
     client = _get_client()
     response = client.chat.completions.create(
@@ -106,18 +123,21 @@ def _parse_json(raw: str) -> dict:
 # API pública
 # ---------------------------------------------------------------------------
 
-def generate_summary(transcription: str) -> str:
+def generate_summary(transcription: str, custom_instructions: Optional[str] = None) -> str:
     """
     Genera un resumen ejecutivo en Markdown.
     Usa el prompt summary.md con el system prompt de Champion AI.
+    `custom_instructions` (opcional): instrucciones propias del usuario al
+    reprocesar este step (ver ADR-010) — se agregan al final del prompt.
     """
     logger.info("Generando resumen ejecutivo")
     system_prompt = _load_prompt("system.md")
     user_message = _inject_transcription(_load_prompt("summary.md"), transcription)
+    user_message = _append_custom_instructions(user_message, custom_instructions)
     return _call(system_prompt, user_message, _MAX_TOKENS_TEXT)
 
 
-def generate_notes(transcription: str) -> str:
+def generate_notes(transcription: str, custom_instructions: Optional[str] = None) -> str:
     """
     Genera notas estructuradas en Markdown.
     Usa el prompt notes.md con el system prompt de Champion AI.
@@ -125,10 +145,11 @@ def generate_notes(transcription: str) -> str:
     logger.info("Generando notas (Markdown)")
     system_prompt = _load_prompt("system.md")
     user_message = _inject_transcription(_load_prompt("notes.md"), transcription)
+    user_message = _append_custom_instructions(user_message, custom_instructions)
     return _call(system_prompt, user_message, _MAX_TOKENS_TEXT)
 
 
-def generate_notes_json(transcription: str) -> dict:
+def generate_notes_json(transcription: str, custom_instructions: Optional[str] = None) -> dict:
     """
     Genera notas estructuradas en formato JSON.
     Usa el prompt notes_json.md — misma estructura que notes.md pero en JSON.
@@ -137,11 +158,12 @@ def generate_notes_json(transcription: str) -> dict:
     logger.info("Generando notas (JSON)")
     system_prompt = _load_prompt("system.md")
     user_message = _inject_transcription(_load_prompt("notes_json.md"), transcription)
+    user_message = _append_custom_instructions(user_message, custom_instructions)
     raw = _call(system_prompt, user_message, _MAX_TOKENS_JSON)
     return _parse_json(raw)
 
 
-def generate_mind_map(transcription: str) -> dict:
+def generate_mind_map(transcription: str, custom_instructions: Optional[str] = None) -> dict:
     """
     Genera un mapa mental jerárquico en formato JSON.
     Usa el prompt mind_map.md.
@@ -150,5 +172,6 @@ def generate_mind_map(transcription: str) -> dict:
     logger.info("Generando mapa mental (JSON)")
     system_prompt = _load_prompt("system.md")
     user_message = _inject_transcription(_load_prompt("mind_map.md"), transcription)
+    user_message = _append_custom_instructions(user_message, custom_instructions)
     raw = _call(system_prompt, user_message, _MAX_TOKENS_JSON)
     return _parse_json(raw)

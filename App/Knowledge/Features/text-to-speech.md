@@ -1,69 +1,67 @@
-# Feature: Text to Speech (TTS)
+# Feature: Text to Speech (TTS) — Intelligent Audio Learning (EPIC V4)
 
-tags: #feature #tts #pending
+tags: #feature #tts #roadmap #v4
 
 ---
 
 ## Estado
 
-> **Esta feature está mencionada en el README pero no tiene documentación técnica en las fuentes disponibles.**
-> No existe contrato API, ni schema de BD, ni flujo documentado para TTS.
+> Esta feature ya **no es una capacidad genérica de TTS**. Fue reencuadrada como parte de **EPIC V4 — Intelligent Audio Learning** (ver [[EPICS]] y [[ROADMAP]]). Sigue sin implementación — este documento describe el alcance planificado, no algo ya construido.
 
 ---
 
-## Lo que se sabe
+## Alcance actual (V4)
 
-El README de Champion AI menciona:
+TTS deja de significar "convertir cualquier texto a voz". El alcance acotado es: **narrar el contenido que el Knowledge Workspace ya generó** — específicamente `summary_text` y `notes_text` de un Knowledge Pack — con:
 
-> "Conversión de **texto a voz**"
-> "Generación automática de resúmenes"
+- Selección de voz
+- Narración del Summary
+- Narración de Notes (Study Narration)
+- SSML con prosodia contextual
+- Caché de audio narrado (evitar regenerar si el texto fuente no cambió)
+- Descarga offline
 
-Y como capacidad de los servicios Azure AI integrados:
+Ver el detalle completo (historias de usuario, subtareas técnicas, dependencias, riesgos) en [[EPICS#EPIC V4 — Intelligent Audio Learning]].
 
-> "procesamiento de voz"
+---
 
-No hay más información sobre endpoints, parámetros, formatos de salida ni implementación.
+## Diseño esperado (siguiendo el patrón STT)
+
+Siguiendo el mismo patrón arquitectónico que [[speech-to-text]] — la Function procesa, la API orquesta, todo vía SP — el flujo esperado es:
+
+```
+Summary/Notes ya generados (Knowledge Pack existente)
+        │
+        ▼
+POST /AIServices/.../narrate (a definir)  →  encola job de narración
+        │
+        ▼  [Azure Function — Durable]
+Azure AI Speech (TTS) → SSML → audio narrado
+        │
+        ▼
+Guarda en Azure Blob + metadata (voz, duración) vía SP dedicado
+        │
+        ▼
+Polling de estado y resultado (mismo patrón que STT)
+```
+
+> Este es el diseño esperado según los invariantes arquitectónicos del proyecto, no un contrato ya implementado. El diseño técnico definitivo se hace como spike al inicio del EPIC V4 (ver [[BACKLOG]]).
 
 ---
 
 ## Preguntas abiertas
 
-- ¿Existe un endpoint `/AIServices/TTS/...`?
-- ¿El audio generado se almacena en Azure Blob?
-- ¿Se sigue el mismo patrón async (Queue + Function) que el STT?
-- ¿Cuáles son los formatos de audio de salida?
-- ¿Qué voces o locales de Azure Speech se usan?
-- ¿Se crea un job tipo `ai_job` para TTS también?
-- ¿Existe una tabla `tts_*` análoga a `stt_recording`?
-
----
-
-## Suposición arquitectónica (no confirmada)
-
-Si se sigue el mismo patrón que [[speech-to-text]], el flujo esperado sería:
-
-```
-POST /AIServices/TTS/init
-→ Crear job
-→ Encolar en queue dedicada
-→ Azure Function procesa TTS
-→ Almacena audio en Blob
-→ Polling de estado y resultado
-```
-
-> **Advertencia:** Esto es una inferencia, no está documentado. No implementar basándose en este supuesto.
-
----
-
-## Acción recomendada
-
-Documentar el contrato HTTP y el flujo una vez que sea implementado, siguiendo el mismo estándar que [[speech-to-text]].
+- ¿Qué endpoint HTTP expone la API para solicitar narración?
+- ¿La narración es un nuevo tipo de `ai_job` o una extensión de `stt_recording_result`?
+- ¿Qué voces/locales de Azure Speech se soportan inicialmente?
+- ¿Cómo se invalida el caché de audio narrado si el usuario regenera el resumen/notas?
 
 ---
 
 ## Referencias cruzadas
 
-- [[vision]] — Mención como capacidad del sistema
-- [[speech-to-text]] — Feature análoga, completamente documentada
-- [[pending-features]] — Lista de features pendientes
-- [[known-issues]] — Registro de vacíos de información
+- [[PROJECT_VISION]] — mención de esta capacidad dentro de la cadena de valor del producto
+- [[EPICS]] — EPIC V4, alcance técnico completo
+- [[ROADMAP]] — versión V4 — Intelligent Audio Learning
+- [[speech-to-text]] — Feature análoga, completamente documentada, mismo patrón arquitectónico a seguir
+- [[known-issues]] — ISSUE-004, estado de esta feature

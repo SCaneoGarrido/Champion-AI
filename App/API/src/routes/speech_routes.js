@@ -85,4 +85,18 @@ speech_router.post(
     speech_controller.retryJob
 );
 
+speech_router.delete(
+    '/jobs/:job_id',
+    verificarToken,
+    extractUserId,
+    speech_controller.deleteJob
+);
+
+speech_router.post(
+    '/jobs/:job_id/reprocess',
+    verificarToken,
+    extractUserId,
+    speech_controller.reprocessJobStep
+);
+
 module.exports = speech_router;

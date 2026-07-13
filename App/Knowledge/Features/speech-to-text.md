@@ -58,7 +58,7 @@ sp_complete_stt_live_recording_job_v1
 → status: completed
 ```
 
-**Próxima etapa planificada:** `transcript_cleanup` entre `transcription` y `summary`. Ver [[pipeline-roadmap]].
+**Próxima etapa planificada:** `transcript_cleanup` entre `transcription` y `summary` (EPIC V2 — Intelligent Study). Ver [[EPICS]].
 
 ---
 
@@ -227,5 +227,5 @@ Ver [[error-codes]].
 - [[summaries]] — Feature de resúmenes
 - [[notes]] — Feature de notas
 - [[mind-maps]] — Feature de mapas mentales
-- [[pipeline-roadmap]] — Evolución futura del pipeline
+- [[EPICS]] — Evolución futura del pipeline (EPIC V2 — Intelligent Study)
 - [[job-states]] — Máquina de estados

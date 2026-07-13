@@ -25,7 +25,10 @@ RETURNS TABLE (
     upload_status VARCHAR(50),
 
     request_payload JSONB,
-    job_metadata JSONB
+    job_metadata JSONB,
+
+    pending_reprocess_step VARCHAR(50),
+    pending_reprocess_instructions TEXT
 )
 LANGUAGE plpgsql
 AS $$
@@ -55,7 +58,10 @@ BEGIN
         r.upload_status,
 
         j.request_payload,
-        j.metadata AS job_metadata
+        j.metadata AS job_metadata,
+
+        j.pending_reprocess_step,
+        j.pending_reprocess_instructions
 
     FROM ai_job j
     INNER JOIN stt_recording r

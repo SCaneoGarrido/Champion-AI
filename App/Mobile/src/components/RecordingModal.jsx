@@ -1,6 +1,8 @@
 /**
- * Modal de grabación: micrófono con ondas, timer y progreso de carga.
- * Se muestra durante initializing | recording | processing.
+ * Modal de grabación: micrófono con ondas y timer.
+ * Se muestra durante initializing | recording | processing (deteniendo mic).
+ * El progreso de subida real vive en UploadStatusBar (App.jsx) — sigue
+ * visible aunque este modal se cierre al navegar. Ver ADR-012.
  */
 import React, { useRef, useEffect } from 'react';
 import {
@@ -26,7 +28,7 @@ function formatTime(secs) {
     return `${m}:${s}`;
 }
 
-export default function RecordingModal({ visible, status, elapsed, step, uploadProgress, onStop }) {
+export default function RecordingModal({ visible, status, elapsed, step, onStop }) {
     const ring0 = useRef(new Animated.Value(0)).current;
     const ring1 = useRef(new Animated.Value(0)).current;
     const ring2 = useRef(new Animated.Value(0)).current;
@@ -66,11 +68,6 @@ export default function RecordingModal({ visible, status, elapsed, step, uploadP
     const isInitializing = status === 'initializing';
     const isRecording = status === 'recording';
     const isProcessing = status === 'processing';
-
-    const uploadPct =
-        uploadProgress && uploadProgress.total > 0
-            ? Math.round((uploadProgress.blocks / uploadProgress.total) * 100)
-            : 0;
 
     return (
         <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
@@ -126,24 +123,12 @@ export default function RecordingModal({ visible, status, elapsed, step, uploadP
                         <Text style={styles.timer}>{formatTime(elapsed)}</Text>
                     )}
 
-                    {/* ── Progreso de carga (processing) ── */}
-                    {isProcessing && (
+                    {/* ── Paso actual (processing: deteniendo mic) ── */}
+                    {isProcessing && step ? (
                         <View style={styles.progressArea}>
-                            {step ? <Text style={styles.stepText}>{step}</Text> : null}
-                            {uploadProgress && uploadProgress.total > 0 && (
-                                <>
-                                    <View style={styles.progressTrack}>
-                                        <Animated.View
-                                            style={[styles.progressFill, { width: `${uploadPct}%` }]}
-                                        />
-                                    </View>
-                                    <Text style={styles.progressLabel}>
-                                        {uploadPct}%  ·  bloque {uploadProgress.blocks}/{uploadProgress.total}
-                                    </Text>
-                                </>
-                            )}
+                            <Text style={styles.stepText}>{step}</Text>
                         </View>
-                    )}
+                    ) : null}
 
                     {/* ── Botón detener (recording) ── */}
                     {isRecording && (
@@ -244,23 +229,6 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '600',
         textAlign: 'center',
-    },
-    progressTrack: {
-        height: 4,
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        borderRadius: 2,
-        overflow: 'hidden',
-    },
-    progressFill: {
-        height: '100%',
-        backgroundColor: ACCENT,
-        borderRadius: 2,
-    },
-    progressLabel: {
-        color: '#475569',
-        fontSize: 11,
-        fontWeight: '600',
-        textAlign: 'right',
     },
 
     // ── Botones ──
