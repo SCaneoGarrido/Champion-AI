@@ -1,8 +1,8 @@
---
+﻿--
 -- PostgreSQL database dump
 --
 
-\restrict twV2dWaQPzNla7CdoFNbnNb72x8xWsorB7Xu1GfSt7Xyr37J97MU9yqe5Ww8Ztx
+\restrict HkGpgRUFWfLRuQP4DnnnRRZ5UheKCmZhbGgQuc1pZyMveVtcU0HHLOI9pB6d4Rf
 
 -- Dumped from database version 17.10
 -- Dumped by pg_dump version 17.10
@@ -77,8 +77,10 @@ DROP TABLE IF EXISTS public.ai_job_status_history;
 DROP TABLE IF EXISTS public.ai_job;
 DROP FUNCTION IF EXISTS public.sync_ai_job_from_history();
 DROP PROCEDURE IF EXISTS public.sp_update_ai_job_status_v1(IN p_job_id character varying, IN p_status character varying, IN p_step_name character varying, IN p_message text, IN p_error_code character varying, IN p_error_message text, IN p_retryable boolean, IN p_steps_snapshot jsonb, IN p_metadata jsonb, IN p_actor_type character varying);
+DROP PROCEDURE IF EXISTS public.sp_soft_delete_stt_job_v1(IN p_job_id character varying, IN p_user_id uuid);
 DROP PROCEDURE IF EXISTS public.sp_save_stt_partial_result_v1(IN p_job_id character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb);
 DROP PROCEDURE IF EXISTS public.sp_reset_ai_job_for_retry_v1(IN p_job_id character varying, IN p_actor_type character varying);
+DROP PROCEDURE IF EXISTS public.sp_request_stt_step_reprocess_v1(IN p_job_id character varying, IN p_user_id uuid, IN p_step character varying, IN p_custom_instructions text, IN p_actor_type character varying);
 DROP PROCEDURE IF EXISTS public.sp_create_stt_live_recording_job_v1(IN p_job_id character varying, IN p_user_id uuid, IN p_service_code character varying, IN p_feature_code character varying, IN p_flow character varying, IN p_initial_status character varying, IN p_initial_message text, IN p_actor_type character varying, IN p_language_locale character varying, IN p_language_name character varying, IN p_audio_format character varying, IN p_sample_rate integer, IN p_duration_seconds numeric, IN p_blob_name text, IN p_blob_url text, IN p_upload_status character varying, IN p_request_payload jsonb);
 DROP PROCEDURE IF EXISTS public.sp_complete_stt_live_recording_job_v1(IN p_job_id character varying, IN p_final_status character varying, IN p_final_step character varying, IN p_completion_message text, IN p_actor_type character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb, IN p_raw_result_json jsonb);
 DROP FUNCTION IF EXISTS public.set_updated_at();
@@ -143,33 +145,44 @@ ALTER FUNCTION public.fn_can_process_ai_job(p_job_id character varying) OWNER TO
 -- Name: fn_get_stt_live_recording_job_context(character varying); Type: FUNCTION; Schema: public; Owner: champion_db_user
 --
 
-CREATE FUNCTION public.fn_get_stt_live_recording_job_context(p_job_id character varying) RETURNS TABLE(job_id character varying, user_id uuid, service_code character varying, feature_code character varying, flow character varying, status character varying, current_step character varying, recording_id uuid, language_locale character varying, language_name character varying, audio_format character varying, sample_rate integer, duration_seconds numeric, blob_name text, blob_url text, upload_status character varying, request_payload jsonb, job_metadata jsonb)
+CREATE FUNCTION public.fn_get_stt_live_recording_job_context(p_job_id character varying) RETURNS TABLE(job_id character varying, user_id uuid, service_code character varying, feature_code character varying, flow character varying, status character varying, current_step character varying, recording_id uuid, language_locale character varying, language_name character varying, audio_format character varying, sample_rate integer, duration_seconds numeric, blob_name text, blob_url text, upload_status character varying, request_payload jsonb, job_metadata jsonb, pending_reprocess_step character varying, pending_reprocess_instructions text)
     LANGUAGE plpgsql
     AS $$
 BEGIN
     RETURN QUERY
     SELECT
         j.job_id,
-        j.requested_by,
+        j.requested_by AS user_id,
+
         j.service_code,
         j.feature_code,
         j.flow,
         j.status,
         j.current_step,
+
         r.recording_id,
+
         r.language_locale,
         r.language_name,
+
         r.audio_format,
         r.sample_rate,
         r.duration_seconds,
+
         r.blob_name,
         r.blob_url,
         r.upload_status,
+
         j.request_payload,
-        j.metadata
-    FROM public.ai_job j
-    INNER JOIN public.stt_recording r
+        j.metadata AS job_metadata,
+
+        j.pending_reprocess_step,
+        j.pending_reprocess_instructions
+
+    FROM ai_job j
+    INNER JOIN stt_recording r
         ON r.job_id = j.job_id
+
     WHERE j.job_id = p_job_id;
 END;
 $$;
@@ -209,7 +222,7 @@ BEGIN
     FROM stt_recording
     WHERE job_id = p_job_id;
 
-    -- Validar si existe la grabación antes de continuar
+    -- Validar si existe la grabaci├│n antes de continuar
     IF v_recording_id IS NULL THEN
         RAISE EXCEPTION 'Recording no encontrado para job %', p_job_id;
     END IF;
@@ -278,12 +291,17 @@ BEGIN
         NOW()
     );
 
-    -- 5. Actualizar la tabla principal marcando la fecha de completado
+    -- 5. Actualizar la tabla principal marcando la fecha de completado.
+    --    Limpia pending_reprocess_step/instructions: si este ciclo vino de un
+    --    reprocesamiento parcial (sp_request_stt_step_reprocess_v1), ya se
+    --    consumi├│ ÔÇö no debe quedar pendiente para la pr├│xima ejecuci├│n.
     UPDATE ai_job
     SET
         status = p_final_status,
         current_step = p_final_step,
         completed_at = NOW(),
+        pending_reprocess_step = NULL,
+        pending_reprocess_instructions = NULL,
         updated_at = NOW()
     WHERE job_id = p_job_id;
 
@@ -414,6 +432,74 @@ $$;
 ALTER PROCEDURE public.sp_create_stt_live_recording_job_v1(IN p_job_id character varying, IN p_user_id uuid, IN p_service_code character varying, IN p_feature_code character varying, IN p_flow character varying, IN p_initial_status character varying, IN p_initial_message text, IN p_actor_type character varying, IN p_language_locale character varying, IN p_language_name character varying, IN p_audio_format character varying, IN p_sample_rate integer, IN p_duration_seconds numeric, IN p_blob_name text, IN p_blob_url text, IN p_upload_status character varying, IN p_request_payload jsonb) OWNER TO champion_db_user;
 
 --
+-- Name: sp_request_stt_step_reprocess_v1(character varying, uuid, character varying, text, character varying); Type: PROCEDURE; Schema: public; Owner: champion_db_user
+--
+
+CREATE PROCEDURE public.sp_request_stt_step_reprocess_v1(IN p_job_id character varying, IN p_user_id uuid, IN p_step character varying, IN p_custom_instructions text DEFAULT NULL::text, IN p_actor_type character varying DEFAULT 'user'::character varying)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_status VARCHAR(50);
+BEGIN
+    IF p_step NOT IN ('summary', 'notes', 'mind_map') THEN
+        RAISE EXCEPTION 'INVALID_STEP';
+    END IF;
+
+    SELECT status INTO v_status
+    FROM ai_job
+    WHERE job_id = p_job_id
+      AND requested_by = p_user_id
+      AND is_deleted = FALSE
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'JOB_NOT_FOUND';
+    END IF;
+
+    IF v_status != 'completed' THEN
+        RAISE EXCEPTION 'JOB_NOT_COMPLETED';
+    END IF;
+
+    UPDATE stt_recording_result
+    SET summary_text  = CASE WHEN p_step = 'summary'  THEN NULL ELSE summary_text  END,
+        notes_text    = CASE WHEN p_step = 'notes'    THEN NULL ELSE notes_text    END,
+        notes_json    = CASE WHEN p_step = 'notes'    THEN NULL ELSE notes_json    END,
+        mind_map_json = CASE WHEN p_step = 'mind_map' THEN NULL ELSE mind_map_json END,
+        updated_at    = NOW()
+    WHERE job_id = p_job_id;
+
+    -- Historial: mismo protocolo is_current que el resto de las transiciones
+    UPDATE ai_job_status_history
+    SET is_current = FALSE
+    WHERE job_id = p_job_id
+      AND is_current = TRUE;
+
+    INSERT INTO ai_job_status_history (
+        job_id, status, step_name, message, is_current, created_by_type, created_at
+    ) VALUES (
+        p_job_id,
+        'queued',
+        'reprocess_' || p_step,
+        'Reprocesamiento de "' || p_step || '" solicitado por el usuario',
+        TRUE,
+        p_actor_type,
+        NOW()
+    );
+
+    UPDATE ai_job
+    SET status                          = 'queued',
+        current_step                    = 'reprocess_' || p_step,
+        pending_reprocess_step          = p_step,
+        pending_reprocess_instructions  = p_custom_instructions,
+        updated_at                      = NOW()
+    WHERE job_id = p_job_id;
+END;
+$$;
+
+
+ALTER PROCEDURE public.sp_request_stt_step_reprocess_v1(IN p_job_id character varying, IN p_user_id uuid, IN p_step character varying, IN p_custom_instructions text, IN p_actor_type character varying) OWNER TO champion_db_user;
+
+--
 -- Name: sp_reset_ai_job_for_retry_v1(character varying, character varying); Type: PROCEDURE; Schema: public; Owner: champion_db_user
 --
 
@@ -440,7 +526,7 @@ BEGIN
         RAISE EXCEPTION 'JOB_NOT_RETRYABLE';
     END IF;
 
-    -- 2. Contar cuántas veces ha fallado (= número de reintentos previos)
+    -- 2. Contar cu├íntas veces ha fallado (= n├║mero de reintentos previos)
     SELECT COUNT(*) INTO v_failed_count
     FROM ai_job_status_history
     WHERE job_id = p_job_id
@@ -547,6 +633,41 @@ $$;
 
 
 ALTER PROCEDURE public.sp_save_stt_partial_result_v1(IN p_job_id character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb) OWNER TO champion_db_user;
+
+--
+-- Name: sp_soft_delete_stt_job_v1(character varying, uuid); Type: PROCEDURE; Schema: public; Owner: champion_db_user
+--
+
+CREATE PROCEDURE public.sp_soft_delete_stt_job_v1(IN p_job_id character varying, IN p_user_id uuid)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_is_deleted BOOLEAN;
+BEGIN
+    SELECT is_deleted INTO v_is_deleted
+    FROM ai_job
+    WHERE job_id = p_job_id
+      AND requested_by = p_user_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'JOB_NOT_FOUND';
+    END IF;
+
+    IF v_is_deleted THEN
+        RETURN; -- ya eliminado ÔÇö no-op idempotente
+    END IF;
+
+    UPDATE ai_job
+    SET is_deleted = TRUE,
+        deleted_at = NOW(),
+        updated_at = NOW()
+    WHERE job_id = p_job_id;
+END;
+$$;
+
+
+ALTER PROCEDURE public.sp_soft_delete_stt_job_v1(IN p_job_id character varying, IN p_user_id uuid) OWNER TO champion_db_user;
 
 --
 -- Name: sp_update_ai_job_status_v1(character varying, character varying, character varying, text, character varying, text, boolean, jsonb, jsonb, character varying); Type: PROCEDURE; Schema: public; Owner: champion_db_user
@@ -713,6 +834,10 @@ CREATE TABLE public.ai_job (
     metadata jsonb,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    is_deleted boolean DEFAULT false NOT NULL,
+    deleted_at timestamp with time zone,
+    pending_reprocess_step character varying(50),
+    pending_reprocess_instructions text,
     CONSTRAINT chk_ai_job_status CHECK (((status)::text = ANY (ARRAY[('queued'::character varying)::text, ('processing'::character varying)::text, ('completed'::character varying)::text, ('failed'::character varying)::text])))
 );
 
@@ -881,7 +1006,8 @@ CREATE VIEW public.vw_ai_job_current_status AS
     h.created_by_type,
     h.created_at AS last_status_at
    FROM (public.ai_job j
-     LEFT JOIN public.ai_job_status_history h ON ((((h.job_id)::text = (j.job_id)::text) AND (h.is_current = true))));
+     LEFT JOIN public.ai_job_status_history h ON ((((h.job_id)::text = (j.job_id)::text) AND (h.is_current = true))))
+  WHERE (j.is_deleted = false);
 
 
 ALTER VIEW public.vw_ai_job_current_status OWNER TO champion_db_user;
@@ -923,7 +1049,8 @@ CREATE VIEW public.vw_stt_recording_result AS
     result.updated_at AS result_updated_at
    FROM ((public.stt_recording r
      JOIN public.ai_job j ON (((j.job_id)::text = (r.job_id)::text)))
-     LEFT JOIN public.stt_recording_result result ON (((result.recording_id = r.recording_id) AND ((result.job_id)::text = (r.job_id)::text))));
+     LEFT JOIN public.stt_recording_result result ON (((result.recording_id = r.recording_id) AND ((result.job_id)::text = (r.job_id)::text))))
+  WHERE (j.is_deleted = false);
 
 
 ALTER VIEW public.vw_stt_recording_result OWNER TO champion_db_user;
@@ -1290,5 +1417,5 @@ ALTER TABLE ONLY public.stt_recording
 -- PostgreSQL database dump complete
 --
 
-\unrestrict twV2dWaQPzNla7CdoFNbnNb72x8xWsorB7Xu1GfSt7Xyr37J97MU9yqe5Ww8Ztx
+\unrestrict HkGpgRUFWfLRuQP4DnnnRRZ5UheKCmZhbGgQuc1pZyMveVtcU0HHLOI9pB6d4Rf
 
