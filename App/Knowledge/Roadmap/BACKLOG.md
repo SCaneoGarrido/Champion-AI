@@ -37,8 +37,8 @@ Milestone (= versión, ver [[MILESTONES]])
 
 | Issue | Tipo | Área | Prioridad | Estimación | Dependencias |
 |---|---|---|---|---|---|
-| Diseñar navegación del Knowledge Workspace (Mobile) | spike | workspace | Alta | S | — |
-| Componente de reproductor de audio integrado | feature | workspace | Alta | M | Diseño de navegación |
+| ~~Diseñar navegación del Knowledge Workspace (Mobile)~~ ✅ Resuelto (2026-07-13, [[ADR-009-mobile-navigation-manager-viewer-seam]]) | spike | workspace | Alta | S | — |
+| Componente de reproductor de audio integrado | feature | workspace | Alta | M | — (ya no depende del diseño de navegación — resuelto) |
 | Componente Mermaid mind map encapsulado + testeado en aislamiento | feature | workspace | Alta | M | — |
 | Integrar reproductor + resumen + notas + mind map en una sola pantalla | feature | workspace | Alta | L | Los 3 anteriores |
 | Definir/ajustar endpoint de datos agregados del Knowledge Pack | feature | api | Media | S | — |

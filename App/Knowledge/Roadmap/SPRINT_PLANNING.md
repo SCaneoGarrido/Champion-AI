@@ -32,12 +32,25 @@ tags: #roadmap #scrum #sprint
 
 Priorizado desde la tabla V1 de [[BACKLOG]], respetando dependencias:
 
-1. **Diseñar navegación del Knowledge Workspace (Mobile)** — spike, S — sin dependencias, desbloquea todo lo demás
-2. **Componente Mermaid mind map encapsulado + testeado en aislamiento** — feature, M — puede avanzar en paralelo al punto 1, es la pieza de mayor riesgo histórico (ver EPIC V1 en [[EPICS]])
-3. **Componente de reproductor de audio integrado** — feature, M — depende del diseño de navegación
-4. **Definir/ajustar endpoint de datos agregados del Knowledge Pack** — feature (API), S — puede avanzar en paralelo, sin dependencias
+1. ~~**Diseñar navegación del Knowledge Workspace (Mobile)**~~ ✅ Resuelto (2026-07-13) — ver
+   [[ADR-009-mobile-navigation-manager-viewer-seam]]. "Mis Apuntes" navega a una ruta estable
+   `KnowledgePackViewer` (hoy apunta a `NoteDetailScreen`); construir el Workspace es solo
+   implementar el componente y reasignar `component={...}` en `App.jsx` — no requiere ningún
+   trabajo de navegación adicional ni volver a tocar `NotesScreen.jsx`.
+2. **Componente Mermaid mind map encapsulado + testeado en aislamiento** — feature, M — ya no
+   depende de nada, es lo próximo a arrancar; es la pieza de mayor riesgo histórico (ver EPIC V1 en
+   [[EPICS]])
+3. **Componente de reproductor de audio integrado** — feature, M — ya no depende del diseño de
+   navegación (resuelto), puede arrancar en paralelo al punto 2
+4. **Definir/ajustar endpoint de datos agregados del Knowledge Pack** — feature (API), S — puede
+   avanzar en paralelo, sin dependencias. Punto de partida: `GET /jobs/{id}/result` (via
+   `vw_stt_recording_result`) ya devuelve transcripción + resumen + notas + mind map en una sola
+   respuesta — evaluar primero si alcanza tal cual antes de diseñar un endpoint nuevo.
 
-Quedan fuera de Sprint 1 (siguiente sprint natural dentro de V1): integración final de las 3 piezas en una sola pantalla, y el QA de regresión visual — ambas dependen de que los componentes anteriores existan primero.
+Con el punto 1 resuelto, lo que queda de Sprint 1 son los puntos 2–4, ninguno bloqueado. Quedan
+fuera de Sprint 1 (siguiente sprint natural dentro de V1): integración final de las 3 piezas en una
+sola pantalla, y el QA de regresión visual — ambas dependen de que los componentes anteriores
+existan primero.
 
 ### Por qué este recorte
 - Prioriza primero el componente de mayor riesgo conocido (Mermaid) para descubrir temprano si hay problemas similares a los de la Presentation Layer revertida, cuando todavía es barato corregir el rumbo.
