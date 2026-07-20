@@ -25,13 +25,14 @@ class AzureStorageService {
                 permissions: BlobSASPermissions.parse("cw"), // create + write
                 expiresOn
             }, this.#credential).toString();
-
+            logger.info(`[azure_storage_service][generateUploadUrl] - sasToken: ${sasToken}`)
             return `https://${this.#account}.blob.core.windows.net/${this.#containerName}/${blobPath}?${sasToken}`;
         } catch (error) {
             logger.error('Error al generar Upload URL ' + error.message);
             return null;
         }
     }
+
     async uploadFileToBlob(file) {
         try {
             if (!file || !file.filename || !file.path) {
@@ -58,7 +59,6 @@ class AzureStorageService {
     }
 
     async uploadToQueue(message) {
-
         try {;
             const queueClient = new QueueClient(
                 process.env.CONNECTION_STRING,
@@ -101,7 +101,6 @@ class AzureStorageService {
 
     async testQueueConnection() {
         try {
-            const { QueueClient } = require('@azure/storage-queue');
             const queueClient = new QueueClient(
                 process.env.CONNECTION_STRING,
                 process.env.QUEUE_NAME

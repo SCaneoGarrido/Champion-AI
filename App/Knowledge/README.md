@@ -145,6 +145,7 @@ graph TD
 Champion-AI/README.md
 Champion-AI/ARCHITECTURE.md
 Champion-AI/CLAUDE.md
+Champion-AI/COWORK.md
 Champion-AI/App/API/CLAUDE.md
 Champion-AI/App/procesamiento/CLAUDE.md
 Champion-AI/App/SQL/Stored Procedures/

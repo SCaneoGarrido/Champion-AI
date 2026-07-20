@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "9c0f59e3122ef0fd",
+        "id": "003e4d62e41b49ae",
         "type": "tabs",
         "children": [
           {
-            "id": "acae578f64afc580",
+            "id": "b36267acec1b8410",
             "type": "leaf",
             "state": {
               "type": "graph",
@@ -49,7 +49,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "tag:#summaries",
+                "query": "",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -70,8 +70,7 @@
               "title": "Marcadores"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "horizontal",
@@ -177,8 +176,11 @@
       "bases:Crear nueva base": false
     }
   },
-  "active": "acae578f64afc580",
+  "active": "b36267acec1b8410",
   "lastOpenFiles": [
+    "Prompts/system.md",
+    "Sin título.base",
+    "Sin nombre",
     "Product/ADR-008-knowledge-workspace.md",
     "README.md.tmp.9796.1a16667aeb1c",
     "README.md.tmp.9796.dfa507fd31c2",
@@ -188,8 +190,6 @@
     "Features/mind-maps.md.tmp.9796.f50d17d3e2b9",
     "Bugs/known-issues.md.tmp.9796.a5609902dbde",
     "Bugs/known-issues.md.tmp.9796.45c11a4e84a9",
-    "Architecture/azure-function.md.tmp.9796.92f85e29ca52",
-    "Architecture/azure-function.md.tmp.9796.51dc9477f231",
     "ADR/ADR-008-knowledge-workspace.md",
     "Roadmap/SPRINT_PLANNING.md",
     "Roadmap/MILESTONES.md",

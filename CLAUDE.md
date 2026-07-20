@@ -185,6 +185,7 @@ mind_map (gpt-5-mini)
 
 ## Referencias de contexto
 
+- Instrucciones de colaboración en equipo (Claude Cowork): `COWORK.md`
 - Arquitectura detallada: `ARCHITECTURE.md`
 - Visión de producto: `App/Knowledge/Product/PROJECT_VISION.md`
 - Estrategia de producto: `App/Knowledge/Product/PRODUCT_STRATEGY.md`

@@ -81,6 +81,7 @@ export default function AudioFileUploader({ accentColor, mutedColor, errorColor 
     if (!file) return;
     try {
       const initData = await initSTTJob(file.format);
+      console.log(`[AudioFileUploader][AudioFileUploader] - Init Response ${JSON.stringify(initData, " ", 2)}`);
       startUpload({
         name,
         fileUri: file.fileUri,

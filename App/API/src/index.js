@@ -16,10 +16,11 @@ const AzureStorageService = require('./services/azure_storage_service');
 const database_service = new DatabaseService();
 const health_service = new HealthService();
 const azure_storage_service = new AzureStorageService();
+const logger = require('./utils/logger');
 const REQUIRED_ENV_VARS = ['JWT_KEY', 'REFRESH_SECRET', 'DBUSER', 'DBSERVER', 'DATABASE', 'DBPASSWORD', 'DBPORT'];
 const missingVars = REQUIRED_ENV_VARS.filter(v => !process.env[v]);
 if (missingVars.length > 0) {
-    console.error('Variables de entorno requeridas no definidas: ' + missingVars.join(', '));
+    logger.error('Variables de entorno requeridas no definidas: ' + missingVars.join(', '));
     process.exit(1);
 }
 
@@ -54,10 +55,10 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, '0.0.0.0', async () => {
     const LOCAL_IP = getLocalIP();
-    console.log('Iniciando chequeo de servicios externos...');
+    logger.info('Iniciando chequeo de servicios externos...');
     const skipAzure = process.env.SKIP_AZURE_HEALTHCHECK === 'true';
     if (skipAzure) {
-        console.warn('SKIP_AZURE_HEALTHCHECK=true: omitiendo chequeo de Azure (solo desarrollo local).');
+        logger.warn('SKIP_AZURE_HEALTHCHECK=true: omitiendo chequeo de Azure (solo desarrollo local).');
     }
     // Chequeo inicial de servicios externos con retry y backoff
     const connections = await Promise.all([
@@ -70,10 +71,10 @@ app.listen(PORT, '0.0.0.0', async () => {
 
     // Validar si vale la pena arrancar la API o salir si no se pudieron conectar las dependencias críticas
     if (connections.includes(false)) {
-        console.error('No se pudieron conectar todas las dependencias críticas. Saliendo...');
+        logger.error('No se pudieron conectar todas las dependencias críticas. Saliendo...');
         process.exit(1); 
     }
 
 
-    console.log(`Arrancando API en http://${LOCAL_IP}:${PORT}`);
+    logger.info(`Arrancando API en http://${LOCAL_IP}:${PORT}`);
 })
