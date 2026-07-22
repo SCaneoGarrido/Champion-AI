@@ -4,17 +4,21 @@
     "type": "split",
     "children": [
       {
-        "id": "003e4d62e41b49ae",
+        "id": "3e1947942cfb6e31",
         "type": "tabs",
         "children": [
           {
-            "id": "b36267acec1b8410",
+            "id": "c5c0b2adf06836ca",
             "type": "leaf",
             "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Vista gráfica"
+              "type": "markdown",
+              "state": {
+                "file": "Roadmap/BACKLOG.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "BACKLOG"
             }
           }
         ]
@@ -40,7 +44,7 @@
                 "autoReveal": false
               },
               "icon": "lucide-folder-closed",
-              "title": "Explorador de archivos"
+              "title": "Files"
             }
           },
           {
@@ -99,7 +103,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Enlaces entrantes"
+              "title": "Backlinks"
             }
           },
           {
@@ -157,56 +161,84 @@
               "icon": "lucide-list",
               "title": "Esquema"
             }
+          },
+          {
+            "id": "a23ea8b2ce9b433f",
+            "type": "leaf",
+            "state": {
+              "type": "smart-connections-view",
+              "state": {},
+              "icon": "lucide-ghost",
+              "title": "smart-connections-view"
+            }
+          },
+          {
+            "id": "7c356ca12b5d8f40",
+            "type": "leaf",
+            "state": {
+              "type": "llm-helper-chat",
+              "state": {},
+              "icon": "messages-square",
+              "title": "LLM Chat"
+            }
           }
-        ]
+        ],
+        "currentTab": 6
       }
     ],
     "direction": "horizontal",
-    "width": 300,
+    "width": 200,
     "collapsed": true
   },
   "left-ribbon": {
     "hiddenItems": {
-      "switcher:Abrir selector rápido": false,
-      "graph:Abrir vista gráfica": false,
-      "canvas:Crear nuevo lienzo": false,
-      "daily-notes:Abrir la nota de hoy": false,
-      "templates:Insertar plantilla": false,
-      "command-palette:Abrir paleta de comandos": false,
-      "bases:Crear nueva base": false
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false,
+      "local-llm-helper:LLM Helper": false
     }
   },
-  "active": "b36267acec1b8410",
+  "active": "c5c0b2adf06836ca",
   "lastOpenFiles": [
     "Prompts/system.md",
+    "Prompts/summary.md",
+    "Prompts/notes.md",
+    "Prompts/mind_map.md",
+    "Product/PROJECT_VISION.md",
+    "Product/PRODUCT_STRATEGY.md",
+    "Operations/local-setup.md",
+    "Operations/error-codes.md",
+    "Operations/database-management.md",
+    "Flows/upload-audio.md",
+    "Flows/stt-processing.md",
+    "Flows/registration.md",
+    "Flows/polling.md",
+    "Flows/login.md",
+    "Features/text-to-speech.md",
+    "Features/summaries.md",
+    "Features/speech-to-text.md",
+    "Features/notes.md",
+    "Features/mind-maps.md",
+    "Database/views.md",
+    "Database/tables.md",
+    "Database/stored-procedures.md",
+    "Database/schema-overview.md",
+    "Database/job-states.md",
+    "Database/functions.md",
+    "Changelog/changelog_20260629.md",
     "Sin título.base",
+    "copilot/copilot-custom-prompts",
+    "copilot",
     "Sin nombre",
-    "Product/ADR-008-knowledge-workspace.md",
     "README.md.tmp.9796.1a16667aeb1c",
     "README.md.tmp.9796.dfa507fd31c2",
     "README.md.tmp.9796.c2ce70afd708",
     "README.md.tmp.9796.395ed36d2bc0",
     "README.md.tmp.9796.de2a19621eb1",
-    "Features/mind-maps.md.tmp.9796.f50d17d3e2b9",
-    "Bugs/known-issues.md.tmp.9796.a5609902dbde",
-    "Bugs/known-issues.md.tmp.9796.45c11a4e84a9",
-    "ADR/ADR-008-knowledge-workspace.md",
-    "Roadmap/SPRINT_PLANNING.md",
-    "Roadmap/MILESTONES.md",
-    "Roadmap/BACKLOG.md",
-    "Roadmap/EPICS.md",
-    "Roadmap/ROADMAP.md",
-    "Product/PRODUCT_STRATEGY.md",
-    "Product/PROJECT_VISION.md",
-    "ADR/ADR-003-sas-direct-upload.md",
-    "ADR/ADR-007-fast-transcription.md",
-    "Roadmap/pipeline-roadmap.md",
-    "Prompts/summary.md",
-    "Changelog/changelog_20260629.md",
-    "README.md",
-    "Prompts/mind_map.md",
-    "ADR/ADR-004-response-envelope.md",
-    "Flows/polling.md",
-    "Architecture/backend-api.md"
+    "Features/mind-maps.md.tmp.9796.f50d17d3e2b9"
   ]
 }
