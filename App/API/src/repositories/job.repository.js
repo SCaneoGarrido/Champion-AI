@@ -273,6 +273,23 @@ class JobRepository {
         }
     }
 
+    async getBlobUrlForDownload(job_id, user_id) {
+        try {
+            const query = `
+                SELECT blob_url
+                FROM stt_recording
+                WHERE job_id = $1 AND user_id = $2
+                LIMIT 1
+            `;
+            const res = await database_service.query(query, [job_id, user_id], true);
+            if (!res.success || res.rowCount === 0) return null;
+            return res.data[0].blob_url;
+        } catch (error) {
+            logger.error(`[JobRepository][getBlobUrlForDownload] Error: ${error.message}`);
+            return null;
+        }
+    }
+
     async getJobStatus(job_id, user_id) {
         try {
             const query = `

@@ -11,10 +11,14 @@
             "id": "e93c3c8efe2565f0",
             "type": "leaf",
             "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Graph view"
+              "type": "markdown",
+              "state": {
+                "file": "00_PROJECT_OVERVIEW.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "00_PROJECT_OVERVIEW"
             }
           }
         ]
@@ -183,7 +187,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 563.5
+    "width": 200,
+    "collapsed": true
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -197,12 +202,12 @@
       "local-llm-helper:LLM Helper": false
     }
   },
-  "active": "7c356ca12b5d8f40",
+  "active": "e93c3c8efe2565f0",
   "lastOpenFiles": [
+    "Prompts/notes.md",
     "Roadmap/BACKLOG.md",
     "Prompts/system.md",
     "Prompts/summary.md",
-    "Prompts/notes.md",
     "Prompts/mind_map.md",
     "Product/PROJECT_VISION.md",
     "Product/PRODUCT_STRATEGY.md",

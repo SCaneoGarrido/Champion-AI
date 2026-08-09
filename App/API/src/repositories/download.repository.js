@@ -22,7 +22,7 @@ class DownloadRepository {
 
     async checkIfAlreadyDownloaded(userId, blobName) {
         const query = `
-            INSERT INTO dowload_locks(user_id, blob_name)
+            INSERT INTO download_locks(user_id, blob_name)
             VALUES ($1, $2)
             ON CONFLICT (user_id, blob_name) DO NOTHING
             RETURNING id;

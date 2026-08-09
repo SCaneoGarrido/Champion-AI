@@ -23,7 +23,7 @@ const database_service = new DatabaseService();
 const health_service = new HealthService();
 const azure_storage_service = new AzureStorageService();
 const download_repository = new DownloadRepository();
-
+download_repository.cleanOldDownloadsLocks();
 
 
 
@@ -87,9 +87,9 @@ app.listen(PORT, '0.0.0.0', async () => {
         process.exit(1);
     }
 
-    cron.schedule('0 * * * *', () => { // Actualizar este cron :_:
+    cron.schedule('0 * * * *', async () => { // Actualizar este cron :_:
         console.log('[Cron] Iniciando limpieza de registros de descargas antiguos...');
-        download_repository.cleanOldDownloadLocks();
+        await download_repository.cleanOldDownloadsLocks();
     });
     logger.info(`Arrancando API en http://${LOCAL_IP}:${PORT}`);
 })

@@ -100,22 +100,37 @@ class AzureStorageService {
         }
     }
 
-    generateSingleUseUrl(blob_name) {
+    getBlobPathFromUrl(blobUrl) {
         try {
-            // 3. Definir la ventana de tiempo de vida del token (Mínimo posible, ej. 1 minuto)
+            const prefix = `https://${this.#account}.blob.core.windows.net/${this.#containerName}/`;
+            if (!blobUrl || !blobUrl.startsWith(prefix)) {
+                logger.warn('[AzureStorageService][getBlobPathFromUrl] La URL del blob no corresponde a este storage account/container.');
+                return null;
+            }
+            return blobUrl.slice(prefix.length);
+        } catch (error) {
+            logger.error('Error al extraer el path del blob desde su URL: ' + error.message);
+            return null;
+        }
+    }
+
+    generateSingleUseUrl(blob_name) {
+      const accountName = this.#account;
+      const containerName = this.#containerName
+        try {
+            // Ventana de tiempo de vida del token (corta, ya que es de un solo uso)
             const startTime = new Date();
-            const expiryTime = new Date(startTime.getTime() + 60 * 1000); // Válido por 60 segundos
+            const expiryTime = new Date(startTime.getTime() + 5 * 60 * 1000); // Válido por 5 minutos
 
             const sasToken = generateBlobSASQueryParameters({
-                containerName: this.#containerName,
-                blob_name,
+                containerName,
+                blobName: blob_name,
                 permissions: BlobSASPermissions.parse("r"), // Permiso estricto de solo lectura ("read")
                 startsOn: startTime,
                 expiresOn: expiryTime
             }, this.#credential).toString();
 
-            const blobUrl = `https://${accountName}.blob.core.windows.net/${containerName}/${blob_name}?${sasToken}`;
-            //const singleUseUrl = `${blob_name}?${sasToken}`
+            const blobUrl = `https://${accountName}.blob.core.windows.net/${containerName}/${encodeURIComponent(blob_name)}?${sasToken}`;
             logger.info("[AzureStorageService][generateSingleUseUrl] - Enlace dinámico generado con éxito.");
             return blobUrl;
 
