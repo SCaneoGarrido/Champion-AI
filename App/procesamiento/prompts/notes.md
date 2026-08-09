@@ -52,6 +52,12 @@ Do not infer missing information.
 FORMAT
 --------------------------------------------------
 
+Write in Markdown. The output is rendered by a Markdown renderer — use real
+Markdown syntax ("#"/"##" headings, "-" bullet lists), not plain text labels.
+
+Wrap every mathematical expression in "$...$" (inline) or "$$...$$" (block) —
+see MATHEMATICAL NOTATION in the system prompt.
+
 # Title
 
 Generate an appropriate title.

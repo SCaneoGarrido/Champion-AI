@@ -1,5 +1,6 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { cleanAIText } from './textFormat';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -20,7 +21,7 @@ function mindMapNodesToHtml(nodes = [], depth = 0) {
 
   return nodes.map(node => `
     <li style="margin: ${isRoot ? 8 : 4}px 0; padding-left: ${depth * 18}px; color: ${color}; font-weight: ${weight}; font-size: ${isRoot ? 13 : 12}px;">
-      <span style="color: #c9920a; margin-right: 6px;">${bullet}</span>${escapeHtml(node.name)}
+      <span style="color: #c9920a; margin-right: 6px;">${bullet}</span>${escapeHtml(cleanAIText(node.name))}
       ${node.children?.length ? `<ul style="list-style:none; padding:0;">${mindMapNodesToHtml(node.children, depth + 1)}</ul>` : ''}
     </li>
   `).join('');
@@ -62,17 +63,17 @@ function buildHtml(jobName, result) {
 
   <div class="section">
     <div class="section-label">Transcripción</div>
-    <div class="section-body">${escapeHtml(result.transcription_text) || '<span class="empty">Sin datos.</span>'}</div>
+    <div class="section-body">${escapeHtml(cleanAIText(result.transcription_text)) || '<span class="empty">Sin datos.</span>'}</div>
   </div>
 
   <div class="section">
     <div class="section-label">Resumen</div>
-    <div class="section-body">${escapeHtml(result.summary_text) || '<span class="empty">Sin datos.</span>'}</div>
+    <div class="section-body">${escapeHtml(cleanAIText(result.summary_text)) || '<span class="empty">Sin datos.</span>'}</div>
   </div>
 
   <div class="section">
     <div class="section-label">Notas</div>
-    <div class="section-body">${escapeHtml(result.notes_text) || '<span class="empty">Sin datos.</span>'}</div>
+    <div class="section-body">${escapeHtml(cleanAIText(result.notes_text)) || '<span class="empty">Sin datos.</span>'}</div>
   </div>
 
   <div class="section">

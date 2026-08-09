@@ -171,6 +171,28 @@ export default function NotesScreen({ navigation }) {
     setSelectedJob(null);
   };
 
+  // Punto de entrada temporal de revisión manual (EPIC V1 — Knowledge
+  // Workspace, en desarrollo). Navega por nombre de ruta, igual que
+  // handleView — no importa el componente concreto, mismo seam de
+  // ADR-009-mobile-navigation-manager-viewer-seam.
+  const handleViewWorkspacePreview = () => {
+    setShowOptions(false);
+    navigation.navigate('KnowledgeWorkspacePreview', {
+      jobId: selectedJob.job_id,
+      blobName: selectedJob.blob_name,
+    });
+    setSelectedJob(null);
+  };
+
+  // Debug puntual del componente RichMarkdown (Markdown + LaTeX real) — con
+  // datos mock, no depende del job seleccionado. Se prueba en dispositivo
+  // antes de conectarlo a contenido real (ver RichMarkdown.jsx).
+  const handleViewMarkdownPreview = () => {
+    setShowOptions(false);
+    navigation.navigate('RichMarkdownPreview');
+    setSelectedJob(null);
+  };
+
   const handleEdit = () => {
     setShowOptions(false);
     setShowEdit(true);
@@ -422,6 +444,8 @@ export default function NotesScreen({ navigation }) {
         job={selectedJob}
         onClose={closeOptions}
         onView={handleView}
+        onViewWorkspacePreview={handleViewWorkspacePreview}
+        onViewMarkdownPreview={handleViewMarkdownPreview}
         onEdit={handleEdit}
         onDelete={handleDeleteRequest}
         onRetry={handleRetry}

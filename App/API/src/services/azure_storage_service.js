@@ -34,6 +34,7 @@ class AzureStorageService {
     }
 
     async uploadFileToBlob(file) {
+        // Deprecado la API no sube archivos ni maneja bytes de estos
         try {
             if (!file || !file.filename || !file.path) {
                 throw new Error('El objeto file no tiene las propiedades necesarias (filename, path).');
@@ -59,7 +60,7 @@ class AzureStorageService {
     }
 
     async uploadToQueue(message) {
-        try {;
+        try {
             const queueClient = new QueueClient(
                 process.env.CONNECTION_STRING,
                 process.env.QUEUE_NAME
@@ -99,6 +100,30 @@ class AzureStorageService {
         }
     }
 
+    generateSingleUseUrl(blob_name) {
+        try {
+            // 3. Definir la ventana de tiempo de vida del token (Mínimo posible, ej. 1 minuto)
+            const startTime = new Date();
+            const expiryTime = new Date(startTime.getTime() + 60 * 1000); // Válido por 60 segundos
+
+            const sasToken = generateBlobSASQueryParameters({
+                containerName: this.#containerName,
+                blob_name,
+                permissions: BlobSASPermissions.parse("r"), // Permiso estricto de solo lectura ("read")
+                startsOn: startTime,
+                expiresOn: expiryTime
+            }, this.#credential).toString();
+
+            const blobUrl = `https://${accountName}.blob.core.windows.net/${containerName}/${blob_name}?${sasToken}`;
+            //const singleUseUrl = `${blob_name}?${sasToken}`
+            logger.info("[AzureStorageService][generateSingleUseUrl] - Enlace dinámico generado con éxito.");
+            return blobUrl;
+
+        } catch (error) {
+            logger.error("Error al descargar blob: " + error.message);
+            return null;
+        }
+    };
     async testQueueConnection() {
         try {
             const queueClient = new QueueClient(
@@ -127,7 +152,7 @@ class AzureStorageService {
             }
             const expiryDate = new Date(expiry);
             const now = new Date();
-            if (isNaN(expiryDate.getTime())){
+            if (isNaN(expiryDate.getTime())) {
                 logger.warn("[AzureStorageService][validateBlobUrlExpiration] El parámetro de expiración (se) no es una fecha válida: " + expiry);
                 return {
                     valid: false,

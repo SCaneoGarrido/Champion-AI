@@ -34,7 +34,7 @@ async function attemptTokenRefresh() {
       const refreshToken = getRefreshTokenFromSession(session);
       if (!refreshToken) return null;
 
-      const res = await fetch(`${API_BASE_URL}/API/AUTH/refresh`, {
+      const res = await fetch(`${API_BASE_URL}/API/v1/AUTH/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: refreshToken }),

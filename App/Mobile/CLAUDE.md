@@ -44,7 +44,7 @@ El estado de la aplicación debe reflejar el estado del servidor (los jobs son l
 ```
 1. Register / Login → obtener access_token (JWT)
 
-2. POST /AIServices/Speechv2/init { format }
+2. POST /API/v1/AIServices/Speechv2/init { format }
    → recibe { job_id, upload_url, expires_in }
 
 3. PUT {upload_url} con headers:
@@ -52,16 +52,16 @@ El estado de la aplicación debe reflejar el estado del servidor (los jobs son l
    Content-Type: audio/{formato}
    → sube el audio DIRECTAMENTE a Azure Blob (no pasa por la API)
 
-4. POST /AIServices/Speechv2/SpeechToTextv2 {
+4. POST /API/v1/AIServices/Speechv2/SpeechToTextv2 {
      req_info: { job_id, service, feature, flow, language_info },
      audio_info: { format, sample_rate, duration_seconds, blob_url }
    }
    → recibe 202 { job_id, polling_url }
 
-5. Polling: GET /AIServices/Speechv2/jobs/{job_id}/status
+5. Polling: GET /API/v1/AIServices/Speechv2/jobs/{job_id}/status
    → repetir hasta status = "completed" o "failed"
 
-6. GET /AIServices/Speechv2/jobs/{job_id}/result
+6. GET /API/v1/AIServices/Speechv2/jobs/{job_id}/result
    → recibe { transcription, summary, notes, mind_map }
 ```
 
@@ -74,7 +74,7 @@ Todos los endpoints protegidos requieren:
 Authorization: Bearer {access_token}
 ```
 
-El token se obtiene en `POST /API/AUTH/login`. La app **no debe enviar `user_id`** en ningún payload: el backend lo extrae del JWT.
+El token se obtiene en `POST /API/v1/AUTH/login`. La app **no debe enviar `user_id`** en ningún payload: el backend lo extrae del JWT.
 
 ### Manejo de respuestas
 

@@ -72,7 +72,12 @@ VALIDATION RULES
 
 Return ONLY valid JSON.
 
-No markdown.
+No Markdown structure inside field values (no "#" headings, no "-" bullet
+lists) — the JSON schema itself is the structure.
+
+Exception: if a field value contains a mathematical expression, wrap it in
+"$...$" (inline) or "$$...$$" (block) — see MATHEMATICAL NOTATION in the
+system prompt. This is the one LaTeX construct allowed inside field values.
 
 No explanations.
 

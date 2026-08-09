@@ -20,6 +20,8 @@ function fmtDate(iso) {
 export default function JobOptionsModal({
   visible, job, onClose,
   onView,
+  onViewWorkspacePreview,
+  onViewMarkdownPreview,
   onEdit,
   onDelete,
   onRetry, retrying,
@@ -94,6 +96,20 @@ export default function JobOptionsModal({
               <MaterialIcons name="auto-awesome" size={22} color="#ffffff" />
               <Text style={styles.optionPrimaryText}>Knowledge Workspace</Text>
             </TouchableOpacity>
+
+            {onViewWorkspacePreview && (
+              <TouchableOpacity style={styles.optionBeta} onPress={onViewWorkspacePreview} activeOpacity={0.82}>
+                <MaterialIcons name="science" size={22} color="#9333ea" />
+                <Text style={styles.optionBetaText}>Knowledge Workspace (Beta Version)</Text>
+              </TouchableOpacity>
+            )}
+
+            {onViewMarkdownPreview && (
+              <TouchableOpacity style={styles.optionBeta} onPress={onViewMarkdownPreview} activeOpacity={0.82}>
+                <MaterialIcons name="functions" size={22} color="#9333ea" />
+                <Text style={styles.optionBetaText}>Markdown + LaTeX (Debug, datos mock)</Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity style={styles.optionSecondary} onPress={onEdit} activeOpacity={0.82}>
               <MaterialIcons name="edit" size={22} color="#c9920a" />
@@ -218,6 +234,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     borderWidth: 1.5,
     borderColor: 'rgba(201,146,10,0.2)',
+  },
+  optionBeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: 'rgba(147,51,234,0.08)',
+    borderRadius: 18,
+    paddingVertical: 17,
+    paddingHorizontal: 22,
+    borderWidth: 1.5,
+    borderColor: 'rgba(147,51,234,0.2)',
+  },
+  optionBetaText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#9333ea',
   },
   optionDisabled: { opacity: 0.6 },
   optionSecondaryText: {

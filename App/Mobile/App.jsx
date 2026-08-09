@@ -19,6 +19,9 @@ import { UploadManagerProvider } from './src/context/UploadManagerContext';
 import UploadStatusBar from './src/components/UploadStatusBar';
 import SpeechToTextScreen from './src/screens/SpeechToTextScreen';
 import NoteDetailScreen from './src/screens/NoteDetailScreen';
+import KnowledgeWorkspaceScreen from './src/screens/KnowledgeWorkspaceScreen';
+import MindMapScreen from './src/screens/MindMapScreen';
+import RichMarkdownPreviewScreen from './src/screens/RichMarkdownPreviewScreen';
 import { setSessionExpiredHandler } from './src/utils/authFetch';
 
 export const navigationRef = createNavigationContainerRef();
@@ -73,6 +76,44 @@ export default function App() {
           <Stack.Screen
             name="KnowledgePackViewer"
             component={NoteDetailScreen}
+            options={{ headerShown: false, presentation: 'modal' }}
+          />
+          {/*
+            Ruta temporal de revisión manual (EPIC V1 — Knowledge Workspace).
+            Misma firma de params que KnowledgePackViewer ({ jobId, blobName }),
+            registrada aparte a propósito para no reemplazar el viewer en
+            producción todavía — sigue la lección del rollback de la
+            Presentation Layer: probar aislado antes de integrar (ver
+            App/Knowledge/Bugs/known-issues.md, ISSUE-012). Cuando se apruebe,
+            el único cambio pendiente es mover este component al registro de
+            arriba (ADR-009 ya preparó el seam para ese swap).
+          */}
+          <Stack.Screen
+            name="KnowledgeWorkspacePreview"
+            component={KnowledgeWorkspaceScreen}
+            options={{ headerShown: false, presentation: 'modal' }}
+          />
+          {/*
+            "Bloques" del Workspace — recibe mindMap/documentTitle ya
+            resueltos por KnowledgeWorkspaceScreen (ver MindMapScreen.jsx).
+            Sin params cae a datos mock, para poder seguir probando
+            MindMapDiagram aislado (known-issues.md ISSUE-012).
+          */}
+          <Stack.Screen
+            name="MindMapScreen"
+            component={MindMapScreen}
+            options={{ headerShown: false, presentation: 'modal' }}
+          />
+          {/*
+            Preview aislado de RichMarkdown (Markdown + LaTeX real vía
+            WebView/KaTeX) — datos 100% mock. Reintroduce WebView, la misma
+            clase de riesgo de ISSUE-012 (known-issues.md); se prueba en
+            dispositivo, sola, antes de conectarla a contenido real en
+            ReaderCard/AIQuoteCard/MindMapDiagram.
+          */}
+          <Stack.Screen
+            name="RichMarkdownPreview"
+            component={RichMarkdownPreviewScreen}
             options={{ headerShown: false, presentation: 'modal' }}
           />
         </Stack.Navigator>

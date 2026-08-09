@@ -46,6 +46,12 @@ Never add future actions that were not explicitly mentioned.
 STRUCTURE
 --------------------------------------------------
 
+Write in Markdown. The output is rendered by a Markdown renderer — use real
+Markdown syntax ("#" headings, "-" bullet lists), not plain text labels.
+
+Wrap every mathematical expression in "$...$" (inline) or "$$...$$" (block) —
+see MATHEMATICAL NOTATION in the system prompt.
+
 # Executive Summary
 
 A concise but complete summary.

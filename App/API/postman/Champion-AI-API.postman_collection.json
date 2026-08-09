@@ -1,0 +1,534 @@
+{
+	"info": {
+		"_postman_id": "c9a1e6a0-3b1a-4b1a-9b1a-champion0001",
+		"name": "Champion AI - API",
+		"description": "Colección Postman para la Champion API (Node.js/Express). Cubre Auth, User, Speech-to-Text (STT) y Vision (deprecated). Todas las respuestas siguen el contrato `{ success, data, error }`. Ver `App/API/CLAUDE.md` para el detalle de cada endpoint.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "champion-ai"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{user_email}}\",\n  \"first_name\": \"Test\",\n  \"last_name\": \"User\",\n  \"password\": \"{{user_password}}\",\n  \"phone\": null,\n  \"location\": null,\n  \"occupation\": null\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/API/AUTH/register",
+							"host": [ "{{base_url}}" ],
+							"path": [ "API", "AUTH", "register" ]
+						},
+						"description": "Registra un nuevo usuario. Rate limit: 5 req/hora. Respuesta 201.\n\nErrores: 400 VALIDATION_ERROR, 400 INVALID_EMAIL, 409 CONFLICT, 500 INTERNAL_ERROR."
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const body = pm.response.json();",
+									"    if (body?.data?.access_token) {",
+									"        pm.environment.set('access_token', body.data.access_token);",
+									"    }",
+									"    if (body?.data?.refresh_token) {",
+									"        pm.environment.set('refresh_token', body.data.refresh_token);",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/API/AUTH/login",
+							"host": [ "{{base_url}}" ],
+							"path": [ "API", "AUTH", "login" ]
+						},
+						"description": "Autentica al usuario y devuelve `access_token` + `refresh_token`. Guarda ambos automáticamente en las variables de entorno via test script. Rate limit: 10 req/15min.\n\nErrores: 400 VALIDATION_ERROR, 401 UNAUTHORIZED, 429 ACCOUNT_LOCKED / TOO_MANY_REQUESTS, 500 INTERNAL_ERROR."
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const body = pm.response.json();",
+									"    if (body?.data?.access_token) {",
+									"        pm.environment.set('access_token', body.data.access_token);",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/API/AUTH/refresh",
+							"host": [ "{{base_url}}" ],
+							"path": [ "API", "AUTH", "refresh" ]
+						},
+						"description": "Genera un nuevo `access_token` a partir de un `refresh_token` válido.\n\nErrores: 400 INVALID_PAYLOAD, 401 TOKEN_EXPIRED, 500 INTERNAL_ERROR."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "Get Profile",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/API/USER/me",
+							"host": [ "{{base_url}}" ],
+							"path": [ "API", "USER", "me" ]
+						},
+						"description": "Devuelve el perfil del usuario autenticado (user_id extraído del JWT).\n\nErrores: 404 USER_NOT_FOUND, 500 INTERNAL_ERROR."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"display_name\": \"Test User\",\n  \"email\": \"{{user_email}}\",\n  \"phone\": \"+56912345678\",\n  \"location\": \"Santiago, Chile\",\n  \"occupation\": \"Software Engineer\",\n  \"avatar_url\": null\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/API/USER/me",
+							"host": [ "{{base_url}}" ],
+							"path": [ "API", "USER", "me" ]
+						},
+						"description": "Actualiza el perfil del usuario autenticado. Todos los campos son opcionales.\n\nErrores: 400 INVALID_EMAIL, 409 EMAIL_TAKEN, 500 UPDATE_FAILED / INTERNAL_ERROR."
+					},
+					"response": []
+				},
+				{
+					"name": "Init Avatar Upload",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const body = pm.response.json();",
+									"    if (body?.data?.upload_url) {",
+									"        pm.environment.set('avatar_upload_url', body.data.upload_url);",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ext\": \"jpg\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/API/USER/avatar/init",
+							"host": [ "{{base_url}}" ],
+							"path": [ "API", "USER", "avatar", "init" ]
+						},
+						"description": "Genera una SAS URL temporal para subir el avatar directo a Azure Blob Storage. El cliente debe hacer PUT del binario a `upload_url` (fuera de Postman collection, ya que la API nunca recibe binarios)."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Speech (STT)",
+			"item": [
+				{
+					"name": "Init Upload (SAS URL)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const body = pm.response.json();",
+									"    if (body?.data?.job_id) {",
+									"        pm.environment.set('job_id', body.data.job_id);",
+									"    }",
+									"    if (body?.data?.upload_url) {",
+									"        pm.environment.set('stt_upload_url', body.data.upload_url);",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"req_info\": {\n    \"audio\": {\n      \"format\": \"webm\"\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/AIServices/Speechv2/init",
+							"host": [ "{{base_url}}" ],
+							"path": [ "AIServices", "Speechv2", "init" ]
+						},
+						"description": "Genera un `job_id` y una SAS URL temporal (3600s, solo PUT) para subir el audio directo a Azure Blob. El cliente debe subir el binario a `upload_url` antes de llamar a `SpeechToTextv2`. Guarda `job_id` automáticamente en el entorno.\n\nRespuesta 201: `{ job_id, blob_name, upload_url, expires_in }`."
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Audio to Blob (SAS URL)",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "PUT",
+						"header": [
+							{ "key": "x-ms-blob-type", "value": "BlockBlob" },
+							{ "key": "Content-Type", "value": "audio/webm" }
+						],
+						"body": {
+							"mode": "file",
+							"file": {}
+						},
+						"url": {
+							"raw": "{{stt_upload_url}}",
+							"host": [ "{{stt_upload_url}}" ]
+						},
+						"description": "Sube el binario de audio directamente a Azure Blob Storage usando la `upload_url` (SAS) obtenida en 'Init Upload'. Este endpoint NO pertenece a la Champion API — es Azure Blob Storage directo (principio: el audio nunca pasa por la API). Selecciona un archivo de audio en el body (form: 'binary') antes de enviar.\n\nRequiere `stt_upload_url` seteada en el entorno (se autocompleta al ejecutar 'Init Upload')."
+					},
+					"response": []
+				},
+				{
+					"name": "Speech To Text v2 (create job)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"req_info\": {\n    \"job_id\": \"{{job_id}}\",\n    \"service\": \"STT\",\n    \"feature\": \"live_recording\",\n    \"flow\": \"flow_live_recording\",\n    \"language_info\": {\n      \"locale\": \"es-CL\",\n      \"locale_name\": \"Spanish (Chile)\"\n    }\n  },\n  \"audio_info\": {\n    \"format\": \"webm\",\n    \"sample_rate\": 16000,\n    \"duration_seconds\": 120,\n    \"blob_url\": \"{{stt_upload_url}}\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/AIServices/Speechv2/SpeechToTextv2",
+							"host": [ "{{base_url}}" ],
+							"path": [ "AIServices", "Speechv2", "SpeechToTextv2" ]
+						},
+						"description": "Registra el job en BD (estado `queued`) y lo encola para procesamiento en la Azure Function. Requiere que el audio ya haya sido subido al blob (ver 'Init Upload' + 'Upload Audio to Blob').\n\nFormatos válidos: webm|mp4|m4a|mp3|wav|ogg. Sample rates válidos: 8000|16000|44100|48000. Duración: 1–10800s.\n\nErrores: 400 INVALID_PAYLOAD/INVALID_STT_CONTEXT/UNSUPPORTED_FORMAT/INVALID_SAMPLE_RATE/DURATION_EXCEEDED/INVALID_BLOB_URL, 401 INVALID_TOKEN, 403 TOKEN_EXPIRED/USER_MISMATCH, 500 JOB_CREATION_FAILED/INTERNAL_ERROR."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Job Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/AIServices/Speechv2/jobs/{{job_id}}/status",
+							"host": [ "{{base_url}}" ],
+							"path": [ "AIServices", "Speechv2", "jobs", "{{job_id}}", "status" ]
+						},
+						"description": "Consulta el estado actual del job (`queued`, `processing`, `completed`, `failed`). Usar polling periódico hasta obtener un estado terminal.\n\nErrores: 404 JOB_NOT_FOUND, 500 INTERNAL_ERROR."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Job Result",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/AIServices/Speechv2/jobs/{{job_id}}/result",
+							"host": [ "{{base_url}}" ],
+							"path": [ "AIServices", "Speechv2", "jobs", "{{job_id}}", "result" ]
+						},
+						"description": "Devuelve el Knowledge Pack completo (transcripción, resumen, notas, mapa mental) una vez que el job está `completed`.\n\nErrores: 404 JOB_NOT_FOUND, 409 RESULT_NOT_READY, 500 INTERNAL_ERROR."
+					},
+					"response": []
+				},
+				{
+					"name": "List Recent Jobs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/AIServices/Speechv2/jobs?limit=20",
+							"host": [ "{{base_url}}" ],
+							"path": [ "AIServices", "Speechv2", "jobs" ],
+							"query": [
+								{ "key": "limit", "value": "20", "description": "Máximo 50, default 20" }
+							]
+						},
+						"description": "Lista los Knowledge Packs (jobs) recientes del usuario autenticado, excluyendo los eliminados (`is_deleted = FALSE`)."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Job Stats",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/AIServices/Speechv2/jobs/stats",
+							"host": [ "{{base_url}}" ],
+							"path": [ "AIServices", "Speechv2", "jobs", "stats" ]
+						},
+						"description": "Devuelve estadísticas agregadas de los jobs del usuario autenticado (conteos por estado, etc.)."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Job Name",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"blob_name\": \"Clase de historia 3\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/AIServices/Speechv2/jobs/{{job_id}}/name",
+							"host": [ "{{base_url}}" ],
+							"path": [ "AIServices", "Speechv2", "jobs", "{{job_id}}", "name" ]
+						},
+						"description": "Renombra el Knowledge Pack (nombre visible para el usuario, no el path real del blob).\n\nErrores: 400 MISSING_NAME, 404 NOT_FOUND, 500 INTERNAL_ERROR."
+					},
+					"response": []
+				},
+				{
+					"name": "Retry Failed Job",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/AIServices/Speechv2/jobs/{{job_id}}/retry",
+							"host": [ "{{base_url}}" ],
+							"path": [ "AIServices", "Speechv2", "jobs", "{{job_id}}", "retry" ]
+						},
+						"description": "Reintenta un job en estado `failed` desde el último paso exitoso (smart retry). Máximo 3 reintentos.\n\nErrores: 404 JOB_NOT_FOUND, 409 JOB_NOT_RETRYABLE, 429 MAX_RETRIES_EXCEEDED, 500 INTERNAL_ERROR."
+					},
+					"response": []
+				},
+				{
+					"name": "Reprocess Job Step",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"step\": \"summary\",\n  \"custom_instructions\": \"Hazlo más breve y en primera persona\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/AIServices/Speechv2/jobs/{{job_id}}/reprocess",
+							"host": [ "{{base_url}}" ],
+							"path": [ "AIServices", "Speechv2", "jobs", "{{job_id}}", "reprocess" ]
+						},
+						"description": "Reprocesa un único step de contenido (`summary`, `notes` o `mind_map`) de un Knowledge Pack ya `completed`, opcionalmente con instrucciones propias del usuario (`custom_instructions` es opcional). `transcription` no es reprocesable.\n\nErrores: 400 INVALID_STEP, 404 JOB_NOT_FOUND, 409 JOB_NOT_COMPLETED, 500 INTERNAL_ERROR."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Job (soft delete)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/AIServices/Speechv2/jobs/{{job_id}}",
+							"host": [ "{{base_url}}" ],
+							"path": [ "AIServices", "Speechv2", "jobs", "{{job_id}}" ]
+						},
+						"description": "Elimina (soft delete) un Knowledge Pack. Marca `ai_job.is_deleted = TRUE`; no borra filas ni el audio en Blob Storage. Idempotente (eliminar dos veces no falla). Ver ADR-010.\n\nErrores: 404 JOB_NOT_FOUND, 500 INTERNAL_ERROR."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Available Languages",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/AIServices/Speechv2/getAvailableLenguages",
+							"host": [ "{{base_url}}" ],
+							"path": [ "AIServices", "Speechv2", "getAvailableLenguages" ]
+						},
+						"description": "Devuelve la lista de locales/idiomas disponibles para STT/TTS (nombres únicos por locale).\n\nErrores: 404 NOT_FOUND, 500 INTERNAL_ERROR."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Voices By Language",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/AIServices/Speechv2/getVoicesByLang?lang=es-CL",
+							"host": [ "{{base_url}}" ],
+							"path": [ "AIServices", "Speechv2", "getVoicesByLang" ],
+							"query": [
+								{ "key": "lang", "value": "es-CL" }
+							]
+						},
+						"description": "Devuelve las voces disponibles de Azure AI Speech para el locale indicado.\n\nErrores: 400 VALIDATION_ERROR (falta `lang`), 404 NOT_FOUND, 500 INTERNAL_ERROR."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Vision (deprecated)",
+			"description": "Endpoints de análisis de imágenes con Azure AI Vision. El servicio subyacente (`vision_services_deprecated.js`) está marcado como deprecated en el repositorio — mantenido solo por compatibilidad. No requieren JWT actualmente (a diferencia del resto de la API).",
+			"item": [
+				{
+					"name": "Analyze Image by URL",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"imageUrl\": \"https://example.com/imagen.jpg\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/AIServices/Visionv1/analyze-image-url",
+							"host": [ "{{base_url}}" ],
+							"path": [ "AIServices", "Visionv1", "analyze-image-url" ]
+						},
+						"description": "Analiza una imagen a partir de su URL pública usando Azure AI Vision.\n\nErrores: 400 VALIDATION_ERROR (falta `imageUrl`), 500 INTERNAL_ERROR."
+					},
+					"response": []
+				},
+				{
+					"name": "Analyze Uploaded Image",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "file", "type": "file", "src": [] }
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/AIServices/Visionv1/analyze-uploaded-image",
+							"host": [ "{{base_url}}" ],
+							"path": [ "AIServices", "Visionv1", "analyze-uploaded-image" ]
+						},
+						"description": "Sube una imagen (multipart/form-data, campo `file`) y la analiza con Azure AI Vision. Devuelve texto detectado y descripción (dense caption).\n\nErrores: 400 VALIDATION_ERROR (falta archivo), 500 INTERNAL_ERROR."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Transversal",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/API/Transversal/health",
+							"host": [ "{{base_url}}" ],
+							"path": [ "API", "Transversal", "health" ]
+						},
+						"description": "Chequea el estado de las dependencias externas (PostgreSQL, Azure Queue, Azure Blob). Devuelve 200 (UP) o 503 (DOWN)."
+					},
+					"response": []
+				},
+				{
+					"name": "Version Info",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/API/Transversal/version",
+							"host": [ "{{base_url}}" ],
+							"path": [ "API", "Transversal", "version" ]
+						},
+						"description": "Devuelve metadata de la API: versión, features, límites de audio, endpoints principales."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{ "key": "token", "value": "{{access_token}}", "type": "string" }
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": { "type": "text/javascript", "exec": [ "" ] }
+		},
+		{
+			"listen": "test",
+			"script": { "type": "text/javascript", "exec": [ "" ] }
+		}
+	],
+	"variable": [
+		{ "key": "base_url", "value": "http://localhost:5051", "type": "string" }
+	]
+}

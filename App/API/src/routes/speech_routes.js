@@ -71,7 +71,7 @@ speech_router.get(
     speech_controller.getJobStatus
 );
 
-speech_router.get(
+speech_router.get( // esta retornaria un Knowledge Pack 
     '/jobs/:job_id/result',
     verificarToken,
     extractUserId,

@@ -167,7 +167,8 @@ class JobRepository {
                     result_id,
                     transcription_text, summary_text,
                     notes_text, notes_json, mind_map_json,
-                    generated_at
+                    generated_at,
+                    blob_name
                 FROM vw_stt_recording_result
                 WHERE job_id = $1 AND user_id = $2
                 LIMIT 1
@@ -294,6 +295,8 @@ class JobRepository {
             return null;
         }
     }
+
+    
 }
 
 module.exports = JobRepository;

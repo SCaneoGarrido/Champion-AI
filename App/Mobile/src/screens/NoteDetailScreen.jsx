@@ -11,6 +11,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import styles from './NoteDetailScreen.styles';
 import { getJobResult } from '../utils/api';
 import { exportJobToPDF } from '../utils/pdfExport';
+import { cleanAIText } from '../utils/textFormat';
 
 // ── Secciones ──────────────────────────────────────────────────────────────────
 
@@ -39,7 +40,7 @@ function MindMapNode({ node, depth = 0 }) {
     <View>
       <View style={nodeStyle}>
         <Text style={bulletStyle}>{bullet}</Text>
-        <Text style={labelStyle}>{node.name}</Text>
+        <Text style={labelStyle}>{cleanAIText(node.name)}</Text>
       </View>
       {node.children?.length > 0 && depth < 3 && (
         <View style={childrenStyle}>
@@ -77,7 +78,7 @@ function CollapsibleSection({ section, result, expanded, onToggle }) {
       summary:       result.summary_text,
       notes:         result.notes_text,
     };
-    const text = fieldMap[section.key];
+    const text = cleanAIText(fieldMap[section.key]);
     return text
       ? <Text style={styles.sectionText}>{text}</Text>
       : <Text style={styles.emptyText}>Sin datos.</Text>;

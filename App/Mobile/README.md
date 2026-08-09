@@ -126,14 +126,14 @@ En **React Native** no se usa CSS como en web: los estilos van en **`StyleSheet.
 
 La app consume (rutas reales del API en este repo):
 
-- **POST** `/API/AUTH/login` – Inicio de sesión (email, password). Respuesta con JWT en `data.user.jwt`.
-- **POST** `/API/AUTH/register` – Registro de usuario.
+- **POST** `/API/v1/AUTH/login` – Inicio de sesión (email, password). Respuesta con JWT en `data.user.jwt`.
+- **POST** `/API/v1/AUTH/register` – Registro de usuario.
 
 Tras el login, la app guarda en **AsyncStorage** (`@champion_user`) el **user_id** y los **tokens** (`accessToken` / `refreshToken`). Las peticiones protegidas deben usar **`authenticatedFetch`** (`src/utils/authFetch.js`), que añade el header **`Authorization: Bearer <JWT>`**.
 
 Servicios de voz (STT), con token:
 
-- **POST** `/AIServices/Speechv2/init`
-- **POST** `/AIServices/Speechv2/SpeechToTextv2`
+- **POST** `/API/v1/AIServices/Speechv2/init`
+- **POST** `/API/v1/AIServices/Speechv2/SpeechToTextv2`
 
 El backend está en **App/API** (Express, puerto 5051 por defecto).

@@ -14,7 +14,7 @@ import {
 import { authenticatedFetch } from './authFetch';
 import { getSession } from './session';
 
-const SPEECH_BASE = '/AIServices/Speechv2';
+const SPEECH_BASE = '/API/v1/AIServices/Speechv2';
 const CHUNK_SIZE = 4 * 1024 * 1024; // 4 MB por bloque
 
 // ─── helpers internos ────────────────────────────────────────────────────────

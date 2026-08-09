@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"const p=require\\('./node_modules/react-native-reanimated/package.json'\\); console.log\\(JSON.stringify\\({version:p.version, peerDependencies:p.peerDependencies, dependencies:p.dependencies}, null, 2\\)\\)\")",
+      "Bash(node -e \"const p=require\\('./node_modules/react-native-worklets/package.json'\\); console.log\\(p.version\\)\")"
+    ]
+  }
+}

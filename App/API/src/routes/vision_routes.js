@@ -1,6 +1,6 @@
 const express = require('express');
 const vision_router = express.Router();
-const VisionServices = require('../services/vision_services');
+const VisionServices = require('../services/vision_services_deprecated');
 const logger = require('../utils/logger');
 const { createUploadMiddleware } = require('../middleware/multerMiddleware');
 const { sendSuccess, sendError } = require('../utils/response.helper');

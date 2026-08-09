@@ -101,14 +101,14 @@ export async function register(body) {
 import { authenticatedFetch } from './authFetch';
 
 export async function getUserProfile() {
-  const res = await authenticatedFetch('/API/USER/me');
+  const res = await authenticatedFetch('/API/v1/USER/me');
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json?.error?.message || `HTTP ${res.status}`);
   return json.data;
 }
 
 export async function updateUserProfile(data) {
-  const res = await authenticatedFetch('/API/USER/me', {
+  const res = await authenticatedFetch('/API/v1/USER/me', {
     method: 'PUT',
     body: JSON.stringify(data),
   });
@@ -118,7 +118,7 @@ export async function updateUserProfile(data) {
 }
 
 export async function initAvatarUpload(ext = 'jpg') {
-  const res = await authenticatedFetch('/API/USER/avatar/init', {
+  const res = await authenticatedFetch('/API/v1/USER/avatar/init', {
     method: 'POST',
     body: JSON.stringify({ ext }),
   });
@@ -130,35 +130,35 @@ export async function initAvatarUpload(ext = 'jpg') {
 // ─── Jobs / Estadísticas ──────────────────────────────────────────────────────
 
 export async function getRecentJobs(limit = 20) {
-  const res = await authenticatedFetch(`/AIServices/Speechv2/jobs?limit=${limit}`);
+  const res = await authenticatedFetch(`/API/v1/AIServices/Speechv2/jobs?limit=${limit}`);
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json?.error?.message || `HTTP ${res.status}`);
   return json.data?.items ?? [];
 }
 
 export async function getUserStats() {
-  const res = await authenticatedFetch('/AIServices/Speechv2/jobs/stats');
+  const res = await authenticatedFetch('/API/v1/AIServices/Speechv2/jobs/stats');
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json?.error?.message || `HTTP ${res.status}`);
   return json.data ?? { total_jobs: 0, completed: 0, total_duration_seconds: 0 };
 }
 
 export async function retryJob(jobId) {
-  const res = await authenticatedFetch(`/AIServices/Speechv2/jobs/${jobId}/retry`, { method: 'POST' });
+  const res = await authenticatedFetch(`/API/v1/AIServices/Speechv2/jobs/${jobId}/retry`, { method: 'POST' });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json?.error?.code ?? `HTTP ${res.status}`);
   return json.data ?? null;
 }
 
 export async function getJobResult(jobId) {
-  const res = await authenticatedFetch(`/AIServices/Speechv2/jobs/${jobId}/result`);
+  const res = await authenticatedFetch(`/API/v1/AIServices/Speechv2/jobs/${jobId}/result`);
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json?.error?.message || `HTTP ${res.status}`);
   return json.data ?? null;
 }
 
 export async function patchJobName(jobId, name) {
-  const res = await authenticatedFetch(`/AIServices/Speechv2/jobs/${jobId}/name`, {
+  const res = await authenticatedFetch(`/API/v1/AIServices/Speechv2/jobs/${jobId}/name`, {
     method: 'PATCH',
     body: JSON.stringify({ blob_name: name }),
   });
@@ -168,14 +168,14 @@ export async function patchJobName(jobId, name) {
 }
 
 export async function deleteJob(jobId) {
-  const res = await authenticatedFetch(`/AIServices/Speechv2/jobs/${jobId}`, { method: 'DELETE' });
+  const res = await authenticatedFetch(`/API/v1/AIServices/Speechv2/jobs/${jobId}`, { method: 'DELETE' });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json?.error?.code ?? `HTTP ${res.status}`);
   return json.data ?? null;
 }
 
 export async function reprocessJobStep(jobId, step, customInstructions) {
-  const res = await authenticatedFetch(`/AIServices/Speechv2/jobs/${jobId}/reprocess`, {
+  const res = await authenticatedFetch(`/API/v1/AIServices/Speechv2/jobs/${jobId}/reprocess`, {
     method: 'POST',
     body: JSON.stringify({ step, custom_instructions: customInstructions || undefined }),
   });
