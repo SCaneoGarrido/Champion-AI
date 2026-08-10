@@ -171,25 +171,17 @@ export default function NotesScreen({ navigation }) {
     setSelectedJob(null);
   };
 
-  // Punto de entrada temporal de revisión manual (EPIC V1 — Knowledge
-  // Workspace, en desarrollo). Navega por nombre de ruta, igual que
-  // handleView — no importa el componente concreto, mismo seam de
-  // ADR-009-mobile-navigation-manager-viewer-seam.
-  const handleViewWorkspacePreview = () => {
+  // Punto de entrada permanente a la sección "Beta" del Workspace — donde se
+  // prueba la próxima iteración (ej. TTS/narración) antes de promoverla a
+  // KnowledgePackViewer (ver ADR-014-knowledge-workspace-versioning). Navega
+  // por nombre de ruta, igual que handleView — no importa el componente
+  // concreto, mismo seam de ADR-009-mobile-navigation-manager-viewer-seam.
+  const handleViewWorkspaceBeta = () => {
     setShowOptions(false);
-    navigation.navigate('KnowledgeWorkspacePreview', {
+    navigation.navigate('KnowledgeWorkspaceBeta', {
       jobId: selectedJob.job_id,
       blobName: selectedJob.blob_name,
     });
-    setSelectedJob(null);
-  };
-
-  // Debug puntual del componente RichMarkdown (Markdown + LaTeX real) — con
-  // datos mock, no depende del job seleccionado. Se prueba en dispositivo
-  // antes de conectarlo a contenido real (ver RichMarkdown.jsx).
-  const handleViewMarkdownPreview = () => {
-    setShowOptions(false);
-    navigation.navigate('RichMarkdownPreview');
     setSelectedJob(null);
   };
 
@@ -444,8 +436,7 @@ export default function NotesScreen({ navigation }) {
         job={selectedJob}
         onClose={closeOptions}
         onView={handleView}
-        onViewWorkspacePreview={handleViewWorkspacePreview}
-        onViewMarkdownPreview={handleViewMarkdownPreview}
+        onViewWorkspaceBeta={handleViewWorkspaceBeta}
         onEdit={handleEdit}
         onDelete={handleDeleteRequest}
         onRetry={handleRetry}

@@ -8,13 +8,20 @@ tags: #roadmap #epics #scrum
 
 ---
 
-## EPIC V1 — Knowledge Workspace
+## EPIC V1 — Knowledge Workspace — ✅ CERRADO (M1, 2026-08-10)
 
 ### Objetivo
 Reemplazar la vista Markdown por una superficie de consumo única (Knowledge Workspace) donde el usuario ve audio, resumen, notas y mapa mental integrados, con mejor experiencia móvil y una arquitectura de componentes preparada para las versiones siguientes.
 
 ### Descripción
-Hoy el resultado de un Knowledge Pack (STT) se consume en pantallas separadas y en texto plano/Markdown. El Workspace unifica esa experiencia en una sola pantalla componible: reproductor de audio, secciones de resumen y notas, y renderizado del mapa mental (Mermaid), todo dentro del mismo contenedor de navegación.
+Hoy el resultado de un Knowledge Pack (STT) se consume en una sola pantalla componible
+(`KnowledgeWorkspaceScreen.jsx`, producción desde el cierre de M1): reproductor de audio, secciones
+de resumen y notas con renderizado Markdown + LaTeX real, y mapa mental, todo dentro del mismo
+contenedor de navegación. **Nota sobre el mapa mental**: el plan original decía "Mermaid" — la
+implementación final es un árbol nativo (View/Text), no Mermaid/WebView, decisión tomada por el
+precedente de rollback de ISSUE-012 (ver [[known-issues]] y
+[[ADR-013-math-rendering-pipeline-rewrite]]). Cumple el mismo objetivo visual sin el riesgo
+estructural que causó ese rollback.
 
 ### Historias de usuario
 - Como estudiante, quiero abrir un Knowledge Pack y ver el audio, el resumen, las notas y el mapa mental en un solo lugar, para no perder contexto saltando entre pantallas.
@@ -22,24 +29,36 @@ Hoy el resultado de un Knowledge Pack (STT) se consume en pantallas separadas y 
 - Como desarrollador, quiero que el Workspace esté armado con componentes reutilizables, para poder agregar Topics/Search/Flashcards en versiones futuras sin reescribir la base.
 
 ### Subtareas técnicas
-- ~~Diseño de la estructura de navegación del Workspace en `App/Mobile`~~ — seam ya construido (ver [[ADR-009-mobile-navigation-manager-viewer-seam]]): "Mis Apuntes" (`NotesScreen`) navega a una ruta estable `KnowledgePackViewer` registrada en el stack raíz, sin conocer el componente que hay detrás. Lo que queda pendiente de esta subtarea es solo: implementar la pantalla del Workspace y reasignar el `component={...}` de esa ruta en `App.jsx` (más `<ThemeProvider>` propio si el nuevo componente usa `useTheme()` — el stack raíz queda fuera del `ThemeProvider` de los tabs)
-- Componente de reproductor de audio integrado al Workspace
-- Componente de renderizado de Mermaid mind map **encapsulado y testeado de forma aislada** antes de integrarlo (lección directa del rollback de la Presentation Layer)
-- Endpoint de la API que sirva el Knowledge Pack completo en una sola respuesta para el Workspace (evaluar si `GET /jobs/{id}/result` ya es suficiente o si conviene una vista agregada nueva — sin romper el contrato `{ success, data, error }`)
-- No requiere cambios en la Azure Function ni en el pipeline STT — es consumo de datos ya generados
+- ~~Diseño de la estructura de navegación del Workspace en `App/Mobile`~~ ✅ [[ADR-009-mobile-navigation-manager-viewer-seam]]
+- ~~Componente de reproductor de audio integrado al Workspace~~ ✅ Resuelto (2026-08-10)
+- ~~Componente de mind map encapsulado y testeado de forma aislada~~ ✅ Resuelto (2026-08-10) — árbol
+  nativo, no Mermaid (ver nota en Descripción)
+- ~~Endpoint de la API que sirva el Knowledge Pack completo~~ ✅ `GET /jobs/{id}/result` ya era
+  suficiente, confirmado, sin cambios
+- ~~Flip de `KnowledgePackViewer` a la superficie del Workspace~~ ✅ Resuelto (2026-08-10, ver
+  [[ADR-014-knowledge-workspace-versioning]])
+- No requirió cambios en la Azure Function ni en el pipeline STT — fue consumo de datos ya generados
 
 ### Dependencias
 - Ninguna hacia atrás — depende solo del pipeline STT ya implementado (transcripción, resumen, notas, mapa mental)
 - Bloquea a V2, V2.5, V3, V4 y V5: todas requieren una superficie donde mostrarse
 
 ### Criterios de aceptación
-- El usuario puede completar el flujo "abrir Knowledge Pack → escuchar audio → leer resumen/notas → ver mapa mental" sin salir del Workspace
-- El mapa mental Mermaid renderiza sin errores visuales en al menos las resoluciones móviles objetivo del equipo
-- No se reintroduce una vista Markdown standalone como punto de entrada principal
+- ✅ El usuario puede completar el flujo "abrir Knowledge Pack → escuchar audio → leer resumen/notas → ver mapa mental" sin salir del Workspace
+- ✅ El mapa mental renderiza sin errores visuales en dispositivo real, tras varias rondas de
+  bugfixing (renderizado matemático, paginación, overlaps — ver
+  [[ADR-013-math-rendering-pipeline-rewrite]]). Nota: no es Mermaid, ver Descripción.
+- ✅ No se reintrodujo una vista Markdown standalone como punto de entrada principal —
+  `NoteDetailScreen` (legacy) se retiró de las rutas activas
 
-### Riesgos
-- **Alto:** ya existe un precedente de rollback completo (código + BD) de una superficie de presentación (Markdown/LaTeX/Mermaid) por bugs visuales persistentes en mobile. Mitigación: encapsular y probar el componente Mermaid de forma aislada antes de integrarlo al Workspace; no reutilizar código de la implementación revertida sin revisión.
-- **Medio:** definir el contrato de datos del Workspace antes de construir UI, para no acoplar la pantalla a la forma actual de `vw_stt_recording_result`.
+### Riesgos (históricos, ya mitigados)
+- **Alto** (materializado parcialmente, no como rollback completo): el pipeline de renderizado
+  matemático tuvo bugs reales en producción (superposición de ecuaciones, sintaxis interna visible)
+  — a diferencia del rollback de ISSUE-012, esta vez se identificó la causa raíz y se corrigió sin
+  necesidad de revertir código. Ver [[ADR-013-math-rendering-pipeline-rewrite]] para el detalle
+  técnico completo.
+- **Medio:** contrato de datos del Workspace — `GET /jobs/{id}/result` resultó suficiente, no hizo
+  falta desacoplar.
 
 ### Prioridad
 Alta — desbloquea el resto del roadmap.

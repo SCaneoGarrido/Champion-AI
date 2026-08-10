@@ -38,11 +38,12 @@ Milestone (= versión, ver [[MILESTONES]])
 | Issue | Tipo | Área | Prioridad | Estimación | Dependencias |
 |---|---|---|---|---|---|
 | ~~Diseñar navegación del Knowledge Workspace (Mobile)~~ ✅ Resuelto (2026-07-13, [[ADR-009-mobile-navigation-manager-viewer-seam]]) | spike | workspace | Alta | S | — |
-| Componente de reproductor de audio integrado | feature | workspace | Alta | M | — (ya no depende del diseño de navegación — resuelto) |
-| Componente Mermaid mind map encapsulado + testeado en aislamiento | feature | workspace | Alta | M | — |
-| Integrar reproductor + resumen + notas + mind map en una sola pantalla | feature | workspace | Alta | L | Los 3 anteriores |
-| Definir/ajustar endpoint de datos agregados del Knowledge Pack | feature | api | Media | S | — |
-| QA de regresión visual en mobile (lección de la Presentation Layer revertida) | chore | workspace | Alta | S | Integración de pantalla |
+| ~~Componente de reproductor de audio integrado~~ ✅ Resuelto (2026-08-10) | feature | workspace | Alta | M | — |
+| ~~Componente de mind map encapsulado + testeado en aislamiento~~ ✅ Resuelto (2026-08-10) — **no es Mermaid literal**, árbol nativo View/Text por el precedente de ISSUE-012; renderiza LaTeX real, ver [[ADR-013-math-rendering-pipeline-rewrite]] | feature | workspace | Alta | M | — |
+| ~~Integrar reproductor + resumen + notas + mind map en una sola pantalla~~ ✅ Resuelto (2026-08-10) | feature | workspace | Alta | L | Los 3 anteriores |
+| ~~Definir/ajustar endpoint de datos agregados del Knowledge Pack~~ ✅ Ya satisfecho por `GET /jobs/{id}/result` desde antes de este sprint, sin cambios | feature | api | Media | S | — |
+| ~~QA de regresión visual en mobile~~ ✅ Resuelto (2026-08-10) — varias rondas de bugfixing real en dispositivo (renderizado matemático, paginación, overlaps de UI), no una ceremonia separada | chore | workspace | Alta | S | Integración de pantalla |
+| ~~Flip de `KnowledgePackViewer` a producción~~ ✅ Resuelto (2026-08-10, [[ADR-014-knowledge-workspace-versioning]]) — Milestone M1 cerrado | chore | workspace | Alta | S | Todo lo anterior |
 
 ## V2 — Intelligent Study
 

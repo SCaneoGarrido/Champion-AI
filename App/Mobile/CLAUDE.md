@@ -4,9 +4,22 @@ Contexto de componente. Ver `CLAUDE.md` en la raíz del proyecto para principios
 
 ## Dirección de producto (Roadmap)
 
-La interfaz principal a futuro **deja de ser una vista Markdown / pantallas separadas de resultado** y pasa a ser el **Knowledge Workspace**: una superficie única donde el usuario consume audio, resumen, notas y mapa mental integrados (EPIC V1 — ver `App/Knowledge/Roadmap/EPICS.md` y `App/Knowledge/Roadmap/ROADMAP.md`).
+La interfaz principal **ya no es una vista Markdown / pantallas separadas de resultado** — es el
+**Knowledge Workspace**: una superficie única donde el usuario consume audio, resumen, notas y
+mapa mental integrados (EPIC V1, cerrado 2026-08-10 — ver `App/Knowledge/Roadmap/EPICS.md` y
+`App/Knowledge/ADR/ADR-014-knowledge-workspace-versioning.md`).
 
-Esta sección documenta la implementación **actual** (previa al Workspace) — no ha cambiado con esta reorganización de roadmap. El trabajo de construcción del Workspace se planifica en el EPIC V1, no está implementado todavía. Un intento previo de superficie de presentación (Markdown/LaTeX/Mermaid) se implementó y se revirtió por completo por bugs visuales en mobile — el Workspace se construye con ese aprendizaje incorporado (componentes encapsulados y probados antes de integrarse). Ver `App/Knowledge/Bugs/known-issues.md`.
+`src/screens/KnowledgeWorkspaceScreen.jsx` es la superficie de producción real ("Knowledge
+Workspace V1"), servida por la ruta `KnowledgePackViewer`. Un intento previo de superficie de
+presentación (Markdown/LaTeX/Mermaid) se había implementado y revertido por completo por bugs
+visuales en mobile — el Workspace se construyó con ese aprendizaje incorporado (componentes
+encapsulados y probados antes de integrarse), y de hecho encontró bugs reales de renderizado en el
+camino que se corrigieron sin necesitar otro rollback (ver
+`App/Knowledge/ADR/ADR-013-math-rendering-pipeline-rewrite.md`). Ver `App/Knowledge/Bugs/known-issues.md`.
+
+Existe además una sección **Beta** permanente (ruta `KnowledgeWorkspaceBeta`, mismo componente por
+ahora) — punto de entrada oficial para probar la próxima iteración (V2 Topics, V4 narración/TTS...)
+antes de promoverla a la ruta estable. Ver ADR-014.
 
 ## Responsabilidad de este componente
 
@@ -155,14 +168,15 @@ navegación y `App/Knowledge/ADR/ADR-010-knowledge-pack-lifecycle-actions.md` pa
 - Contrato de parámetros: `jobId` (obligatorio, clave opaca) + `blobName` (opcional, solo
   decorativo — el viewer nunca debe ramificar lógica sobre su presencia). El viewer es dueño de su
   propio fetch de datos vía `getJobResult(jobId)`.
-- Hoy la ruta `KnowledgePackViewer` apunta a `src/screens/NoteDetailScreen.jsx`. Cuando se construya
-  el Knowledge Workspace (EPIC V1, ver `App/Knowledge/Roadmap/EPICS.md`), el único cambio necesario
-  es reasignar el `component={...}` de esa ruta en `App.jsx` — `NotesScreen.jsx` no se modifica.
+- La ruta `KnowledgePackViewer` apunta a `src/screens/KnowledgeWorkspaceScreen.jsx` desde el cierre
+  de M1 (2026-08-10 — ver ADR-014). El swap desde `NoteDetailScreen.jsx` (legacy, se mantiene en el
+  repo sin ninguna ruta activa, candidato a limpieza futura) fue exactamente el cambio de una línea
+  que este seam preveía — `NotesScreen.jsx` no se tocó.
 - **Gotcha de theming:** las pantallas del stack raíz viven fuera del `<ThemeProvider>` que
-  `MainTabNavigator` envuelve alrededor de los tabs. `NoteDetailScreen` hoy no usa `useTheme()`, así
-  que no necesita envoltura propia — pero si el futuro componente del Workspace sí la usa, debe
-  auto-envolverse en su propio `<ThemeProvider>` en `App.jsx` (mismo patrón que
-  `SpeechToTextWithTheme`), o fallará en tiempo de ejecución.
+  `MainTabNavigator` envuelve alrededor de los tabs. `KnowledgeWorkspaceScreen` no usa `useTheme()`
+  (hex hardcodeado), así que no necesita envoltura propia — si algún componente del Workspace
+  empieza a usar `useTheme()`, debe auto-envolverse en su propio `<ThemeProvider>` en `App.jsx`
+  (mismo patrón que `SpeechToTextWithTheme`), o fallará en tiempo de ejecución.
 
 ## Acciones de administración de un Knowledge Pack (Editar / Eliminar)
 
@@ -182,8 +196,8 @@ sí — mismo patrón atomizado que `JobOptionsModal`):
 - `Eliminar` es soft delete (`deleteJob(jobId)`) — el job desaparece de la lista tras refrescar; no
   hay acción de "restaurar" en la UI (ver ADR-010).
 
-`Descargar PDF` ya no está en `JobOptionsModal` — el viewer (`NoteDetailScreen`, futuro Knowledge
-Workspace) tiene su propio botón de PDF en el header; `pdfExport.js` no se duplica.
+`Descargar PDF` ya no está en `JobOptionsModal` — el viewer (`KnowledgeWorkspaceScreen`) tiene su
+propio botón de PDF en el header; `pdfExport.js` no se duplica.
 
 ## Notificaciones de job terminado
 

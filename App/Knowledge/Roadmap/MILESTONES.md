@@ -10,7 +10,7 @@ tags: #roadmap #milestones #github
 
 | Milestone | Versión | Epic asociado | Definition of Done |
 |---|---|---|---|
-| **M1 — Knowledge Workspace** | V1 | [[EPICS#EPIC V1 — Knowledge Workspace]] | Criterios de aceptación del EPIC V1 cumplidos: Workspace único en producción, mind map Mermaid estable, sin vista Markdown como entrada principal |
+| **M1 — Knowledge Workspace** ✅ CERRADO (2026-08-10) | V1 | [[EPICS#EPIC V1 — Knowledge Workspace]] | Criterios cumplidos: Workspace único en producción (`KnowledgePackViewer` → `KnowledgeWorkspaceScreen`, ver [[ADR-014-knowledge-workspace-versioning]]), mind map estable (árbol nativo, no Mermaid literal — decisión documentada), sin vista Markdown/legacy como entrada principal |
 | **M2 — Intelligent Study** | V2 | [[EPICS#EPIC V2 — Intelligent Study]] | Transcript Cleanup y Topics en producción; navegación, búsqueda y "continuar donde quedé" funcionando en el Workspace |
 | **M2.5 — Knowledge Enrichment** | V2.5 | [[EPICS#EPIC V2.5 — Knowledge Enrichment]] | Keywords/entities/concepts disponibles por Knowledge Pack; favoritos y notas personales persistentes |
 | **M3 — AI Learning Platform** | V3 | [[EPICS#EPIC V3 — AI Learning Platform]] | Flashcards, quiz y chat sobre la clase disponibles; mind map interactivo; reprocesamiento parcial funcionando |
@@ -26,6 +26,11 @@ M1 → M2 → M2.5 → M3 → M4 → M5
 ```
 
 El orden sigue la cadena de dependencias documentada en cada EPIC (ver [[EPICS]]) y el razonamiento de priorización en [[PRODUCT_STRATEGY]]. No se recomienda paralelizar M2 en adelante sin que M1 esté cerrado, ya que todas las versiones siguientes requieren el Workspace como superficie de entrega.
+
+Con M1 cerrado, cualquier feature de M2 en adelante se construye primero en la sección Beta
+permanente del Workspace (ver [[ADR-014-knowledge-workspace-versioning]]) y se promueve a la ruta
+estable solo después de validarse en dispositivo — mismo criterio que ya se aplicó de facto para
+cerrar M1.
 
 M4 no depende de M3 y podría, en principio, ejecutarse en paralelo a M3 si el equipo tiene capacidad — se mantiene después en la secuencia por prioridad de negocio (aprendizaje activo antes que narración), no por dependencia técnica dura. Ver [[EPICS]] para el detalle de dependencias de cada versión.
 

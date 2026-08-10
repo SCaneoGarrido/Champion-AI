@@ -20,8 +20,7 @@ function fmtDate(iso) {
 export default function JobOptionsModal({
   visible, job, onClose,
   onView,
-  onViewWorkspacePreview,
-  onViewMarkdownPreview,
+  onViewWorkspaceBeta,
   onEdit,
   onDelete,
   onRetry, retrying,
@@ -94,20 +93,13 @@ export default function JobOptionsModal({
           <>
             <TouchableOpacity style={styles.optionPrimary} onPress={onView} activeOpacity={0.82}>
               <MaterialIcons name="auto-awesome" size={22} color="#ffffff" />
-              <Text style={styles.optionPrimaryText}>Knowledge Workspace</Text>
+              <Text style={styles.optionPrimaryText}>Knowledge Workspace V1</Text>
             </TouchableOpacity>
 
-            {onViewWorkspacePreview && (
-              <TouchableOpacity style={styles.optionBeta} onPress={onViewWorkspacePreview} activeOpacity={0.82}>
+            {onViewWorkspaceBeta && (
+              <TouchableOpacity style={styles.optionBeta} onPress={onViewWorkspaceBeta} activeOpacity={0.82}>
                 <MaterialIcons name="science" size={22} color="#9333ea" />
                 <Text style={styles.optionBetaText}>Knowledge Workspace (Beta Version)</Text>
-              </TouchableOpacity>
-            )}
-
-            {onViewMarkdownPreview && (
-              <TouchableOpacity style={styles.optionBeta} onPress={onViewMarkdownPreview} activeOpacity={0.82}>
-                <MaterialIcons name="functions" size={22} color="#9333ea" />
-                <Text style={styles.optionBetaText}>Markdown + LaTeX (Debug, datos mock)</Text>
               </TouchableOpacity>
             )}
 

@@ -28,44 +28,63 @@ tags: #roadmap #scrum #sprint
 
 ---
 
-## Propuesta de Sprint 1 (arranque de V1 — Knowledge Workspace)
+## Sprint 1 (arranque de V1 — Knowledge Workspace) — ✅ CERRADO (2026-08-10)
 
-Priorizado desde la tabla V1 de [[BACKLOG]], respetando dependencias:
+Los 4 issues planificados están resueltos:
 
 1. ~~**Diseñar navegación del Knowledge Workspace (Mobile)**~~ ✅ Resuelto (2026-07-13) — ver
-   [[ADR-009-mobile-navigation-manager-viewer-seam]]. "Mis Apuntes" navega a una ruta estable
-   `KnowledgePackViewer` (hoy apunta a `NoteDetailScreen`); construir el Workspace es solo
-   implementar el componente y reasignar `component={...}` en `App.jsx` — no requiere ningún
-   trabajo de navegación adicional ni volver a tocar `NotesScreen.jsx`.
-2. **Componente Mermaid mind map encapsulado + testeado en aislamiento** — feature, M — ya no
-   depende de nada, es lo próximo a arrancar; es la pieza de mayor riesgo histórico (ver EPIC V1 en
-   [[EPICS]])
-3. **Componente de reproductor de audio integrado** — feature, M — ya no depende del diseño de
-   navegación (resuelto), puede arrancar en paralelo al punto 2
-4. **Definir/ajustar endpoint de datos agregados del Knowledge Pack** — feature (API), S — puede
-   avanzar en paralelo, sin dependencias. Punto de partida: `GET /jobs/{id}/result` (via
-   `vw_stt_recording_result`) ya devuelve transcripción + resumen + notas + mind map en una sola
-   respuesta — evaluar primero si alcanza tal cual antes de diseñar un endpoint nuevo.
+   [[ADR-009-mobile-navigation-manager-viewer-seam]].
+2. ~~**Componente mind map encapsulado + testeado en aislamiento**~~ ✅ Resuelto (2026-08-10) — con
+   una salvedad respecto al plan original: **no es Mermaid literal**, es un árbol nativo
+   (View/Text), decisión tomada por el precedente de rollback de ISSUE-012 y ya reflejada en
+   [[EPICS]]/[[BACKLOG]]. Renderiza LaTeX real vía el mismo pipeline que Resumen/Notas — ver
+   [[ADR-013-math-rendering-pipeline-rewrite]].
+3. ~~**Componente de reproductor de audio integrado**~~ ✅ Resuelto (2026-08-10) — play/pause, seek,
+   endpoint de streaming dedicado (`GET /jobs/:job_id/stream`, sin lock de un solo uso).
+4. ~~**Endpoint de datos agregados del Knowledge Pack**~~ ✅ Ya estaba satisfecho por
+   `GET /jobs/{id}/result` desde antes de este sprint — confirmado, sin cambios necesarios.
 
-Con el punto 1 resuelto, lo que queda de Sprint 1 son los puntos 2–4, ninguno bloqueado. Quedan
-fuera de Sprint 1 (siguiente sprint natural dentro de V1): integración final de las 3 piezas en una
-sola pantalla, y el QA de regresión visual — ambas dependen de que los componentes anteriores
-existan primero.
+### Bonus resuelto fuera de la planificación original de Sprint 1
+- **Integración de las 3 piezas en una sola pantalla** (originalmente prevista para el sprint
+  *siguiente*) — ya está hecha: `KnowledgeWorkspaceScreen.jsx` tiene Resumen/Notas/Transcripción +
+  Bloques (mind map) + Audio, todos accesibles desde el mismo `FloatingToolbar`.
+- **QA de regresión visual** — sucedió en la práctica como una serie de rondas de bugfixing real en
+  dispositivo (renderizado matemático, paginación, overlaps de UI) en vez de una ceremonia
+  separada. Ver el changelog de la sesión y [[ADR-013-math-rendering-pipeline-rewrite]].
+- **Flip a producción**: `KnowledgePackViewer` ya apunta a `KnowledgeWorkspaceScreen` — ver
+  [[ADR-014-knowledge-workspace-versioning]]. Milestone **M1 cerrado** (ver [[MILESTONES]]).
 
-### Por qué este recorte
-- Prioriza primero el componente de mayor riesgo conocido (Mermaid) para descubrir temprano si hay problemas similares a los de la Presentation Layer revertida, cuando todavía es barato corregir el rumbo.
-- No incluye integración final en el mismo sprint — evita repetir el patrón de "todo junto, todo se revierte junto" que ya ocurrió una vez.
+### Por qué el recorte original funcionó
+- Priorizar primero el componente de mayor riesgo conocido (mind map) permitió descubrir temprano
+  los problemas reales (no los mismos de la Presentation Layer revertida, pero de la misma familia
+  — renderizado enriquecido en mobile) cuando todavía era barato corregir el rumbo.
+- No incluir la integración final en el mismo sprint evitó repetir el patrón de "todo junto, todo
+  se revierte junto".
 
 ---
 
-## Recomendación para el siguiente sprint (post Sprint 1)
+## Convención permanente: sección Beta del Workspace
 
-Con los 4 issues de Sprint 1 cerrados, el sprint siguiente debería enfocarse en:
-1. **Integrar reproductor + resumen + notas + mind map en una sola pantalla** (depende de los 3 componentes de Sprint 1)
-2. **QA de regresión visual en mobile** inmediatamente después de la integración, antes de dar por cerrado el Milestone M1
-3. Si M1 cierra sin incidentes, iniciar el **diseño técnico de Transcript Cleanup** (primer issue de V2 en [[BACKLOG]]) en paralelo al QA final de M1, ya que es un spike sin dependencia de Mobile
+A partir del cierre de M1, el patrón "probar aislado antes de integrar" queda formalizado como una
+sección **Beta** permanente (no una ruta temporal ad-hoc) — ver
+[[ADR-014-knowledge-workspace-versioning]]. Cualquier feature de la próxima iteración (V2 Topics,
+V4 narración/TTS, etc.) se prueba primero ahí, se valida en dispositivo, y recién después se
+promueve a la ruta estable (`KnowledgePackViewer`, hoy "Knowledge Workspace V1").
 
-No se recomienda arrancar issues de V2 en paralelo a la integración de V1 (punto 1) — el equipo es de 2 personas y la integración es la pieza de mayor riesgo de todo el Milestone M1.
+---
+
+## Recomendación para el siguiente sprint
+
+Con M1 cerrado, el sprint siguiente debería enfocarse en (según lo que el equipo decida priorizar):
+1. **Si se sigue con V4 (narración/TTS)** — que ya arrancó en paralelo (backend en progreso) — vale
+   la pena decidirlo a propósito: es un salto en el orden documentado de [[MILESTONES]] (M2→M2.5→M3
+   antes de M4), aceptable si hay sinergia real con el reproductor de audio recién construido, pero
+   debería quedar como decisión explícita del equipo, no implícita.
+2. **Si se sigue el orden documentado** — iniciar el **diseño técnico de Transcript Cleanup**
+   (primer issue de V2 en [[BACKLOG]]), un spike sin dependencia de Mobile.
+
+En ambos casos: cualquier UI nueva se construye primero en la sección Beta del Workspace, no
+directo en la ruta estable.
 
 ---
 

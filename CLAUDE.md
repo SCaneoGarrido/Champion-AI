@@ -174,7 +174,7 @@ mind_map (gpt-5-mini)
 | STT — GET /jobs/{id}/status | Implementado |
 | STT — GET /jobs/{id}/result | Implementado |
 | STT — retry de jobs fallidos | Implementado |
-| Knowledge Workspace (V1) | Próximo — ver Roadmap |
+| Knowledge Workspace (V1) | Implementado — en producción desde 2026-08-10 (ver `App/Knowledge/ADR/ADR-014-knowledge-workspace-versioning.md`) |
 | Intelligent Study — Transcript Cleanup, Topics (V2) | Roadmap |
 | Knowledge Enrichment (V2.5) | Roadmap |
 | AI Learning Platform — Flashcards, Quiz, Chat (V3) | Roadmap |

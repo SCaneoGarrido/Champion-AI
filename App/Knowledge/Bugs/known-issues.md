@@ -74,6 +74,27 @@ Profundidad máxima del árbol: 4 niveles.
 
 ---
 
+### ~~ISSUE-012: Riesgo de regresión visual al reintroducir Mermaid en el Knowledge Workspace~~ ✅ CERRADO (2026-08-10)
+
+La Presentation Layer (Markdown, LaTeX, Mermaid mind maps) se implementó de punta a punta y se **revirtió por completo** (código + BD) el 2026-07-11 por bugs visuales persistentes en mobile.
+
+**Resolución:** el riesgo se materializó parcialmente — hubo bugs reales de renderizado en
+producción (ecuaciones superpuestas sobre texto, sintaxis interna `math://`/`%28` visible,
+`[object Object]` en Ejemplos) — pero a diferencia del rollback original, esta vez se identificó
+la causa raíz de cada uno (ver [[ADR-013-math-rendering-pipeline-rewrite]]) y se corrigió sin
+necesitar revertir código ni BD. Dos decisiones clave evitaron repetir el rollback completo:
+
+1. El mapa mental **no usa Mermaid ni WebView para el árbol en sí** — es un componente nativo
+   (View/Text), decisión tomada desde el diseño inicial del Workspace, no como reacción a un bug.
+2. El único WebView que sí se usa (`MathView.jsx`, para tipografía LaTeX real vía KaTeX) está
+   acotado a una fórmula por instancia, nunca al documento completo — mismo criterio de aislamiento
+   que este issue pedía.
+
+M1 cerrado con el Workspace en producción (ver [[MILESTONES]],
+[[ADR-014-knowledge-workspace-versioning]]).
+
+---
+
 ## Issues retirados del roadmap activo
 
 ### ~~ISSUE-005: Gestión de Archivos — Sin documentación técnica~~ ⛔ RETIRADO (2026-07-13)
@@ -95,16 +116,6 @@ El README mencionaba "Conversión de texto a voz" como capacidad genérica del s
 **Estado actual:** TTS deja de ser una feature genérica sin alcance definido. Vive ahora, con alcance acotado, dentro de **EPIC V4 — Intelligent Audio Learning** (ver [[EPICS]]): narración de `summary_text` y `notes_text` ya generados por el Workspace, con selección de voz, SSML y caché — no conversión de texto arbitrario a voz.
 
 Sigue pendiente de implementación. Ver [[text-to-speech]] y [[EPICS#EPIC V4 — Intelligent Audio Learning]].
-
----
-
-### ISSUE-012: Riesgo de regresión visual al reintroducir Mermaid en el Knowledge Workspace
-
-La Presentation Layer (Markdown, LaTeX, Mermaid mind maps) se implementó de punta a punta y se **revirtió por completo** (código + BD) el 2026-07-11 por bugs visuales persistentes en mobile.
-
-El nuevo roadmap (EPIC V1 — Knowledge Workspace, ver [[EPICS]]) reintroduce el renderizado Mermaid del mapa mental, esta vez como un componente encapsulado dentro del Workspace en lugar de una vista Markdown standalone. El riesgo de repetir los mismos bugs visuales sigue vigente si el componente no se prueba de forma aislada antes de integrarlo.
-
-**Mitigación documentada:** ver criterios de aceptación y riesgos del EPIC V1 en [[EPICS]], y [[ADR-008-knowledge-workspace]].
 
 ---
 
@@ -160,4 +171,4 @@ No está documentado el límite de requests por minuto o por hora de la API de F
 | ISSUE-009 | Vacío de info | Activo | Bajo |
 | ISSUE-010 | Vacío de info | Activo | Bajo |
 | ISSUE-011 | Vacío de info | Activo | Informativo |
-| ISSUE-012 | Riesgo de regresión (Mermaid en Workspace) | Activo | Alto |
+| ISSUE-012 | Riesgo de regresión (mind map en Workspace) | ✅ Resuelto | — |

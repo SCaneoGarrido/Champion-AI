@@ -18,10 +18,8 @@ import { ThemeProvider } from './src/context/ThemeContext';
 import { UploadManagerProvider } from './src/context/UploadManagerContext';
 import UploadStatusBar from './src/components/UploadStatusBar';
 import SpeechToTextScreen from './src/screens/SpeechToTextScreen';
-import NoteDetailScreen from './src/screens/NoteDetailScreen';
 import KnowledgeWorkspaceScreen from './src/screens/KnowledgeWorkspaceScreen';
 import MindMapScreen from './src/screens/MindMapScreen';
-import RichMarkdownPreviewScreen from './src/screens/RichMarkdownPreviewScreen';
 import { setSessionExpiredHandler } from './src/utils/authFetch';
 
 export const navigationRef = createNavigationContainerRef();
@@ -73,23 +71,30 @@ export default function App() {
             component={SpeechToTextWithTheme}
             options={{ headerShown: false }}
           />
+          {/*
+            Knowledge Workspace V1 — superficie estable de producción (EPIC
+            V1 cerrado). Reemplaza a NoteDetailScreen (retirado de rutas,
+            archivo se mantiene por ahora como referencia — candidato a
+            limpieza en un futuro chore). Swap habilitado por el seam de
+            ADR-009: NotesScreen sigue navegando solo por nombre de ruta, no
+            se tocó al hacer este cambio.
+          */}
           <Stack.Screen
             name="KnowledgePackViewer"
-            component={NoteDetailScreen}
+            component={KnowledgeWorkspaceScreen}
             options={{ headerShown: false, presentation: 'modal' }}
           />
           {/*
-            Ruta temporal de revisión manual (EPIC V1 — Knowledge Workspace).
-            Misma firma de params que KnowledgePackViewer ({ jobId, blobName }),
-            registrada aparte a propósito para no reemplazar el viewer en
-            producción todavía — sigue la lección del rollback de la
-            Presentation Layer: probar aislado antes de integrar (ver
-            App/Knowledge/Bugs/known-issues.md, ISSUE-012). Cuando se apruebe,
-            el único cambio pendiente es mover este component al registro de
-            arriba (ADR-009 ya preparó el seam para ese swap).
+            Knowledge Workspace Beta — mismo componente que la ruta estable
+            por ahora (todavía no hay una V2 que diverja), pero es el punto
+            de entrada permanente para probar la próxima iteración (ej. TTS/
+            narración) de forma aislada antes de promoverla a
+            KnowledgePackViewer — misma lección del rollback de la
+            Presentation Layer, ahora formalizada como convención en vez de
+            una ruta temporal (ver ADR-014-knowledge-workspace-versioning).
           */}
           <Stack.Screen
-            name="KnowledgeWorkspacePreview"
+            name="KnowledgeWorkspaceBeta"
             component={KnowledgeWorkspaceScreen}
             options={{ headerShown: false, presentation: 'modal' }}
           />
@@ -103,18 +108,6 @@ export default function App() {
             name="MindMapScreen"
             component={MindMapScreen}
             options={{ headerShown: false }}
-          />
-          {/*
-            Preview aislado de RichMarkdown (Markdown + LaTeX real vía
-            WebView/KaTeX) — datos 100% mock. Reintroduce WebView, la misma
-            clase de riesgo de ISSUE-012 (known-issues.md); se prueba en
-            dispositivo, sola, antes de conectarla a contenido real en
-            ReaderCard/AIQuoteCard/MindMapDiagram.
-          */}
-          <Stack.Screen
-            name="RichMarkdownPreview"
-            component={RichMarkdownPreviewScreen}
-            options={{ headerShown: false, presentation: 'modal' }}
           />
         </Stack.Navigator>
       </NavigationContainer>

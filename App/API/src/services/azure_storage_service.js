@@ -3,6 +3,7 @@ const { QueueClient } = require('@azure/storage-queue');
 const JobRepository = require('../repositories/job.repository');
 
 const logger = require('../utils/logger');
+const job_repository = new JobRepository();
 
 class AzureStorageService {
     #account
@@ -34,9 +35,9 @@ class AzureStorageService {
             return null;
         }
     }
-
+    /**
     async uploadFileToBlob(file) {
-        // Deprecado la API no sube archivos ni maneja bytes de estos
+        // Deprecado la API no sube archivos ni maneja bytes
         try {
             if (!file || !file.filename || !file.path) {
                 throw new Error('El objeto file no tiene las propiedades necesarias (filename, path).');
@@ -60,7 +61,8 @@ class AzureStorageService {
             throw new Error(error);
         }
     }
-
+     */
+    
     async uploadToQueue(message) {
         try {
             const queueClient = new QueueClient(
@@ -69,9 +71,9 @@ class AzureStorageService {
             );
             const payload = Buffer.from(JSON.stringify(message)).toString('base64');
             await queueClient.sendMessage(payload);
-            logger.info('Mensaje encolado correctamente...');
+            logger.info('[AzureStorageService][uploadToQueue] - Mensaje encolado correctamente...');
         } catch (error) {
-            logger.error('Error al enviar mensaje a la cola: ' + error.message);
+            logger.error('[AzureStorageService][uploadToQueue] - Error al enviar mensaje a la cola: ' + error.message);
             throw error;
         }
     }
@@ -81,12 +83,12 @@ class AzureStorageService {
             const account = this.#account;
             const container = this.#containerName;
             if (!account || !container) {
-                logger.error('No se han definido las variables de entorno AZURE_STORAGE_ACCOUNT o SPEECH_BLOB_NAME');
+                logger.error('[AzureStorageService][buildBlobUrl] - No se han definido las variables de entorno AZURE_STORAGE_ACCOUNT o SPEECH_BLOB_NAME');
                 return null;
             }
             return `https://${account}.blob.core.windows.net/${container}/${blobPath}`;
         } catch (error) {
-            logger.error('Error al construir URL del blob: ' + error.message);
+            logger.error('[AzureStorageService][buildBlobUrl] - Error al construir URL del blob: ' + error.message);
             return null;
         }
     }
@@ -97,7 +99,7 @@ class AzureStorageService {
             await blobServiceClient.getAccountInfo();
             return true;
         } catch (error) {
-            logger.error('Error al probar conexión a Blob Storage: ' + error.message);
+            logger.error('[AzureStorageService][testBlobConnection] - Error al probar conexión a Blob Storage: ' + error.message);
             return false;
         }
     }
@@ -106,12 +108,12 @@ class AzureStorageService {
         try {
             const prefix = `https://${this.#account}.blob.core.windows.net/${this.#containerName}/`;
             if (!blobUrl || !blobUrl.startsWith(prefix)) {
-                logger.warn('[AzureStorageService][getBlobPathFromUrl] La URL del blob no corresponde a este storage account/container.');
+                logger.warn('[AzureStorageService][getBlobPathFromUrl] - La URL del blob no corresponde a este storage account/container.');
                 return null;
             }
             return blobUrl.slice(prefix.length);
         } catch (error) {
-            logger.error('Error al extraer el path del blob desde su URL: ' + error.message);
+            logger.error('[AzureStorageService][getBlobPathFromUrl] - Error al extraer el path del blob desde su URL: ' + error.message);
             return null;
         }
     }
@@ -137,7 +139,7 @@ class AzureStorageService {
             return blobUrl;
 
         } catch (error) {
-            logger.error("Error al descargar blob: " + error.message);
+            logger.error("[AzureStorageService][generateSingleUseUrl] - Error al descargar blob: " + error.message);
             return null;
         }
     };
@@ -151,7 +153,7 @@ class AzureStorageService {
             return true;
         }
         catch (error) {
-            logger.error('Error al probar conexión a Azure Queue Storage: ' + error.message);
+            logger.error('[AzureStorageService][testQueueConnection] - Error al probar conexión a Azure Queue Storage: ' + error.message);
             return false;
         }
     }
