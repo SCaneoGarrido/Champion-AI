@@ -28,6 +28,7 @@
         "android.permission.READ_MEDIA_IMAGES"
       ]
     },
-    "scheme": "championai"
+    "scheme": "championai",
+    "plugins": ["expo-screen-orientation"]
   }
 }

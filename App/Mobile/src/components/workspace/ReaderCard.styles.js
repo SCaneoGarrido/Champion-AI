@@ -7,8 +7,15 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     padding: 24,
   },
+  // paddingBottom/paddingRight de más (encima del padding de `card`) para que
+  // el texto nunca quede debajo/al lado del FloatingToolbar anclado
+  // abajo-derecha (52px de botón + 16px de offset horizontal / 20px vertical
+  // — ver FloatingToolbar.styles.js). El botón necesita 52+16=68px de despeje
+  // horizontal desde el borde de `card`; `card.padding` ya aporta 24, así que
+  // acá hace falta sumar 44 más (no 24 — cálculo corregido).
   scrollContent: {
-    paddingBottom: 12,
+    paddingBottom: 84,
+    paddingRight: 44,
     gap: 24,
   },
 

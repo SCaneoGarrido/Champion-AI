@@ -47,6 +47,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     padding: 24,
   },
+  rotatingWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
 
 export default styles;

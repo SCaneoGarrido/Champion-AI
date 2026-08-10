@@ -79,6 +79,13 @@ Exception: if a field value contains a mathematical expression, wrap it in
 "$...$" (inline) or "$$...$$" (block) — see MATHEMATICAL NOTATION in the
 system prompt. This is the one LaTeX construct allowed inside field values.
 
+Each item in "examples" is either a plain string, OR — when the example is a
+worked problem with real structure (a statement + a solution) — an object
+with EXACTLY these fields (omit any that don't apply, never invent others):
+{ "statement": "", "solution": "", "notes": "" }. Use this fixed shape
+consistently instead of inventing other field names (no "title"/"problem"/
+"steps"/"result"/etc.) so structured examples look the same across notes.
+
 No explanations.
 
 No comments.

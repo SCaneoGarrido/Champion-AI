@@ -148,6 +148,11 @@ the delimiters. A formula left outside them will show as raw text.
 Never use LaTeX commands outside of math delimiters (plain prose stays plain
 prose — LaTeX is only for the mathematical expressions themselves).
 
+Never use a bare "$" for money amounts (e.g. "$100", "$200"). A stray "$"
+can be misread as the opening of a math expression by the renderer and break
+unrelated content around it. If the transcription mentions a monetary
+amount, spell it out in words instead (e.g. "100 dollars", "200 dólares").
+
 --------------------------------------------------
 DOMAIN KNOWLEDGE
 --------------------------------------------------

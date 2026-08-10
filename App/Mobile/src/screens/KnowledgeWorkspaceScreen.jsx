@@ -18,6 +18,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 
 import ReaderCard from '../components/workspace/ReaderCard';
 import FloatingToolbar from '../components/workspace/FloatingToolbar';
+import AudioPlayer from '../components/workspace/AudioPlayer';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ToastBanner from '../components/ToastBanner';
 import { useToast } from '../hooks/useToast';
@@ -58,6 +59,7 @@ export default function KnowledgeWorkspaceScreen({ navigation, route }) {
   const [exporting, setExporting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showPlayer, setShowPlayer] = useState(false);
 
   useEffect(() => {
     getSession().then(setSession).catch(() => {});
@@ -68,6 +70,7 @@ export default function KnowledgeWorkspaceScreen({ navigation, route }) {
     setError('');
     try {
       const data = await getJobResult(jobId);
+      console.log(`[KnowledgeWorkspaceScreen][fetchResult] - ${JSON.stringify(Object.keys(data))}`);
       setResult(data);
       setWorkspace(mapJobResultToWorkspace(data));
     } catch (e) {
@@ -153,8 +156,8 @@ export default function KnowledgeWorkspaceScreen({ navigation, route }) {
       key: 'audio',
       icon: 'graphic-eq',
       label: 'Escuchar narración',
-      active: false,
-      onPress: () => showToast('🚧 Narración en desarrollo'),
+      active: showPlayer,
+      onPress: () => setShowPlayer(prev => !prev),
     },
   ];
 
@@ -218,6 +221,10 @@ export default function KnowledgeWorkspaceScreen({ navigation, route }) {
             />
             <FloatingToolbar buttons={toolbarButtons} />
           </View>
+
+          {showPlayer && (
+            <AudioPlayer jobId={jobId} onClose={() => setShowPlayer(false)} />
+          )}
 
           <View style={styles.bottomToolbar}>
             <View style={styles.bottomToolbarSide}>

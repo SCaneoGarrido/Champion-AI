@@ -10,22 +10,15 @@ const azure_storage_service = new AzureStorageService();
 
 const downloadcontroller = {
     download_file: async (req, res) => {
+        
         try {
             const { job_id } = req.params;
             const userid = req.userId;
 
-            const blobUrl = await job_repository.getBlobUrlForDownload(job_id, userid);
-            if (!blobUrl) {
-                return sendError(res, 404, "JOB_NOT_FOUND", "Job no encontrado.");
-            }
-
-            const blobPath = azure_storage_service.getBlobPathFromUrl(blobUrl);
-            if (!blobPath) {
-                return sendError(res, 500, "INTERNAL_ERROR", "No se pudo resolver la ubicación del archivo.");
-            }
+            const blobPath = await azure_storage_service.resolveBlobPath(job_id, userid);
+            if (!blobPath) return;
 
             // Aqui llamo la logica para obtener el blob desde azure storage service.
-            /*
             const alreadyDownloaded = await download_repository.checkIfAlreadyDownloaded(userid, blobPath);
 
             if (alreadyDownloaded) {
@@ -35,7 +28,7 @@ const downloadcontroller = {
 
             // limpieza pasiva en segundo plano
             await download_repository.cleanOldDownloadsLocks();
-            */
+          
             const secureBlobUrl = azure_storage_service.generateSingleUseUrl(blobPath);
             if (!secureBlobUrl) {
                 return sendError(res, 500, "INTERNAL_ERROR", "No se pudo generar el enlace de descarga.");
@@ -48,6 +41,30 @@ const downloadcontroller = {
             logger.error("[downloadcontroller][download_audio_file] - Error al descargar archivo de audio: " + error.message);
             return sendError(res, 500, "INTERNAL_ERROR", "Error interno del servidor.");
 
+        }
+    },
+
+    // A diferencia de download_file, no pasa por download_locks: pensado para el reproductor,
+    // que necesita poder pedir la URL de reproducción más de una vez (play/pause, reabrir la nota).
+    stream_file: async (req, res) => {
+        try {
+            const { job_id } = req.params;
+            const userid = req.userId;
+
+            const blobPath = await azure_storage_service.resolveBlobPath(job_id, userid);
+            if (!blobPath) return;
+
+            const secureBlobUrl = azure_storage_service.generateSingleUseUrl(blobPath);
+            if (!secureBlobUrl) {
+                return sendError(res, 500, "INTERNAL_ERROR", "No se pudo generar el enlace de reproducción.");
+            }
+
+            return sendSuccess(res, 200, {
+                streamUrl: secureBlobUrl
+            });
+        } catch (error) {
+            logger.error("[downloadcontroller][stream_file] - Error al generar enlace de streaming: " + error.message);
+            return sendError(res, 500, "INTERNAL_ERROR", "Error interno del servidor.");
         }
     }
 };

@@ -75,6 +75,13 @@ const styles = StyleSheet.create({
     color: '#6B6B6B',
   },
 
+  // Override para RichMarkdown dentro de un chip — el párrafo de Markdown
+  // por defecto trae su propio margen (pensado para documentos largos), acá
+  // no debe agregar espacio extra dentro de la pill.
+  chipParagraphReset: {
+    margin: 0,
+  },
+
   emptyWrap: {
     paddingVertical: 40,
     alignItems: 'center',

@@ -157,6 +157,13 @@ export async function getJobResult(jobId) {
   return json.data ?? null;
 }
 
+export async function getJobStreamUrl(jobId) {
+  const res = await authenticatedFetch(`/API/v1/Downloads/jobs/${jobId}/stream`);
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error?.message || `HTTP ${res.status}`);
+  return json.data?.streamUrl ?? null;
+}
+
 export async function patchJobName(jobId, name) {
   const res = await authenticatedFetch(`/API/v1/AIServices/Speechv2/jobs/${jobId}/name`, {
     method: 'PATCH',

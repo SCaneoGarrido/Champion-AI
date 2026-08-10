@@ -17,6 +17,17 @@
  * literal, es el equivalente visual del EPIC V1 con el riesgo estructural
  * eliminado, no solo mitigado.
  *
+ * Sin paginación — a diferencia de Resumen/Notas, esto es un árbol/diagrama,
+ * no un documento lineal, así que no hay noción de "página 1 de N" que tenga
+ * sentido acá. Se mantiene como una sola superficie con scroll.
+ *
+ * Los nombres de nodo pueden traer LaTeX real ("$...$" — ver
+ * `procesamiento/prompts/mind_map.md`), así que se renderizan con
+ * `RichMarkdown` (el mismo componente que usan Resumen/Notas, con un override
+ * de estilo por profundidad) en vez de la vieja limpieza a texto plano
+ * (`cleanAIText`) — mismo sistema de renderizado matemático en todo el
+ * Workspace, sin un renderizador aparte que muestre la sintaxis interna.
+ *
  * Recibe `data` con la forma de `mind_map_json` (schema fijo, profundidad
  * máxima 4 niveles — ver known-issues.md ISSUE-007):
  *   { title, nodes: [{ name, children: [...] }] }
@@ -24,7 +35,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { cleanAIText } from '../../utils/textFormat';
+import RichMarkdown from './RichMarkdown';
 import styles from './MindMapDiagram.styles';
 
 const CHIP_STYLES = [styles.chipRoot, styles.chipDepth1, styles.chipDepth2, styles.chipDepth3];
@@ -62,7 +73,10 @@ function MindMapNode({ node, depth }) {
         )}
 
         <View style={[styles.chip, chipStyle]}>
-          <Text style={textStyle}>{cleanAIText(node.name)}</Text>
+          <RichMarkdown
+            content={node.name}
+            style={{ body: textStyle, paragraph: styles.chipParagraphReset }}
+          />
         </View>
       </View>
 

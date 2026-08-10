@@ -1,5 +1,7 @@
 const { BlobServiceClient, StorageSharedKeyCredential, generateBlobSASQueryParameters, BlobSASPermissions } = require('@azure/storage-blob');
 const { QueueClient } = require('@azure/storage-queue');
+const JobRepository = require('../repositories/job.repository');
+
 const logger = require('../utils/logger');
 
 class AzureStorageService {
@@ -197,6 +199,26 @@ class AzureStorageService {
         }
     }
 
+    async resolveBlobPath(job_id, userid) {
+        try {
+            const blobUrl = await job_repository.getBlobUrlForDownload(job_id, userid);
+            if (!blobUrl) {
+                logger.warn(`[AzureStorageService][resolveBlobPath] Job no encontrado para job_id: ${job_id} y user_id: ${userid}`);
+                return null;
+            }
+
+            const blobPath = this.getBlobPathFromUrl(blobUrl);
+            if (!blobPath) {
+                logger.error(`[AzureStorageService][resolveBlobPath] No se pudo resolver la ubicación del archivo para job_id: ${job_id} y user_id: ${userid}`);
+                return null;
+            }
+
+            return blobPath;
+        } catch (error) {
+            logger.error(`[AzureStorageService][resolveBlobPath] Error al resolver el path del blob para job_id: ${job_id} y user_id: ${userid}. Detalles: ${error.message}`);
+            return null;
+        }
+    }
 }
 
 module.exports = AzureStorageService;

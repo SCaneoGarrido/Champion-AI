@@ -12,9 +12,11 @@
  * MindMapDiagramPreviewScreen, ahora fusionado en una sola pantalla en vez de
  * mantener dos versiones (preview vs. real) del mismo componente host.
  */
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { MaterialIcons } from '@expo/vector-icons';
 import MindMapDiagram from '../components/workspace/MindMapDiagram';
 import styles from './MindMapScreen.styles';
@@ -61,9 +63,29 @@ export default function MindMapScreen({ navigation, route }) {
   const mindMap = route?.params?.mindMap;
   const documentTitle = route?.params?.documentTitle;
   const usingMock = !mindMap;
+  const [rotating, setRotating] = useState(true);
+
+  // El árbol necesita más ancho del que da portrait sin forzar wrap/overflow en
+  // niveles profundos — se fuerza landscape solo mientras esta pantalla tiene foco
+  // y se revierte a portrait al salir (el resto de la app sigue portrait-locked).
+  // El contenido queda oculto (`rotating`) hasta que lockAsync resuelve — sin
+  // esto se ve un frame en portrait justo antes de que el dispositivo rote.
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      setRotating(true);
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE).finally(() => {
+        if (!cancelled) setRotating(false);
+      });
+      return () => {
+        cancelled = true;
+        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+      };
+    }, [])
+  );
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.screen}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -85,9 +107,15 @@ export default function MindMapScreen({ navigation, route }) {
         </View>
       )}
 
-      <View style={styles.card}>
-        <MindMapDiagram data={usingMock ? MOCK_MIND_MAP : mindMap} />
-      </View>
+      {rotating ? (
+        <View style={styles.rotatingWrap}>
+          <ActivityIndicator color="#B98A00" size="large" />
+        </View>
+      ) : (
+        <View style={styles.card}>
+          <MindMapDiagram data={usingMock ? MOCK_MIND_MAP : mindMap} />
+        </View>
+      )}
     </SafeAreaView>
   );
 }

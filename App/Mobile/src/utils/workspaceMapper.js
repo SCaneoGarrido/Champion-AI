@@ -40,11 +40,46 @@ function splitIntoParagraphs(text) {
 }
 
 // ── Resumen ──────────────────────────────────────────────────────────────────
-// Una sola sección, `rich: true` — summary_text ya viene en Markdown con sus
-// propios encabezados ("# Executive Summary", "## ...") y ecuaciones LaTeX,
-// así que se pasa entero a RichMarkdown en vez de forzarlo dentro de un
-// AIQuoteCard (tenía sentido cuando era una sola cita de texto plano, ya no
-// cuando es un documento Markdown con su propia jerarquía).
+// summary_text viene con encabezados H1 reales ("# Executive Summary",
+// "# Main Topics", "# Key Insights", "# Decisions", "# Final Conclusion" —
+// ver procesamiento/prompts/summary.md) y ecuaciones LaTeX. Se parte por esos
+// límites de "# " en una sección por heading — mismo patrón que
+// buildConceptSection para Notas — así Resumen también pagina en vez de ser
+// un único scroll largo. El heading en sí no se duplica dentro del cuerpo:
+// se usa como `section.title` (ReaderCard ya lo muestra aparte), solo el
+// resto del texto de esa sección va a `paragraphs`.
+
+function splitResumenSections(summaryText) {
+  const text = String(summaryText).trim();
+  const headingMatches = [...text.matchAll(/^# (.+)$/gm)];
+
+  if (headingMatches.length === 0) {
+    // Sin headings H1 (resumen corto/sin estructura) — una sola sección,
+    // mismo comportamiento que antes de paginar.
+    return [{
+      id: 'resumen-1',
+      number: '1',
+      title: 'Resumen',
+      rich: true,
+      paragraphs: [textParagraph(text)],
+    }];
+  }
+
+  return headingMatches.map((match, i) => {
+    const start = match.index;
+    const end = i + 1 < headingMatches.length ? headingMatches[i + 1].index : text.length;
+    const chunk = text.slice(start, end);
+    const newlineIndex = chunk.indexOf('\n');
+    const body = (newlineIndex === -1 ? '' : chunk.slice(newlineIndex + 1)).trim();
+    return {
+      id: `resumen-${i + 1}`,
+      number: String(i + 1),
+      title: match[1].trim(),
+      rich: true,
+      paragraphs: body ? [textParagraph(body)] : [],
+    };
+  });
+}
 
 function buildResumenDocument(result) {
   if (!result.summary_text) {
@@ -53,13 +88,7 @@ function buildResumenDocument(result) {
   return {
     key: 'resumen',
     label: 'Resumen',
-    sections: [{
-      id: 'resumen-1',
-      number: '1',
-      title: 'Resumen',
-      rich: true,
-      paragraphs: [textParagraph(result.summary_text)],
-    }],
+    sections: splitResumenSections(result.summary_text),
   };
 }
 
@@ -99,6 +128,42 @@ function buildConceptSection(concept, index) {
   };
 }
 
+// examples[] no siempre es string — confirmado contra datos reales de
+// producción (SELECT jsonb_typeof(e) FROM stt_recording_result, ...): el
+// modelo a veces describe un ejercicio resuelto como objeto estructurado
+// ({problem, solution, steps, notes...}) en vez de una línea plana, y las
+// claves usadas varían entre jobs (title/problem/statement/context/steps/
+// solution/result/notes/observations/description — 10 distintas). Sin este
+// manejo, el template literal de más abajo coacciona el objeto a
+// "[object Object]". Cualquier clave no listada igual se muestra (con su
+// nombre tal cual) — nunca se descarta contenido silenciosamente.
+const EXAMPLE_FIELD_LABELS = {
+  title: 'Título',
+  problem: 'Problema',
+  statement: 'Enunciado',
+  context: 'Contexto',
+  steps: 'Pasos',
+  solution: 'Solución',
+  result: 'Resultado',
+  notes: 'Notas',
+  observations: 'Observaciones',
+  description: 'Descripción',
+};
+
+function formatExample(example) {
+  if (typeof example === 'string') return example;
+  if (!example || typeof example !== 'object') return String(example ?? '');
+
+  return Object.entries(example)
+    .filter(([, value]) => value != null && value !== '')
+    .map(([key, value]) => {
+      const label = EXAMPLE_FIELD_LABELS[key] || key;
+      const text = Array.isArray(value) ? value.join(' → ') : String(value);
+      return `**${label}:** ${text}`;
+    })
+    .join('  \n'); // "  \n" = salto de línea Markdown dentro del mismo ítem
+}
+
 function buildClosingSection(notesJson, sectionNumber) {
   const blocks = [
     notesJson.key_takeaways?.length && {
@@ -111,7 +176,7 @@ function buildClosingSection(notesJson, sectionNumber) {
     },
     notesJson.examples?.length && {
       label: 'Ejemplos',
-      lines: notesJson.examples,
+      lines: notesJson.examples.map(formatExample),
     },
   ].filter(Boolean);
 

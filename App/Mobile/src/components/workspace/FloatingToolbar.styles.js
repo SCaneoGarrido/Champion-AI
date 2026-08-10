@@ -1,14 +1,15 @@
 import { StyleSheet } from 'react-native';
 
 const styles = StyleSheet.create({
-  // Wrapper a pantalla completa: centra verticalmente el toolbar sin
-  // depender de transforms con porcentajes (no soportados en RN).
+  // Anclado abajo-derecha (FAB estándar) — antes centraba el toolbar en el
+  // alto completo de la columna de lectura (top:0/bottom:0/justifyContent:
+  // 'center'), así que terminaba plantado sobre el texto donde sea que el
+  // usuario estuviera leyendo. Ver ReaderCard.styles.js (scrollContent) para
+  // el padding que reserva espacio para este botón.
   wrapper: {
     position: 'absolute',
-    top: 0,
-    bottom: 0,
+    bottom: 20,
     right: 16,
-    justifyContent: 'center',
     alignItems: 'center',
   },
   column: {

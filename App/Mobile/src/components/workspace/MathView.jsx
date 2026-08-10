@@ -17,9 +17,13 @@
  *
  * Limitación conocida: KaTeX se carga desde CDN (jsDelivr) — requiere
  * conexión a internet. Bundlearlo localmente (assets + file://) queda como
- * mejora futura si el uso offline resulta necesario.
+ * mejora futura si el uso offline resulta necesario. Mientras tanto: si el
+ * CDN falla, no se muestra el LaTeX crudo en pantalla (confundía con la
+ * sintaxis interna) — un aviso corto en su lugar. Y si el `postMessage` de
+ * altura nunca llega (mismo tipo de falla de red), un timeout evita que la
+ * fórmula quede clippeada al alto inicial para siempre.
  */
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 
@@ -62,7 +66,7 @@ function buildHtml(latex, block, color) {
     } catch (e) {
       var el = document.getElementById('m');
       el.className = 'error';
-      el.textContent = ${safeLatex};
+      el.textContent = '⚠ fórmula no disponible';
     }
     postHeight();
     window.addEventListener('load', postHeight);
@@ -71,8 +75,15 @@ function buildHtml(latex, block, color) {
 </html>`;
 }
 
+const HEIGHT_TIMEOUT_MS = 4000;
+const FALLBACK_HEIGHT = 60;
+
 export default function MathView({ latex, block = false, color = '#2E2E2E' }) {
-  const [height, setHeight] = useState(block ? 40 : 22);
+  // Estimación inicial más cercana a una fórmula típica (fracción/límite en
+  // bloque suele rondar 1.5-2 líneas a este tamaño) — reduce el salto visual
+  // entre el primer paint y el alto real que llega por postMessage. Sigue
+  // siendo una estimación, no reemplaza la medición real.
+  const [height, setHeight] = useState(block ? 64 : 26);
   const loadedOnce = useRef(false);
 
   const onMessage = useCallback((event) => {
@@ -83,6 +94,14 @@ export default function MathView({ latex, block = false, color = '#2E2E2E' }) {
     }
   }, []);
 
+  useEffect(() => {
+    loadedOnce.current = false;
+    const timer = setTimeout(() => {
+      if (!loadedOnce.current) setHeight(block ? FALLBACK_HEIGHT : FALLBACK_HEIGHT / 2);
+    }, HEIGHT_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [latex, block]);
+
   if (!latex?.trim()) return null;
 
   return (
@@ -92,7 +111,7 @@ export default function MathView({ latex, block = false, color = '#2E2E2E' }) {
         source={{ html: buildHtml(latex.trim(), block, color) }}
         onMessage={onMessage}
         style={styles.webview}
-        scrollEnabled={false}
+        scrollEnabled
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
         javaScriptEnabled

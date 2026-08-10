@@ -102,7 +102,7 @@ export default function App() {
           <Stack.Screen
             name="MindMapScreen"
             component={MindMapScreen}
-            options={{ headerShown: false, presentation: 'modal' }}
+            options={{ headerShown: false }}
           />
           {/*
             Preview aislado de RichMarkdown (Markdown + LaTeX real vía
