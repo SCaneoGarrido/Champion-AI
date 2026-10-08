@@ -1,8 +1,8 @@
-﻿--
+--
 -- PostgreSQL database dump
 --
 
-\restrict HkGpgRUFWfLRuQP4DnnnRRZ5UheKCmZhbGgQuc1pZyMveVtcU0HHLOI9pB6d4Rf
+\restrict henquO40CFldinZDVFsvTOyv14X6k6tu5SL0IeNcIsAnydpQnRXw5yOrH86QaKm
 
 -- Dumped from database version 17.10
 -- Dumped by pg_dump version 17.10
@@ -60,28 +60,35 @@ ALTER TABLE IF EXISTS ONLY public.stt_recording_result DROP CONSTRAINT IF EXISTS
 ALTER TABLE IF EXISTS ONLY public.stt_recording DROP CONSTRAINT IF EXISTS uq_stt_recording_recording_job;
 ALTER TABLE IF EXISTS ONLY public.stt_recording DROP CONSTRAINT IF EXISTS uq_stt_recording_job;
 ALTER TABLE IF EXISTS ONLY public.ai_job DROP CONSTRAINT IF EXISTS uq_ai_job_job_requested_by;
+ALTER TABLE IF EXISTS ONLY public.download_locks DROP CONSTRAINT IF EXISTS unique_user_blob_download;
 ALTER TABLE IF EXISTS ONLY public.stt_recording DROP CONSTRAINT IF EXISTS unique_job_id;
 ALTER TABLE IF EXISTS ONLY public.stt_recording_result DROP CONSTRAINT IF EXISTS stt_recording_result_pkey;
 ALTER TABLE IF EXISTS ONLY public.stt_recording DROP CONSTRAINT IF EXISTS stt_recording_pkey;
 ALTER TABLE IF EXISTS ONLY public.sec_user DROP CONSTRAINT IF EXISTS sec_user_pkey;
 ALTER TABLE IF EXISTS ONLY public.sec_user_password DROP CONSTRAINT IF EXISTS sec_user_password_pkey;
+ALTER TABLE IF EXISTS ONLY public.download_locks DROP CONSTRAINT IF EXISTS download_locks_pkey;
 ALTER TABLE IF EXISTS ONLY public.ai_job_status_history DROP CONSTRAINT IF EXISTS ai_job_status_history_pkey;
 ALTER TABLE IF EXISTS ONLY public.ai_job DROP CONSTRAINT IF EXISTS ai_job_pkey;
+ALTER TABLE IF EXISTS public.download_locks ALTER COLUMN id DROP DEFAULT;
 DROP VIEW IF EXISTS public.vw_stt_recording_result;
 DROP VIEW IF EXISTS public.vw_ai_job_current_status;
 DROP TABLE IF EXISTS public.stt_recording_result;
 DROP TABLE IF EXISTS public.stt_recording;
 DROP TABLE IF EXISTS public.sec_user_password;
 DROP TABLE IF EXISTS public.sec_user;
+DROP SEQUENCE IF EXISTS public.download_locks_id_seq;
+DROP TABLE IF EXISTS public.download_locks;
 DROP TABLE IF EXISTS public.ai_job_status_history;
 DROP TABLE IF EXISTS public.ai_job;
 DROP FUNCTION IF EXISTS public.sync_ai_job_from_history();
 DROP PROCEDURE IF EXISTS public.sp_update_ai_job_status_v1(IN p_job_id character varying, IN p_status character varying, IN p_step_name character varying, IN p_message text, IN p_error_code character varying, IN p_error_message text, IN p_retryable boolean, IN p_steps_snapshot jsonb, IN p_metadata jsonb, IN p_actor_type character varying);
 DROP PROCEDURE IF EXISTS public.sp_soft_delete_stt_job_v1(IN p_job_id character varying, IN p_user_id uuid);
+DROP PROCEDURE IF EXISTS public.sp_save_stt_partial_result_v1(IN p_job_id character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb, IN p_transcript_clean_text text, IN p_topics_json jsonb);
 DROP PROCEDURE IF EXISTS public.sp_save_stt_partial_result_v1(IN p_job_id character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb);
 DROP PROCEDURE IF EXISTS public.sp_reset_ai_job_for_retry_v1(IN p_job_id character varying, IN p_actor_type character varying);
 DROP PROCEDURE IF EXISTS public.sp_request_stt_step_reprocess_v1(IN p_job_id character varying, IN p_user_id uuid, IN p_step character varying, IN p_custom_instructions text, IN p_actor_type character varying);
 DROP PROCEDURE IF EXISTS public.sp_create_stt_live_recording_job_v1(IN p_job_id character varying, IN p_user_id uuid, IN p_service_code character varying, IN p_feature_code character varying, IN p_flow character varying, IN p_initial_status character varying, IN p_initial_message text, IN p_actor_type character varying, IN p_language_locale character varying, IN p_language_name character varying, IN p_audio_format character varying, IN p_sample_rate integer, IN p_duration_seconds numeric, IN p_blob_name text, IN p_blob_url text, IN p_upload_status character varying, IN p_request_payload jsonb);
+DROP PROCEDURE IF EXISTS public.sp_complete_stt_live_recording_job_v1(IN p_job_id character varying, IN p_final_status character varying, IN p_final_step character varying, IN p_completion_message text, IN p_actor_type character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb, IN p_raw_result_json jsonb, IN p_transcript_clean_text text, IN p_topics_json jsonb);
 DROP PROCEDURE IF EXISTS public.sp_complete_stt_live_recording_job_v1(IN p_job_id character varying, IN p_final_status character varying, IN p_final_step character varying, IN p_completion_message text, IN p_actor_type character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb, IN p_raw_result_json jsonb);
 DROP FUNCTION IF EXISTS public.set_updated_at();
 DROP FUNCTION IF EXISTS public.fn_get_stt_live_recording_job_context(p_job_id character varying);
@@ -310,6 +317,118 @@ $$;
 
 
 ALTER PROCEDURE public.sp_complete_stt_live_recording_job_v1(IN p_job_id character varying, IN p_final_status character varying, IN p_final_step character varying, IN p_completion_message text, IN p_actor_type character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb, IN p_raw_result_json jsonb) OWNER TO champion_db_user;
+
+--
+-- Name: sp_complete_stt_live_recording_job_v1(character varying, character varying, character varying, text, character varying, text, text, text, jsonb, jsonb, jsonb, text, jsonb); Type: PROCEDURE; Schema: public; Owner: champion_db_user
+--
+
+CREATE PROCEDURE public.sp_complete_stt_live_recording_job_v1(IN p_job_id character varying, IN p_final_status character varying, IN p_final_step character varying, IN p_completion_message text, IN p_actor_type character varying, IN p_transcription_text text DEFAULT NULL::text, IN p_summary_text text DEFAULT NULL::text, IN p_notes_text text DEFAULT NULL::text, IN p_notes_json jsonb DEFAULT NULL::jsonb, IN p_mind_map_json jsonb DEFAULT NULL::jsonb, IN p_raw_result_json jsonb DEFAULT NULL::jsonb, IN p_transcript_clean_text text DEFAULT NULL::text, IN p_topics_json jsonb DEFAULT NULL::jsonb)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_recording_id UUID;
+BEGIN
+    -- 1. Buscar el recording_id asociado al job
+    SELECT recording_id
+    INTO v_recording_id
+    FROM stt_recording
+    WHERE job_id = p_job_id;
+
+    -- Validar si existe la grabación antes de continuar
+    IF v_recording_id IS NULL THEN
+        RAISE EXCEPTION 'Recording no encontrado para job %', p_job_id;
+    END IF;
+
+    -- 2. Insertar o actualizar el resultado del STT (Upsert seguro con COALESCE)
+    INSERT INTO stt_recording_result (
+        recording_id,
+        job_id,
+        transcription_text,
+        transcript_clean_text,
+        summary_text,
+        notes_text,
+        notes_json,
+        mind_map_json,
+        topics_json,
+        raw_result_json,
+        generated_at,
+        created_at,
+        updated_at
+    )
+    VALUES (
+        v_recording_id,
+        p_job_id,
+        p_transcription_text,
+        p_transcript_clean_text,
+        p_summary_text,
+        p_notes_text,
+        p_notes_json,
+        p_mind_map_json,
+        p_topics_json,
+        p_raw_result_json,
+        NOW(),
+        NOW(),
+        NOW()
+    )
+    ON CONFLICT (recording_id)
+    DO UPDATE SET
+        transcription_text    = COALESCE(EXCLUDED.transcription_text, stt_recording_result.transcription_text),
+        transcript_clean_text = COALESCE(EXCLUDED.transcript_clean_text, stt_recording_result.transcript_clean_text),
+        summary_text          = COALESCE(EXCLUDED.summary_text, stt_recording_result.summary_text),
+        notes_text            = COALESCE(EXCLUDED.notes_text, stt_recording_result.notes_text),
+        notes_json            = COALESCE(EXCLUDED.notes_json, stt_recording_result.notes_json),
+        mind_map_json         = COALESCE(EXCLUDED.mind_map_json, stt_recording_result.mind_map_json),
+        topics_json           = COALESCE(EXCLUDED.topics_json, stt_recording_result.topics_json),
+        raw_result_json       = COALESCE(EXCLUDED.raw_result_json, stt_recording_result.raw_result_json),
+        generated_at          = NOW(),
+        updated_at            = NOW();
+
+    -- 3. Desactivar el estado actual previo en el historial
+    UPDATE ai_job_status_history
+    SET is_current = FALSE
+    WHERE job_id = p_job_id
+      AND is_current = TRUE;
+
+    -- 4. Insertar el estado final en el historial
+    INSERT INTO ai_job_status_history (
+        job_id,
+        status,
+        step_name,
+        message,
+        is_current,
+        created_by_type,
+        created_at
+    )
+    VALUES (
+        p_job_id,
+        p_final_status,
+        p_final_step,
+        p_completion_message,
+        TRUE,
+        p_actor_type,
+        NOW()
+    );
+
+    -- 5. Actualizar la tabla principal marcando la fecha de completado
+    UPDATE ai_job
+    SET
+        status = p_final_status,
+        current_step = p_final_step,
+        completed_at = NOW(),
+        pending_reprocess_step = NULL,
+        pending_reprocess_instructions = NULL,
+        updated_at = NOW()
+    WHERE job_id = p_job_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Job % no encontrado en ai_job', p_job_id;
+    END IF;
+
+END;
+$$;
+
+
+ALTER PROCEDURE public.sp_complete_stt_live_recording_job_v1(IN p_job_id character varying, IN p_final_status character varying, IN p_final_step character varying, IN p_completion_message text, IN p_actor_type character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb, IN p_raw_result_json jsonb, IN p_transcript_clean_text text, IN p_topics_json jsonb) OWNER TO champion_db_user;
 
 --
 -- Name: sp_create_stt_live_recording_job_v1(character varying, uuid, character varying, character varying, character varying, character varying, text, character varying, character varying, character varying, character varying, integer, numeric, text, text, character varying, jsonb); Type: PROCEDURE; Schema: public; Owner: champion_db_user
@@ -635,6 +754,66 @@ $$;
 ALTER PROCEDURE public.sp_save_stt_partial_result_v1(IN p_job_id character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb) OWNER TO champion_db_user;
 
 --
+-- Name: sp_save_stt_partial_result_v1(character varying, text, text, text, jsonb, jsonb, text, jsonb); Type: PROCEDURE; Schema: public; Owner: champion_db_user
+--
+
+CREATE PROCEDURE public.sp_save_stt_partial_result_v1(IN p_job_id character varying, IN p_transcription_text text DEFAULT NULL::text, IN p_summary_text text DEFAULT NULL::text, IN p_notes_text text DEFAULT NULL::text, IN p_notes_json jsonb DEFAULT NULL::jsonb, IN p_mind_map_json jsonb DEFAULT NULL::jsonb, IN p_transcript_clean_text text DEFAULT NULL::text, IN p_topics_json jsonb DEFAULT NULL::jsonb)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_recording_id UUID;
+BEGIN
+    SELECT recording_id INTO v_recording_id
+    FROM stt_recording
+    WHERE job_id = p_job_id;
+
+    IF v_recording_id IS NULL THEN
+        RAISE EXCEPTION 'Recording no encontrado para job_id = %', p_job_id;
+    END IF;
+
+    INSERT INTO stt_recording_result (
+        recording_id,
+        job_id,
+        transcription_text,
+        summary_text,
+        notes_text,
+        notes_json,
+        mind_map_json,
+        generated_at,
+        created_at,
+        updated_at,
+        transcript_clean_text,
+        topics_json
+    ) VALUES (
+        v_recording_id,
+        p_job_id,
+        p_transcription_text,
+        p_summary_text,
+        p_notes_text,
+        p_notes_json,
+        p_mind_map_json,
+        NOW(),
+        NOW(),
+        NOW(),
+        transcript_clean_text_, -- nuevo campo para la EPIC V2
+        p_topics_json -- nuevo campo para la EPIC V2
+    )
+    ON CONFLICT (recording_id) DO UPDATE SET
+        transcription_text    = COALESCE(EXCLUDED.transcription_text,     stt_recording_result.transcription_text),
+        summary_text          = COALESCE(EXCLUDED.summary_text,           stt_recording_result.summary_text),
+        notes_text            = COALESCE(EXCLUDED.notes_text,             stt_recording_result.notes_text),
+        notes_json            = COALESCE(EXCLUDED.notes_json,             stt_recording_result.notes_json),
+        mind_map_json         = COALESCE(EXCLUDED.mind_map_json,          stt_recording_result.mind_map_json),
+        transcript_clean_text = COALESCE(EXCLUDED.transcript_clean_text,  stt_recording_result.transcript_clean_text),
+        topics_json           = COALESCE(EXCLUDED.topics_json,            stt_recording_result.topics_json),
+        updated_at            = NOW();
+END;
+$$;
+
+
+ALTER PROCEDURE public.sp_save_stt_partial_result_v1(IN p_job_id character varying, IN p_transcription_text text, IN p_summary_text text, IN p_notes_text text, IN p_notes_json jsonb, IN p_mind_map_json jsonb, IN p_transcript_clean_text text, IN p_topics_json jsonb) OWNER TO champion_db_user;
+
+--
 -- Name: sp_soft_delete_stt_job_v1(character varying, uuid); Type: PROCEDURE; Schema: public; Owner: champion_db_user
 --
 
@@ -872,6 +1051,42 @@ CREATE TABLE public.ai_job_status_history (
 ALTER TABLE public.ai_job_status_history OWNER TO champion_db_user;
 
 --
+-- Name: download_locks; Type: TABLE; Schema: public; Owner: champion_db_user
+--
+
+CREATE TABLE public.download_locks (
+    id integer NOT NULL,
+    user_id character varying(255) NOT NULL,
+    blob_name text NOT NULL,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.download_locks OWNER TO champion_db_user;
+
+--
+-- Name: download_locks_id_seq; Type: SEQUENCE; Schema: public; Owner: champion_db_user
+--
+
+CREATE SEQUENCE public.download_locks_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.download_locks_id_seq OWNER TO champion_db_user;
+
+--
+-- Name: download_locks_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: champion_db_user
+--
+
+ALTER SEQUENCE public.download_locks_id_seq OWNED BY public.download_locks.id;
+
+
+--
 -- Name: sec_user; Type: TABLE; Schema: public; Owner: champion_db_user
 --
 
@@ -968,6 +1183,8 @@ CREATE TABLE public.stt_recording_result (
     generated_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    transcript_clean_text text,
+    topics_json jsonb,
     CONSTRAINT chk_stt_recording_result_has_content CHECK (((transcription_text IS NOT NULL) OR (summary_text IS NOT NULL) OR (notes_text IS NOT NULL) OR (notes_json IS NOT NULL) OR (mind_map_json IS NOT NULL) OR (raw_result_json IS NOT NULL)))
 );
 
@@ -1037,10 +1254,12 @@ CREATE VIEW public.vw_stt_recording_result AS
     j.polling_url,
     result.result_id,
     result.transcription_text,
+    result.transcript_clean_text,
     result.summary_text,
     result.notes_text,
     result.notes_json,
     result.mind_map_json,
+    result.topics_json,
     result.raw_result_json,
     result.generated_at,
     r.created_at AS recording_created_at,
@@ -1049,11 +1268,18 @@ CREATE VIEW public.vw_stt_recording_result AS
     result.updated_at AS result_updated_at
    FROM ((public.stt_recording r
      JOIN public.ai_job j ON (((j.job_id)::text = (r.job_id)::text)))
-     LEFT JOIN public.stt_recording_result result ON (((result.recording_id = r.recording_id) AND ((result.job_id)::text = (r.job_id)::text))))
+     LEFT JOIN public.stt_recording_result result ON ((result.recording_id = r.recording_id)))
   WHERE (j.is_deleted = false);
 
 
 ALTER VIEW public.vw_stt_recording_result OWNER TO champion_db_user;
+
+--
+-- Name: download_locks id; Type: DEFAULT; Schema: public; Owner: champion_db_user
+--
+
+ALTER TABLE ONLY public.download_locks ALTER COLUMN id SET DEFAULT nextval('public.download_locks_id_seq'::regclass);
+
 
 --
 -- Name: ai_job ai_job_pkey; Type: CONSTRAINT; Schema: public; Owner: champion_db_user
@@ -1069,6 +1295,14 @@ ALTER TABLE ONLY public.ai_job
 
 ALTER TABLE ONLY public.ai_job_status_history
     ADD CONSTRAINT ai_job_status_history_pkey PRIMARY KEY (id_history);
+
+
+--
+-- Name: download_locks download_locks_pkey; Type: CONSTRAINT; Schema: public; Owner: champion_db_user
+--
+
+ALTER TABLE ONLY public.download_locks
+    ADD CONSTRAINT download_locks_pkey PRIMARY KEY (id);
 
 
 --
@@ -1109,6 +1343,14 @@ ALTER TABLE ONLY public.stt_recording_result
 
 ALTER TABLE ONLY public.stt_recording
     ADD CONSTRAINT unique_job_id UNIQUE (job_id);
+
+
+--
+-- Name: download_locks unique_user_blob_download; Type: CONSTRAINT; Schema: public; Owner: champion_db_user
+--
+
+ALTER TABLE ONLY public.download_locks
+    ADD CONSTRAINT unique_user_blob_download UNIQUE (user_id, blob_name);
 
 
 --
@@ -1417,5 +1659,5 @@ ALTER TABLE ONLY public.stt_recording
 -- PostgreSQL database dump complete
 --
 
-\unrestrict HkGpgRUFWfLRuQP4DnnnRRZ5UheKCmZhbGgQuc1pZyMveVtcU0HHLOI9pB6d4Rf
+\unrestrict henquO40CFldinZDVFsvTOyv14X6k6tu5SL0IeNcIsAnydpQnRXw5yOrH86QaKm
 
