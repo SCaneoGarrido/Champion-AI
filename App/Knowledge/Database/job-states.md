@@ -160,6 +160,23 @@ Ver [[ADR-005-is-current-pattern]].
 
 ---
 
+## Reprocesamiento parcial y soft delete — no son transiciones del pipeline
+
+Dos capacidades agregadas por `ADR-010-knowledge-pack-lifecycle-actions` conviven con esta máquina
+de estados sin ser parte de ella:
+
+- **Reprocesamiento parcial** (`sp_request_stt_step_reprocess_v1`): un job `completed` puede volver
+  a `queued` con `current_step = 'reprocess_{step}'` — no es un nuevo estado, es el mismo `queued`
+  de siempre pero con `pending_reprocess_step`/`pending_reprocess_instructions` seteados en `ai_job`
+  para que la Function regenere solo ese step (ver [[functions]]).
+- **Soft delete** (`sp_soft_delete_stt_job_v1`): marca `ai_job.is_deleted = TRUE` sin insertar
+  ninguna fila en `ai_job_status_history` — deliberadamente no es una transición de estado del
+  pipeline, es metadata de visibilidad. Un job eliminado puede estar en cualquier estado
+  (`queued/processing/completed/failed`); su pipeline en curso no se detiene, solo deja de
+  aparecer en `vw_ai_job_current_status`/`vw_stt_recording_result` (filtro `WHERE is_deleted = FALSE`).
+
+---
+
 ## Referencias cruzadas
 
 - [[tables]] — Estructura de `ai_job` y `ai_job_status_history`

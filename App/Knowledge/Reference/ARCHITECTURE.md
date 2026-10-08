@@ -1,3 +1,8 @@
+> Espejo verbatim de `Champion-AI/ARCHITECTURE.md`. Sincronizado automáticamente por la skill
+> `sync-knowledge-vault` — no editar a mano, editar la fuente y re-ejecutar la skill.
+
+---
+
 # Champion AI — Arquitectura del Sistema
 
 ## Diagrama general

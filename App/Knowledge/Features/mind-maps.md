@@ -46,13 +46,11 @@ Via endpoint:
 GET /AIServices/Speechv2/jobs/{job_id}/result
 ```
 
-Respuesta:
+Respuesta (campo `mind_map_json` al mismo nivel que el resto del resultado, no anidado — ver [[polling]]):
 ```json
 {
   "data": {
-    "result": {
-      "mind_map": {}
-    }
+    "mind_map_json": { "title": "...", "nodes": [] }
   }
 }
 ```
@@ -63,10 +61,18 @@ Ver [[polling]].
 
 ## Dirección de producto (Roadmap)
 
-El mapa mental deja de renderizarse en una vista Markdown standalone. Pasa a vivir **dentro del Knowledge Workspace**:
+El mapa mental ya no se renderiza en una vista Markdown standalone. Vive **dentro del Knowledge
+Workspace**, en producción desde 2026-08-10:
 
-- **EPIC V1 — Knowledge Workspace:** el mind map se integra como componente del Workspace, encapsulado y probado de forma aislada antes de integrarse — mitigación directa del rollback previo de la Presentation Layer (Markdown/LaTeX/Mermaid), ver [[known-issues]] y [[ADR-008-knowledge-workspace]].
-- **EPIC V3 — AI Learning Platform:** el mind map se vuelve **interactivo** (expandir/colapsar nodos), construido sobre el mismo componente de V1.
+- **EPIC V1 — Knowledge Workspace (cerrado):** el mind map se renderiza como **árbol nativo**
+  (`MindMapDiagram.jsx`, componentes `View`/`Text`, no Mermaid/WebView) en `MindMapScreen.jsx`, que
+  fuerza rotación a landscape al entrar en foco (`expo-screen-orientation`). Cada nombre de nodo
+  reutiliza el mismo pipeline de renderizado Markdown+LaTeX que Resumen/Notas (`RichMarkdown.jsx`,
+  ver [[ADR-013-math-rendering-pipeline-rewrite]]) — no una whitelist de comandos LaTeX aparte. Esta
+  decisión de usar árbol nativo en vez de Mermaid fue tomada desde el diseño inicial, no como
+  reacción a un bug — ver [[known-issues]] ISSUE-012 y [[ADR-008-knowledge-workspace]].
+- **EPIC V3 — AI Learning Platform:** el mind map se vuelve **interactivo** (expandir/colapsar
+  nodos), construido sobre el mismo componente de V1.
 
 Ver [[ROADMAP]] y [[EPICS]] para el detalle completo.
 
@@ -74,10 +80,8 @@ Ver [[ROADMAP]] y [[EPICS]] para el detalle completo.
 
 ## Preguntas abiertas
 
-- ¿La app móvil renderiza el mapa mental de forma visual hoy? (previo al Workspace)
-- ¿Qué prompt se usa para generarlo?
-
-Ver [[known-issues]].
+Ninguna pendiente sobre el renderizado — resuelto en M1 (ver arriba). Ver [[known-issues]] para
+vacíos vigentes en otras áreas del proyecto.
 
 ---
 

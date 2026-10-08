@@ -6,7 +6,13 @@ tags: #feature #tts #roadmap #v4
 
 ## Estado
 
-> Esta feature ya **no es una capacidad genérica de TTS**. Fue reencuadrada como parte de **EPIC V4 — Intelligent Audio Learning** (ver [[EPICS]] y [[ROADMAP]]). Sigue sin implementación — este documento describe el alcance planificado, no algo ya construido.
+> Esta feature ya **no es una capacidad genérica de TTS**. Fue reencuadrada como parte de **EPIC V4 — Intelligent Audio Learning** (ver [[EPICS]] y [[ROADMAP]]). Sigue sin implementación real — este documento describe el alcance planificado, no algo ya construido.
+>
+> Existe scaffolding inicial sin lógica (`App/API/src/controllers/tts.controller.js` — try/catch
+> vacío con comentarios de los datos que necesitaría recibir; `App/API/src/routes/text_routes.js` —
+> un único `GET /text-to-speech` que responde un mensaje fijo, sin validación ni cola). No hay
+> endpoint POST, no hay job, no hay Stored Procedure ni integración con Azure Speech TTS todavía —
+> ver la tabla de endpoints en [[backend-api]] donde se documenta explícitamente como **stub**.
 
 ---
 

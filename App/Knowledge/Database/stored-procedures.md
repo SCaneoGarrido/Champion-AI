@@ -176,6 +176,113 @@ Si llega dos veces por redelivery, el `ON CONFLICT (recording_id) DO UPDATE` en 
 
 ---
 
+## sp_save_stt_partial_result_v1
+
+**Ejecutado por:** Azure Function (tras cada paso de IA exitoso)
+
+**Propósito:** Persistir resultados parciales en `stt_recording_result` para que el smart retry pueda reanudar desde el paso que falló sin repetir pasos ya exitosos.
+
+### Firma
+
+```sql
+CALL sp_save_stt_partial_result_v1(
+  p_job_id              VARCHAR(100),
+  p_transcription_text  TEXT  DEFAULT NULL,
+  p_summary_text        TEXT  DEFAULT NULL,
+  p_notes_text          TEXT  DEFAULT NULL,
+  p_notes_json          JSONB DEFAULT NULL,
+  p_mind_map_json       JSONB DEFAULT NULL
+)
+```
+
+### Comportamiento
+
+`INSERT ... ON CONFLICT (recording_id) DO UPDATE` con `COALESCE(EXCLUDED.campo, stt_recording_result.campo)` en cada columna — solo sobreescribe si el parámetro entrante viene `NOT NULL`. Llamadas repetidas con el mismo valor son idempotentes por diseño (no solo por `ON CONFLICT`, sino porque preservar-si-NULL evita pisar un campo ya bueno con un `NULL` de una ejecución parcial posterior).
+
+Si no existe `recording_id` para el `job_id` → `RAISE EXCEPTION`.
+
+Ver [[azure-function]] — "Smart retry".
+
+---
+
+## sp_reset_ai_job_for_retry_v1
+
+**Ejecutado por:** Backend API (`POST /jobs/{job_id}/retry`)
+
+**Propósito:** Resetear un job `failed` a `queued` para que la Azure Function lo vuelva a tomar.
+
+### Firma
+
+```sql
+CALL sp_reset_ai_job_for_retry_v1(
+  p_job_id        VARCHAR(100),
+  p_actor_type    VARCHAR(30) DEFAULT 'backend'
+)
+```
+
+### Reglas
+
+- Solo funciona si `ai_job.status = 'failed'` → si no, `RAISE EXCEPTION 'JOB_NOT_RETRYABLE'`
+- Máximo **3 reintentos**, contados como filas `status='failed'` en `ai_job_status_history` → al superarlo, `RAISE EXCEPTION 'MAX_RETRIES_EXCEEDED'`
+- Limpia `last_error_code`/`last_error_message`/`last_error_retryable` en `ai_job`
+- Registra una nueva entrada de historial (`step_name='retry'`, `status='queued'`), respetando el protocolo `is_current`
+
+---
+
+## sp_soft_delete_stt_job_v1
+
+**Ejecutado por:** Backend API (`DELETE /jobs/{job_id}`)
+
+**Propósito:** Marcar un Knowledge Pack como eliminado sin borrar filas de BD ni el audio en Blob. Ver [[ADR-010-knowledge-pack-lifecycle-actions]].
+
+### Firma
+
+```sql
+CALL sp_soft_delete_stt_job_v1(
+  p_job_id     VARCHAR(100),
+  p_user_id    UUID
+)
+```
+
+### Reglas
+
+- Solo el dueño del job (`requested_by = p_user_id`) puede eliminarlo → si no coincide o no existe, `RAISE EXCEPTION 'JOB_NOT_FOUND'`
+- Idempotente: si ya estaba eliminado, es un no-op silencioso (no relanza error)
+- No valida el `status` del job — se puede eliminar en cualquier estado; un pipeline en curso no se detiene, solo deja de ser visible
+- No inserta entrada en `ai_job_status_history` — el borrado no es un estado del pipeline, `is_deleted`/`deleted_at` en `ai_job` son su propio rastro de auditoría
+- `vw_ai_job_current_status` y `vw_stt_recording_result` filtran `WHERE is_deleted = FALSE` — un job eliminado desaparece de todos los endpoints de lectura sin cambios adicionales en sus queries
+
+---
+
+## sp_request_stt_step_reprocess_v1
+
+**Ejecutado por:** Backend API (`POST /jobs/{job_id}/reprocess`)
+
+**Propósito:** Anular el resultado de un único step de contenido (`summary | notes | mind_map`) de un job `completed` y reencolarlo, opcionalmente con instrucciones propias del usuario. Ver [[ADR-010-knowledge-pack-lifecycle-actions]].
+
+### Firma
+
+```sql
+CALL sp_request_stt_step_reprocess_v1(
+  p_job_id               VARCHAR(100),
+  p_user_id              UUID,
+  p_step                 VARCHAR(50),
+  p_custom_instructions  TEXT DEFAULT NULL,
+  p_actor_type           VARCHAR(30) DEFAULT 'user'
+)
+```
+
+### Reglas
+
+- `p_step ∈ { summary, notes, mind_map }` → si no, `RAISE EXCEPTION 'INVALID_STEP'` (`transcription` no es reprocesable con instrucciones: es audio→texto, no texto→texto)
+- Solo permitido si `ai_job.status = 'completed'` → si no, `RAISE EXCEPTION 'JOB_NOT_COMPLETED'`
+- Anula (`SET ... = NULL`) únicamente la(s) columna(s) de `stt_recording_result` del step pedido — el resto del resultado, incluida `transcription_text`, se conserva intacto
+- Reutiliza el mecanismo de resultados parciales del smart retry: al anular el campo, la próxima ejecución del orquestador Durable (mismo `job_id`) lo detecta en `NULL` y solo regenera ese step
+- Deja `pending_reprocess_step`/`pending_reprocess_instructions` en `ai_job` para que la Azure Function los recoja vía `fn_get_stt_live_recording_job_context` — se limpian al completar
+- Transiciona el job a `queued` con el mismo protocolo `is_current` que `sp_reset_ai_job_for_retry_v1`
+
+---
+
 ## Resumen de SPs por actor
 
 | SP | Backend API | Azure Function |
@@ -183,6 +290,10 @@ Si llega dos veces por redelivery, el `ON CONFLICT (recording_id) DO UPDATE` en 
 | `sp_create_stt_live_recording_job_v1` | ✔ | — |
 | `sp_update_ai_job_status_v1` | ✔ (solo fallo queue) | ✔ (transiciones) |
 | `sp_complete_stt_live_recording_job_v1` | — | ✔ |
+| `sp_save_stt_partial_result_v1` | — | ✔ |
+| `sp_reset_ai_job_for_retry_v1` | ✔ | — |
+| `sp_soft_delete_stt_job_v1` | ✔ | — |
+| `sp_request_stt_step_reprocess_v1` | ✔ | — |
 
 ---
 

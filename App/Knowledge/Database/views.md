@@ -19,9 +19,13 @@ La API nunca construye joins ad-hoc en el código: consulta vistas.
 ```
 ai_job (j)
 LEFT JOIN ai_job_status_history (h) ON h.job_id = j.job_id AND h.is_current = true
+WHERE j.is_deleted = FALSE
 ```
 
-El `LEFT JOIN` garantiza que devuelva el job incluso si por alguna razón no hay historial activo.
+El `LEFT JOIN` garantiza que devuelva el job incluso si por alguna razón no hay historial activo. El
+filtro `is_deleted = FALSE` (agregado en la migración `add_soft_delete_and_reprocess_fields_to_ai_job.sql`)
+es el único punto donde se excluyen los Knowledge Packs eliminados — ningún repositorio necesita
+agregar ese filtro por su cuenta. Ver [[ADR-010-knowledge-pack-lifecycle-actions]].
 
 **Columnas expuestas:**
 
@@ -54,7 +58,7 @@ El `LEFT JOIN` garantiza que devuelva el job incluso si por alguna razón no hay
 | `created_by_type` | `ai_job_status_history.created_by_type` |
 | `last_status_at` | `ai_job_status_history.created_at` |
 
-**Usada por:** `GET /AIServices/Speechv2/jobs/{job_id}/status` (endpoint pendiente)
+**Usada por:** `GET /AIServices/Speechv2/jobs/{job_id}/status` (implementado)
 
 ---
 
@@ -68,9 +72,10 @@ stt_recording (r)
 JOIN ai_job (j) ON j.job_id = r.job_id
 LEFT JOIN stt_recording_result (result) ON result.recording_id = r.recording_id
                                        AND result.job_id = r.job_id
+WHERE j.is_deleted = FALSE
 ```
 
-El `LEFT JOIN` a `stt_recording_result` permite que la vista devuelva datos incluso si el resultado aún no existe (job en processing).
+El `LEFT JOIN` a `stt_recording_result` permite que la vista devuelva datos incluso si el resultado aún no existe (job en processing). Mismo filtro `is_deleted = FALSE` que `vw_ai_job_current_status` — ver nota arriba.
 
 **Columnas expuestas:**
 
@@ -107,7 +112,7 @@ El `LEFT JOIN` a `stt_recording_result` permite que la vista devuelva datos incl
 | `result_created_at` | `stt_recording_result.created_at` |
 | `result_updated_at` | `stt_recording_result.updated_at` |
 
-**Usada por:** `GET /AIServices/Speechv2/jobs/{job_id}/result` (endpoint pendiente)
+**Usada por:** `GET /AIServices/Speechv2/jobs/{job_id}/result` (implementado)
 
 ---
 

@@ -1,3 +1,8 @@
+> Espejo verbatim de `App/API/CLAUDE.md`. Sincronizado automáticamente por la skill
+> `sync-knowledge-vault` — no editar a mano, editar la fuente y re-ejecutar la skill.
+
+---
+
 # Champion AI — Backend API (Node.js / Express)
 
 Contexto de componente. Ver `CLAUDE.md` en la raíz del proyecto para principios globales.
@@ -10,7 +15,7 @@ La Champion API es el **orquestador** del sistema. Es el único punto de entrada
 
 ## Puerto y acceso
 
-Puerto: `5051` (configurable via `.env`)
+Puerto: `5000` (configurable via `.env`)
 Autenticación: JWT en todos los endpoints excepto `/API/AUTH/register`, `/API/AUTH/login`, `/API/AUTH/refresh`, `/health` y `/version`
 
 ## Contrato de respuesta — invariante
@@ -37,56 +42,56 @@ infraestructura consumidos por monitoreo, no por la app.)
 
 ### Autenticación (`auth_routes.js`, prefijo `/API/AUTH`)
 
-| Método | Ruta | Auth | Rate limit | Status | Código HTTP |
-|---|---|---|---|---|---|
-| POST | `/register` | No | 5/hora/IP | Implementado | 201 |
-| POST | `/login` | No | 10/15min/IP | Implementado | 200 |
-| POST | `/refresh` | No (requiere `refresh_token` en body) | — | Implementado | 200 |
+| Método | Ruta        | Auth                                  | Rate limit  | Status       | Código HTTP |
+| ------ | ----------- | ------------------------------------- | ----------- | ------------ | ----------- |
+| POST   | `/register` | No                                    | 5/hora/IP   | Implementado | 201         |
+| POST   | `/login`    | No                                    | 10/15min/IP | Implementado | 200         |
+| POST   | `/refresh`  | No (requiere `refresh_token` en body) | —           | Implementado | 200         |
 
 ### STT — Speech to Text (`speech_routes.js`, prefijo `/AIServices/Speechv2`)
 
-| Método | Ruta | Auth | Status | Código HTTP |
-|---|---|---|---|---|
-| GET | `/getAvailableLenguages` | JWT | Implementado | 200 |
-| GET | `/getVoicesByLang?lang=` | JWT | Implementado | 200 |
-| POST | `/init` | JWT | Implementado | 201 |
-| POST | `/SpeechToTextv2` | JWT | Implementado | 202 |
-| GET | `/jobs` | JWT | Implementado | 200 |
-| GET | `/jobs/stats` | JWT | Implementado | 200 |
-| GET | `/jobs/{job_id}/status` | JWT | Implementado | 200 |
-| GET | `/jobs/{job_id}/result` | JWT | Implementado | 200 |
-| POST | `/jobs/{job_id}/retry` | JWT | Implementado | 202 |
-| PATCH | `/jobs/{job_id}/name` | JWT | Implementado | 200 |
-| DELETE | `/jobs/{job_id}` | JWT | Implementado | 200 |
-| POST | `/jobs/{job_id}/reprocess` | JWT | Implementado | 202 |
+| Método | Ruta                       | Auth | Status       | Código HTTP |
+| ------ | -------------------------- | ---- | ------------ | ----------- |
+| GET    | `/getAvailableLenguages`   | JWT  | Implementado | 200         |
+| GET    | `/getVoicesByLang?lang=`   | JWT  | Implementado | 200         |
+| POST   | `/init`                    | JWT  | Implementado | 201         |
+| POST   | `/SpeechToTextv2`          | JWT  | Implementado | 202         |
+| GET    | `/jobs`                    | JWT  | Implementado | 200         |
+| GET    | `/jobs/stats`              | JWT  | Implementado | 200         |
+| GET    | `/jobs/{job_id}/status`    | JWT  | Implementado | 200         |
+| GET    | `/jobs/{job_id}/result`    | JWT  | Implementado | 200         |
+| POST   | `/jobs/{job_id}/retry`     | JWT  | Implementado | 202         |
+| PATCH  | `/jobs/{job_id}/name`      | JWT  | Implementado | 200         |
+| DELETE | `/jobs/{job_id}`           | JWT  | Implementado | 200         |
+| POST   | `/jobs/{job_id}/reprocess` | JWT  | Implementado | 202         |
 
 ### Descarga y streaming de audio (`download_routes.js`, prefijo `/AIServices/Speechv2`)
 
-| Método | Ruta | Auth | Status | Código HTTP |
-|---|---|---|---|---|
-| GET | `/jobs/{job_id}/download` | JWT | Implementado | 200 |
-| GET | `/jobs/{job_id}/stream` | JWT | Implementado | 200 |
+| Método | Ruta                      | Auth | Status       | Código HTTP |
+| ------ | ------------------------- | ---- | ------------ | ----------- |
+| GET    | `/jobs/{job_id}/download` | JWT  | Implementado | 200         |
+| GET    | `/jobs/{job_id}/stream`   | JWT  | Implementado | 200         |
 
 ### Usuario (`user_routes.js`, prefijo `/API/USER`)
 
-| Método | Ruta | Auth | Status | Código HTTP |
-|---|---|---|---|---|
-| GET | `/me` | JWT | Implementado | 200 |
-| PUT | `/me` | JWT | Implementado | 200 |
-| POST | `/avatar/init` | JWT | Implementado | 201 |
+| Método | Ruta           | Auth | Status       | Código HTTP |
+| ------ | -------------- | ---- | ------------ | ----------- |
+| GET    | `/me`          | JWT  | Implementado | 200         |
+| PUT    | `/me`          | JWT  | Implementado | 200         |
+| POST   | `/avatar/init` | JWT  | Implementado | 201         |
 
 ### Transversal (`transversal_routes.js`)
 
-| Método | Ruta | Auth | Status | Código HTTP |
-|---|---|---|---|---|
-| GET | `/health` | No | Implementado | 200/503 |
-| GET | `/version` | No | Implementado | 200 |
+| Método | Ruta       | Auth | Status       | Código HTTP |
+| ------ | ---------- | ---- | ------------ | ----------- |
+| GET    | `/health`  | No   | Implementado | 200/503     |
+| GET    | `/version` | No   | Implementado | 200         |
 
 ### Text to Speech (`text_routes.js`) — scaffolding, sin lógica real
 
-| Método | Ruta | Auth | Status | Código HTTP |
-|---|---|---|---|---|
-| GET | `/text-to-speech` | No | **Stub** — devuelve un mensaje fijo, sin validación ni cola | 200 |
+| Método | Ruta              | Auth | Status                                                      | Código HTTP |
+| ------ | ----------------- | ---- | ----------------------------------------------------------- | ----------- |
+| GET    | `/text-to-speech` | No   | **Stub** — devuelve un mensaje fijo, sin validación ni cola | 200         |
 
 > `vision_routes.js` (`/analyze-image-url`, `/analyze-uploaded-image`) existe y está implementado
 > pero es una feature adyacente sin roadmap propio en V1–V5 — fuera del alcance de este documento.
@@ -96,11 +101,21 @@ infraestructura consumidos por monitoreo, no por la app.)
 ### POST /API/AUTH/register
 
 **Body:**
+
 ```json
-{ "email": "...", "first_name": "...", "last_name": "...", "password": "...", "phone": "opcional", "location": "opcional", "occupation": "opcional" }
+{
+  "email": "...",
+  "first_name": "...",
+  "last_name": "...",
+  "password": "...",
+  "phone": "opcional",
+  "location": "opcional",
+  "occupation": "opcional"
+}
 ```
 
 **Lógica:**
+
 1. Validar campos presentes (email/password/first_name/last_name) y formato de email
 2. Verificar email no duplicado (case-insensitive via índice `uq_sec_user_email_lower`)
 3. `INSERT` en `sec_user` (incluye `display_name` derivado, `username = email`)
@@ -110,13 +125,13 @@ infraestructura consumidos por monitoreo, no por la app.)
 
 **Errores:**
 
-| HTTP | Código | Condición |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | Campos faltantes |
-| 400 | `INVALID_EMAIL` | Formato de email inválido |
-| 409 | `CONFLICT` | Email ya registrado |
-| 429 | `TOO_MANY_REQUESTS` | Rate limit de registro (5/hora/IP) |
-| 500 | `INTERNAL_ERROR` | Error no clasificado |
+| HTTP | Código              | Condición                          |
+| ---- | ------------------- | ---------------------------------- |
+| 400  | `VALIDATION_ERROR`  | Campos faltantes                   |
+| 400  | `INVALID_EMAIL`     | Formato de email inválido          |
+| 409  | `CONFLICT`          | Email ya registrado                |
+| 429  | `TOO_MANY_REQUESTS` | Rate limit de registro (5/hora/IP) |
+| 500  | `INTERNAL_ERROR`    | Error no clasificado               |
 
 ---
 
@@ -125,6 +140,7 @@ infraestructura consumidos por monitoreo, no por la app.)
 **Body:** `{ "email": "...", "password": "..." }`
 
 **Lógica:**
+
 1. Buscar usuario por `lower(email)`
 2. Verificar bcrypt hash
 3. Verificar bloqueo de cuenta (`sec_user_password.locked_until`)
@@ -134,13 +150,13 @@ infraestructura consumidos por monitoreo, no por la app.)
 
 **Errores:**
 
-| HTTP | Código | Condición |
-|---|---|---|
-| 400 | `VALIDATION_ERROR` | email o password faltante |
-| 401 | `UNAUTHORIZED` | Credenciales incorrectas |
-| 429 | `ACCOUNT_LOCKED` | Cuenta bloqueada (umbral de intentos no documentado — ver known-issues ISSUE-010) |
-| 429 | `TOO_MANY_REQUESTS` | Rate limit de login (10/15min/IP) |
-| 500 | `INTERNAL_ERROR` | Error de servidor |
+| HTTP | Código              | Condición                                                                         |
+| ---- | ------------------- | --------------------------------------------------------------------------------- |
+| 400  | `VALIDATION_ERROR`  | email o password faltante                                                         |
+| 401  | `UNAUTHORIZED`      | Credenciales incorrectas                                                          |
+| 429  | `ACCOUNT_LOCKED`    | Cuenta bloqueada (umbral de intentos no documentado — ver known-issues ISSUE-010) |
+| 429  | `TOO_MANY_REQUESTS` | Rate limit de login (10/15min/IP)                                                 |
+| 500  | `INTERNAL_ERROR`    | Error de servidor                                                                 |
 
 ---
 
@@ -163,16 +179,23 @@ Genera SAS URL para upload directo a Azure Blob.
 **Body:** `{ "req_info": { "audio": { "format": "webm" } } }`
 
 **Lógica:**
+
 1. Validar JWT → extraer `user_id`
 2. Generar `job_id` → `"job_{uuid}"`
 3. Generar SAS URL temporal (expira en 3600s, solo `PUT`)
 4. Construir `blob_url` permanente
 
 **Respuesta 201:**
+
 ```json
 {
   "success": true,
-  "data": { "job_id": "job_...", "blob_name": "job_....webm", "upload_url": "https://...?sig=...", "expires_in": 3600 },
+  "data": {
+    "job_id": "job_...",
+    "blob_name": "job_....webm",
+    "upload_url": "https://...?sig=...",
+    "expires_in": 3600
+  },
   "error": null
 }
 ```
@@ -184,6 +207,7 @@ Genera SAS URL para upload directo a Azure Blob.
 Registra el job en BD y lo encola para procesamiento.
 
 **Body:**
+
 ```json
 {
   "req_info": {
@@ -204,46 +228,54 @@ Registra el job en BD y lo encola para procesamiento.
 
 **Validaciones (en este orden):**
 
-| Campo | Regla |
-|---|---|
-| JWT | Válido y no expirado |
-| `user_id` | El del token debe coincidir con el job (no aceptar user_id del payload) |
-| `req_info` | Presente y con subcampos requeridos |
-| `audio.format` | `webm \| mp4 \| m4a \| mp3 \| wav \| ogg` |
-| `sample_rate` | `8000 \| 16000 \| 44100 \| 48000` |
-| `duration_seconds` | Entre 1 y 10800 |
-| `blob_url` | Presente y no expirada |
+| Campo              | Regla                                                                   |
+| ------------------ | ----------------------------------------------------------------------- |
+| JWT                | Válido y no expirado                                                    |
+| `user_id`          | El del token debe coincidir con el job (no aceptar user_id del payload) |
+| `req_info`         | Presente y con subcampos requeridos                                     |
+| `audio.format`     | `webm \| mp4 \| m4a \| mp3 \| wav \| ogg`                               |
+| `sample_rate`      | `8000 \| 16000 \| 44100 \| 48000`                                       |
+| `duration_seconds` | Entre 1 y 10800                                                         |
+| `blob_url`         | Presente y no expirada                                                  |
 
 **Lógica:**
+
 1. Validar JWT y payload
 2. `CALL sp_create_stt_live_recording_job_v1(...)` → job en estado `queued`
 3. Publicar `{ "job_id": "..." }` en queue `championaiqueue`
 4. **Si la publicación falla:** `CALL sp_update_ai_job_status_v1(status='failed', error_code='QUEUE_SEND_FAILED')`
 
 **Respuesta 202:**
+
 ```json
 {
   "success": true,
-  "data": { "job_id": "job_...", "status": "accepted", "flow": "flow_live_recording", "polling_url": "...", "created_at": "..." },
+  "data": {
+    "job_id": "job_...",
+    "status": "accepted",
+    "flow": "flow_live_recording",
+    "polling_url": "...",
+    "created_at": "..."
+  },
   "error": null
 }
 ```
 
 **Errores:**
 
-| HTTP | Código | Condición |
-|---|---|---|
-| 400 | `INVALID_PAYLOAD` | `req_info` ausente |
-| 400 | `INVALID_STT_CONTEXT` | `req_info` o `audio_info` mal formados |
-| 400 | `UNSUPPORTED_FORMAT` | Formato no soportado |
-| 400 | `INVALID_SAMPLE_RATE` | Sample rate inválido |
-| 400 | `DURATION_EXCEEDED` | Audio > 3 horas |
-| 400 | `INVALID_BLOB_URL` | `blob_url` ausente o expirada |
-| 401 | `INVALID_TOKEN` | JWT ausente |
-| 403 | `TOKEN_EXPIRED` | JWT inválido o expirado |
-| 403 | `USER_MISMATCH` | `user_id` del token no coincide |
-| 500 | `JOB_CREATION_FAILED` | No se pudo crear el job |
-| 500 | `INTERNAL_ERROR` | Error no clasificado |
+| HTTP | Código                | Condición                              |
+| ---- | --------------------- | -------------------------------------- |
+| 400  | `INVALID_PAYLOAD`     | `req_info` ausente                     |
+| 400  | `INVALID_STT_CONTEXT` | `req_info` o `audio_info` mal formados |
+| 400  | `UNSUPPORTED_FORMAT`  | Formato no soportado                   |
+| 400  | `INVALID_SAMPLE_RATE` | Sample rate inválido                   |
+| 400  | `DURATION_EXCEEDED`   | Audio > 3 horas                        |
+| 400  | `INVALID_BLOB_URL`    | `blob_url` ausente o expirada          |
+| 401  | `INVALID_TOKEN`       | JWT ausente                            |
+| 403  | `TOKEN_EXPIRED`       | JWT inválido o expirado                |
+| 403  | `USER_MISMATCH`       | `user_id` del token no coincide        |
+| 500  | `JOB_CREATION_FAILED` | No se pudo crear el job                |
+| 500  | `INTERNAL_ERROR`      | Error no clasificado                   |
 
 ---
 
@@ -271,6 +303,7 @@ Estadísticas agregadas de jobs del usuario.
 Consulta el estado actual del job via vista `vw_ai_job_current_status`.
 
 **Respuestas posibles:**
+
 ```json
 { "success": true, "data": { "job_id": "...", "status": "processing", "current_step": "summary" }, "error": null }
 { "success": true, "data": { "job_id": "...", "status": "completed" }, "error": null }
@@ -330,6 +363,7 @@ Reprocesa un único step de contenido (`summary`, `notes` o `mind_map`) de un Kn
 **Body:** `{ "step": "summary", "custom_instructions": "Hazlo más breve y en primera persona" }` (`custom_instructions` es opcional)
 
 **Lógica:**
+
 1. Validar `step ∈ { summary, notes, mind_map }` — `transcription` no es reprocesable (es audio→texto, no texto→texto)
 2. `CALL sp_request_stt_step_reprocess_v1(job_id, user_id, step, custom_instructions)` — solo permitido si el job está `completed`; anula únicamente la(s) columna(s) de `stt_recording_result` del step solicitado y deja el job en `queued`
 3. Publicar `{ "job_id": "..." }` en `championaiqueue` — exactamente el mismo publish que usa `retryJob`
@@ -347,6 +381,7 @@ La Azure Function no necesita un mensaje de queue distinto: al recibir el mismo 
 Genera una SAS URL de **un solo uso** para descargar el audio original.
 
 **Lógica:**
+
 1. `resolveBlobPath(job_id, userId)` — resuelve el path real del blob desde `blob_url` guardado en BD (no desde `blob_name`, que es solo el nombre descriptivo)
 2. Verifica contra la tabla `download_locks` si ya fue consumido (`403` si sí)
 3. Limpieza pasiva de locks vencidos en la misma llamada

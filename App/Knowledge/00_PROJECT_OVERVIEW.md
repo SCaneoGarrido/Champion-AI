@@ -5,6 +5,10 @@ tags: #overview #master #rag-index
 > Archivo maestro de visión global. Punto de entrada recomendado para cualquier sistema RAG que
 > indexe esta bóveda de conocimiento. Para detalle técnico profundo de librerías, endpoints y base
 > de datos, ver [[TECHNICAL_STACK_AND_SERVICES]].
+>
+> Última actualización: 2026-08-12 — auditoría completa de la bóveda (skill `sync-knowledge-vault`):
+> cierre de M1/Knowledge Workspace reflejado, endpoint surface completo re-verificado contra el
+> código real, espejos de `CLAUDE.md`/`ARCHITECTURE.md` agregados en `Reference/`.
 
 ---
 
@@ -37,8 +41,9 @@ una Azure Function transcribe, resume, genera notas y un mapa mental → el resu
 clases, profesionales que graban charlas o reuniones formativas.
 
 **Estado del proyecto:** desarrollo activo. La base técnica (pipeline STT completo, autenticación,
-polling, gestión de Knowledge Packs) está implementada; es la fundación sobre la que se construye
-el Knowledge Workspace (V1 del roadmap).
+polling, gestión de Knowledge Packs) y el Knowledge Workspace (V1 del roadmap) están implementados
+y en producción desde 2026-08-10. El desarrollo activo ahora se enfoca en EPIC V2 — Intelligent
+Study (Transcript Cleanup, Topics). Ver [[MILESTONES]].
 
 **Equipo:** Nicolás Bustamante y Sebastián Caneo (desarrolladores). Metodología Scrum.
 
@@ -152,8 +157,11 @@ Estos 10 principios gobiernan toda decisión de diseño en el proyecto (fuente: 
 | Gestión de Knowledge Packs — renombrar, eliminar (soft delete), reprocesar un step | Implementado |
 | Notificaciones locales de job terminado (cliente) | Implementado |
 | Subida de audio en segundo plano (background upload manager) | Implementado |
-| Knowledge Workspace (V1) | Próximo |
-| Intelligent Study — Transcript Cleanup, Topics, Timeline (V2) | Roadmap |
+| Perfil de usuario (`/API/USER/me`, avatar) | Implementado |
+| Refresh de JWT (`POST /API/AUTH/refresh`) | Implementado |
+| Descarga y streaming de audio original (`/jobs/{id}/download`, `/stream`) | Implementado |
+| Knowledge Workspace (V1) | **Implementado — en producción desde 2026-08-10** (ver [[ADR-014-knowledge-workspace-versioning]]) |
+| Intelligent Study — Transcript Cleanup, Topics, Timeline (V2) | Roadmap — próximo a iniciar |
 | Knowledge Enrichment — keywords, entidades, favoritos (V2.5) | Roadmap |
 | AI Learning Platform — Flashcards, Quiz, Chat (V3) | Roadmap |
 | Intelligent Audio Learning — narración TTS (V4) | Roadmap |
@@ -173,8 +181,11 @@ Estos 10 principios gobiernan toda decisión de diseño en el proyecto (fuente: 
 | Base de datos | `App/Knowledge/Database/schema-overview.md`, `tables.md`, `views.md`, `stored-procedures.md`, `functions.md`, `job-states.md` |
 | Flujos end-to-end | `App/Knowledge/Flows/registration.md`, `login.md`, `upload-audio.md`, `stt-processing.md`, `polling.md` |
 | Features | `App/Knowledge/Features/speech-to-text.md`, `summaries.md`, `notes.md`, `mind-maps.md`, `text-to-speech.md` |
-| Producto y roadmap | `App/Knowledge/Product/PROJECT_VISION.md`, `PRODUCT_STRATEGY.md`, `App/Knowledge/Roadmap/ROADMAP.md`, `EPICS.md`, `BACKLOG.md` |
-| Decisiones de arquitectura (ADR) | `App/Knowledge/ADR/ADR-001` a `ADR-012` |
+| Producto y roadmap | `App/Knowledge/Product/PROJECT_VISION.md`, `PRODUCT_STRATEGY.md`, `App/Knowledge/Roadmap/ROADMAP.md`, `EPICS.md`, `BACKLOG.md`, `MILESTONES.md`, `SPRINT_PLANNING.md` |
+| Decisiones de arquitectura (ADR) | `App/Knowledge/ADR/ADR-001` a `ADR-014` (ver índice completo en `README.md`) |
 | Operación | `App/Knowledge/Operations/local-setup.md`, `error-codes.md`, `database-management.md` |
 | Vacíos y bugs conocidos | `App/Knowledge/Bugs/known-issues.md` |
-| Contexto por componente | `App/API/CLAUDE.md`, `App/Mobile/CLAUDE.md`, `App/procesamiento/CLAUDE.md` |
+| Historial de sesiones de trabajo | `App/Knowledge/Changelog/` |
+| Prompts de Azure OpenAI (espejo, sincronizado) | `App/Knowledge/Prompts/` |
+| **Espejos verbatim de `CLAUDE.md`/`ARCHITECTURE.md`** (para consumidores que solo indexan `App/Knowledge/`) | `App/Knowledge/Reference/CLAUDE.md`, `ARCHITECTURE.md`, `API-CLAUDE.md`, `Mobile-CLAUDE.md`, `procesamiento-CLAUDE.md` |
+| Contexto por componente (fuente original, fuera de la bóveda) | `App/API/CLAUDE.md`, `App/Mobile/CLAUDE.md`, `App/procesamiento/CLAUDE.md` |

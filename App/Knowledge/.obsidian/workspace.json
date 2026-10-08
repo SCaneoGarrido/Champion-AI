@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "00_PROJECT_OVERVIEW.md",
+                "file": "TECHNICAL_STACK_AND_SERVICES.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "00_PROJECT_OVERVIEW"
+              "title": "TECHNICAL_STACK_AND_SERVICES"
             }
           }
         ]
@@ -41,7 +41,9 @@
               "type": "file-explorer",
               "state": {
                 "sortOrder": "alphabetical",
-                "autoReveal": false
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
               },
               "icon": "lucide-folder-closed",
               "title": "Files"
@@ -204,6 +206,9 @@
   },
   "active": "e93c3c8efe2565f0",
   "lastOpenFiles": [
+    "Sin título.base",
+    "TECHNICAL_STACK_AND_SERVICES.md",
+    "00_PROJECT_OVERVIEW.md",
     "Prompts/notes.md",
     "Roadmap/BACKLOG.md",
     "Prompts/system.md",
@@ -227,10 +232,6 @@
     "Database/views.md",
     "Database/tables.md",
     "Database/stored-procedures.md",
-    "Database/schema-overview.md",
-    "Database/job-states.md",
-    "Database/functions.md",
-    "Sin título.base",
     "copilot/copilot-custom-prompts",
     "copilot",
     "Sin nombre",

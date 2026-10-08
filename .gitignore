@@ -198,3 +198,6 @@ __azurite_db*__.json
 
 # DB backups
 App/backups/
+
+# Other directories
+cheat sheets

@@ -60,7 +60,10 @@ VALIDATION RULES
 
 Return ONLY valid JSON.
 
-No markdown.
+No Markdown structure in node names (no "#" headings, no "-" bullet lists).
+
+Exception: if a node name contains a mathematical expression, wrap it in
+"$...$" — see MATHEMATICAL NOTATION in the system prompt.
 
 No explanations.
 

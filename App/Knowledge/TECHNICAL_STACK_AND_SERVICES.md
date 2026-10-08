@@ -90,12 +90,15 @@ tags: #technical #stack #services #database #endpoints #rag-index
 | Librería | Versión | Uso |
 |---|---|---|
 | `@react-navigation/native` + `native-stack` + `bottom-tabs` | `^7.x` | Navegación (stack raíz + tabs principales) |
-| `expo-av` | `~16.0.8` | Grabación y reproducción de audio |
+| `expo-av` | `~16.0.8` | Grabación y reproducción de audio — incluye el reproductor integrado del Knowledge Workspace (`AudioPlayer.jsx`) |
 | `expo-file-system` | `~19.0.21` | Manejo de archivos locales antes del upload |
 | `expo-document-picker` / `expo-image-picker` | `~14.0.8` / `~17.0.10` | Selección de archivos existentes |
 | `expo-notifications` | `~0.32.17` | Notificaciones locales del SO (job completado) |
 | `expo-print` / `expo-sharing` | `~15.0.8` / `~14.0.8` | Exportación y compartición de PDF |
 | `expo-linear-gradient` | `~15.0.8` | UI — gradientes de tema |
+| `expo-screen-orientation` | `~9.0.9` | Rotación forzada a landscape del mind map (`MindMapScreen.jsx`) — config plugin declarado en `app.json` |
+| `react-native-markdown-display` | `^7.0.2` | Renderizado Markdown del Knowledge Workspace (`RichMarkdown.jsx`), extendido con una regla custom de markdown-it para LaTeX (`mathMarkdownRule.js`) |
+| `react-native-webview` | `13.15.0` | Único uso: `MathView.jsx` — renderiza una fórmula LaTeX por instancia vía KaTeX (CDN), nunca el documento completo. Ver [[ADR-013-math-rendering-pipeline-rewrite]] |
 | `@react-native-async-storage/async-storage` | `2.2.0` | Persistencia local (token de sesión, preferencias) |
 | `react-native-reanimated` | `~4.1.1` | Animaciones (tab bar animado) |
 | `react-native-safe-area-context` / `react-native-screens` | `~5.6.0` / `~4.16.0` | Soporte nativo de navegación |
@@ -104,12 +107,13 @@ tags: #technical #stack #services #database #endpoints #rag-index
 
 | Carpeta | Contenido relevante |
 |---|---|
-| `screens/` | `LoginScreen`, `SignUpScreen`, `DashboardScreen`, `NotesScreen` (manager de Knowledge Packs), `NoteDetailScreen` (viewer), `SpeechToTextScreen`, `ProfileScreen`, `SettingsScreen`, `ServicesScreen` |
+| `screens/` | `LoginScreen`, `SignUpScreen`, `DashboardScreen`, `NotesScreen` (manager de Knowledge Packs), `KnowledgeWorkspaceScreen` (viewer de producción, ruta `KnowledgePackViewer`/`KnowledgeWorkspaceBeta` — ver [[ADR-014-knowledge-workspace-versioning]]), `MindMapScreen` (bloques del Workspace, fuerza landscape), `SpeechToTextScreen`, `ProfileScreen`, `SettingsScreen`, `ServicesScreen`. `NoteDetailScreen` sigue en el repo pero **sin ninguna ruta activa** desde el cierre de M1 — código muerto, candidato a limpieza futura |
 | `components/` | `LiveSTTRecorder`, `AudioFileUploader`, `AudioRecorder`, `JobOptionsModal`, `EditJobModal`, `ReprocessStepModal`, `ConfirmDialog`, `ConfirmUploadModal`, `UploadStatusBar`, `NotificationsPanel`, `AppTopBar` |
+| `components/workspace/` | `AudioPlayer` (reproductor integrado, confirmación antes de cargar), `FloatingToolbar` (FAB del reader), `ReaderCard` (paginación por sección), `RichMarkdown` + `mathMarkdown`/`mathMarkdownRule` (pipeline Markdown+LaTeX propio), `MathView` (WebView aislado por fórmula, KaTeX), `MindMapDiagram` (árbol nativo, reutiliza `RichMarkdown`), `AIQuoteCard`, `ImageCard` |
 | `context/` | `ThemeContext.jsx`, `NotificationsContext.jsx`, `UploadManagerContext.jsx` |
-| `hooks/` | `useLiveSTTRecorder.js`, `useJobCompletionNotifier.js`, `useThemedStyles.js`, `useToast.js` |
+| `hooks/` | `useLiveSTTRecorder.js`, `useJobCompletionNotifier.js`, `useThemedStyles.js`, `useThemedScreenStyles.js`, `useTopBarStyle.js`, `useToast.js` |
 | `navigation/` | `MainTabNavigator.jsx` |
-| `utils/` | `api.js`, `authFetch.js`, `speechApi.js`, `session.js`, `pdfExport.js`, `validation.js` |
+| `utils/` | `api.js` (incluye `getJobStreamUrl`), `authFetch.js`, `speechApi.js`, `session.js`, `pdfExport.js`, `validation.js`, `workspaceMapper.js` (mapea `notes_json`/`mind_map_json` a las secciones del Workspace, incluye `formatExample()` para `examples[]` con shape mixto string/objeto) |
 | `theme/` | `appTheme.js`, `screenThemeMerges.js` |
 
 ### 2.4 Patrones de diseño aplicados
@@ -120,9 +124,16 @@ tags: #technical #stack #services #database #endpoints #rag-index
   su provider — mismo contrato estricto en los tres.
 - **Separación manager/viewer desacoplada por navegación, no por composición**: `NotesScreen.jsx`
   (administra la lista de Knowledge Packs) nunca importa la implementación del viewer
-  (`NoteDetailScreen.jsx`, futuro Knowledge Workspace) — solo navega con
-  `navigation.navigate('KnowledgePackViewer', { jobId, blobName })`. Ver
-  `App/Knowledge/ADR/ADR-009-mobile-navigation-manager-viewer-seam.md`.
+  (`KnowledgeWorkspaceScreen.jsx` desde el cierre de M1, antes `NoteDetailScreen.jsx`) — solo navega
+  con `navigation.navigate('KnowledgePackViewer', { jobId, blobName })`. Ver
+  `App/Knowledge/ADR/ADR-009-mobile-navigation-manager-viewer-seam.md` y
+  `App/Knowledge/ADR/ADR-014-knowledge-workspace-versioning.md`.
+- **Pipeline de renderizado Markdown+LaTeX propio, no una dependencia externa de LaTeX**: en vez de
+  un preprocesador regex, `mathMarkdownRule.js` registra una regla real de `markdown-it` (tokens
+  `math_inline`/`math_block`, con `token.block = true` explícito — el mismo mecanismo que la
+  librería usa internamente para `image`/`hardbreak` — para que la fórmula reserve su propio espacio
+  de layout en vez de quedar mezclada dentro de un `<Text>`). Ver
+  `App/Knowledge/ADR/ADR-013-math-rendering-pipeline-rewrite.md`.
 - **Subida de audio desacoplada del componente de pantalla**: la lógica de upload
   (`uploadBlobInChunks` + `submitSTTJob`) vive en `UploadManagerContext`, no en la pantalla, para
   sobrevivir a la navegación del usuario. Ver
@@ -340,27 +351,54 @@ reprocesamiento normal (excepto vía el flujo explícito de `reprocess`, que rea
 
 ## 6. Endpoints principales de la API
 
-### 6.1 Autenticación
+> Endpoint surface completo verificado contra `App/API/src/routes/*.js` en esta auditoría — incluye
+> varios endpoints que no estaban documentados en ninguna fuente previa del proyecto (`/refresh`,
+> `/API/USER/*`, `/download`, `/stream`, `/health`, `/version`). Detalle completo (bodies, errores)
+> en [[backend-api]].
+
+### 6.1 Autenticación (`/API/AUTH`)
 
 | Método | Ruta | Auth | Código éxito |
 |---|---|---|---|
-| POST | `/API/AUTH/register` | No | 201 |
-| POST | `/API/AUTH/login` | No | 200 |
+| POST | `/register` | No | 201 |
+| POST | `/login` | No | 200 — devuelve `access_token` + `refresh_token` |
+| POST | `/refresh` | No (requiere `refresh_token` en body) | 200 |
 
 ### 6.2 STT — Speech to Text (`/AIServices/Speechv2`)
 
 | Método | Ruta | Auth | Código éxito | Propósito |
 |---|---|---|---|---|
+| GET | `/getAvailableLenguages` | JWT | 200 | Locales soportados por Fast Transcription |
+| GET | `/getVoicesByLang?lang=` | JWT | 200 | Voces disponibles por idioma (insumo de EPIC V4/TTS) |
 | POST | `/init` | JWT | 201 | Genera SAS URL de subida directa a Blob |
 | POST | `/SpeechToTextv2` | JWT | 202 | Crea el job (SP) y lo publica en la queue |
+| GET | `/jobs` | JWT | 200 | Lista jobs recientes del usuario (`?limit=`, tope 50) |
+| GET | `/jobs/stats` | JWT | 200 | Estadísticas agregadas de jobs del usuario |
 | GET | `/jobs/{job_id}/status` | JWT | 200 | Polling de estado — consulta `vw_ai_job_current_status` |
 | GET | `/jobs/{job_id}/result` | JWT | 200 | Resultado completo — consulta `vw_stt_recording_result` |
+| GET | `/jobs/{job_id}/download` | JWT | 200 | SAS de un solo uso para descargar el audio original (`download_locks`) |
+| GET | `/jobs/{job_id}/stream` | JWT | 200 | SAS reutilizable (5 min) para el reproductor integrado, sin lock |
 | POST | `/jobs/{job_id}/retry` | JWT | 202 | Reintenta un job fallido |
 | PATCH | `/jobs/{job_id}/name` | JWT | 200 | Renombra el Knowledge Pack (`stt_recording.blob_name`, campo descriptivo — DML directo, sin SP) |
 | DELETE | `/jobs/{job_id}` | JWT | 200 | Soft delete (`sp_soft_delete_stt_job_v1`) — no borra filas ni el audio en Blob |
 | POST | `/jobs/{job_id}/reprocess` | JWT | 202 | Reprocesa un step (`summary\|notes\|mind_map`) con instrucciones propias opcionales |
 
-### 6.3 Contrato de respuesta invariante
+### 6.3 Usuario (`/API/USER`)
+
+| Método | Ruta | Auth | Código éxito | Propósito |
+|---|---|---|---|---|
+| GET | `/me` | JWT | 200 | Perfil del usuario autenticado |
+| PUT | `/me` | JWT | 200 | Edita perfil (valida unicidad de email si cambia) |
+| POST | `/avatar/init` | JWT | 201 | SAS URL de subida directa a Blob para el avatar |
+
+### 6.4 Transversal
+
+| Método | Ruta | Auth | Código éxito | Propósito |
+|---|---|---|---|---|
+| GET | `/health` | No | 200/503 | Chequea Postgres, Azure Queue, Azure Blob |
+| GET | `/version` | No | 200 | Metadata estática de la API |
+
+### 6.5 Contrato de respuesta invariante
 
 ```json
 {

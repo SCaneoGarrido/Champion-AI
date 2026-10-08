@@ -44,35 +44,48 @@ La existencia de ambos formatos (texto y JSON) sugiere que la app móvil puede m
 
 ## Cómo se obtiene
 
-Via endpoint (pendiente de implementación):
 ```http
 GET /AIServices/Speechv2/jobs/{job_id}/result
 ```
 
-Respuesta:
+Respuesta (`notes_text` y `notes_json` se devuelven **ambos**, como campos independientes al mismo
+nivel — no anidados bajo `result`, ver [[polling]]):
 ```json
 {
   "data": {
-    "result": {
-      "notes": "..."
+    "notes_text": "# Title\n...",
+    "notes_json": {
+      "title": "",
+      "overview": "",
+      "concepts": [{ "name": "", "definition": "", "explanation": "", "context": "", "observations": "" }],
+      "examples": [],
+      "important_details": [],
+      "key_takeaways": []
     }
   }
 }
 ```
 
-> El contrato actual del endpoint devuelve `notes` como campo único. No está especificado si devuelve texto, JSON o ambos.
-
 Ver [[polling]].
+
+---
+
+## Estructura real de `notes_json`
+
+Definida por el prompt `App/procesamiento/prompts/notes_json.md` (espejo en
+`App/Knowledge/Prompts/notes_json.md`). El campo `examples[]` tiene un shape mixto — confirmado
+contra datos reales de producción, no solo contra el prompt: cada elemento es **un string plano O**
+un objeto `{ statement, solution, notes }` cuando el ejemplo es un problema resuelto con estructura
+propia. El cliente móvil (`workspaceMapper.js`'s `formatExample()`) maneja ambos casos — ver
+[[ADR-013-math-rendering-pipeline-rewrite]] para el bug histórico que esto corrigió
+(`[object Object]` en pantalla cuando el shape no se manejaba).
 
 ---
 
 ## Preguntas abiertas
 
-- ¿Cuál es la estructura del `notes_json`? ¿Listas de puntos, secciones, etc.?
-- ¿El endpoint devuelve `notes_text` o `notes_json` o ambos?
-- ¿Qué prompt se usa para generar las notas?
-
-Ver [[known-issues]].
+Ninguna pendiente sobre el contrato del endpoint o el shape de `notes_json` — resueltas en esta
+auditoría y en la sesión de M1. Ver [[known-issues]] para vacíos vigentes en otras áreas.
 
 ---
 

@@ -23,7 +23,7 @@ const database_service = new DatabaseService();
 const health_service = new HealthService();
 const azure_storage_service = new AzureStorageService();
 const download_repository = new DownloadRepository();
-download_repository.cleanOldDownloadsLocks();
+// download_repository.cleanOldDownloadsLocks(); --> WTF que hace esto aqui????
 
 
 
@@ -56,7 +56,7 @@ app.use('/API/v1/Downloads', download_router);
 
 // Global error handler — captura errores no manejados por controladores
 app.use((err, req, res, next) => {
-    const logger = require('./utils/logger');
+    //const logger = require('./utils/logger'); importacion duplicada
     logger.error('Unhandled error: ' + err.message);
     return res.status(500).json({
         success: false,

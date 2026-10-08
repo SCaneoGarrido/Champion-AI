@@ -11,13 +11,15 @@
 -- ============================================================
 
 CREATE OR REPLACE PROCEDURE sp_save_stt_partial_result_v1(
-    p_job_id              VARCHAR(100),
-    p_transcription_text  TEXT  DEFAULT NULL,
-    p_summary_text        TEXT  DEFAULT NULL,
-    p_notes_text          TEXT  DEFAULT NULL,
-    p_notes_json          JSONB DEFAULT NULL,
-    p_mind_map_json       JSONB DEFAULT NULL
-)
+    p_job_id                    VARCHAR(100),
+    p_transcription_text        TEXT  DEFAULT NULL,
+    p_summary_text              TEXT  DEFAULT NULL,
+    p_notes_text                TEXT  DEFAULT NULL,
+    p_notes_json                JSONB DEFAULT NULL,
+    p_mind_map_json             JSONB DEFAULT NULL,
+    p_transcript_clean_text     TEXT  DEFAULT NULL, -- new params 
+    p_topics_json               JSONB DEFAULT NULL  -- new params
+  )
 LANGUAGE plpgsql
 AS $$
 DECLARE
@@ -41,7 +43,9 @@ BEGIN
         mind_map_json,
         generated_at,
         created_at,
-        updated_at
+        updated_at,
+        transcript_clean_text,
+        topics_json
     ) VALUES (
         v_recording_id,
         p_job_id,
@@ -52,14 +56,18 @@ BEGIN
         p_mind_map_json,
         NOW(),
         NOW(),
-        NOW()
+        NOW(),
+        transcript_clean_text_, -- nuevo campo para la EPIC V2
+        p_topics_json -- nuevo campo para la EPIC V2
     )
     ON CONFLICT (recording_id) DO UPDATE SET
-        transcription_text = COALESCE(EXCLUDED.transcription_text, stt_recording_result.transcription_text),
-        summary_text       = COALESCE(EXCLUDED.summary_text,       stt_recording_result.summary_text),
-        notes_text         = COALESCE(EXCLUDED.notes_text,         stt_recording_result.notes_text),
-        notes_json         = COALESCE(EXCLUDED.notes_json,         stt_recording_result.notes_json),
-        mind_map_json      = COALESCE(EXCLUDED.mind_map_json,      stt_recording_result.mind_map_json),
-        updated_at         = NOW();
+        transcription_text    = COALESCE(EXCLUDED.transcription_text,     stt_recording_result.transcription_text),
+        summary_text          = COALESCE(EXCLUDED.summary_text,           stt_recording_result.summary_text),
+        notes_text            = COALESCE(EXCLUDED.notes_text,             stt_recording_result.notes_text),
+        notes_json            = COALESCE(EXCLUDED.notes_json,             stt_recording_result.notes_json),
+        mind_map_json         = COALESCE(EXCLUDED.mind_map_json,          stt_recording_result.mind_map_json),
+        transcript_clean_text = COALESCE(EXCLUDED.transcript_clean_text,  stt_recording_result.transcript_clean_text),
+        topics_json           = COALESCE(EXCLUDED.topics_json,            stt_recording_result.topics_json),
+        updated_at            = NOW();
 END;
 $$;

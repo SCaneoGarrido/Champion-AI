@@ -1,3 +1,8 @@
+> Espejo verbatim de `App/Mobile/CLAUDE.md`. Sincronizado automáticamente por la skill
+> `sync-knowledge-vault` — no editar a mano, editar la fuente y re-ejecutar la skill.
+
+---
+
 # Champion AI — App Móvil (React Native / Expo)
 
 Contexto de componente. Ver `CLAUDE.md` en la raíz del proyecto para principios globales.

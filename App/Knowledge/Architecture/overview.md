@@ -65,17 +65,19 @@ Ver [[backend-api]] para los contratos HTTP que consume.
 Puerto: `5051`
 
 Responsable de:
-- Autenticación y autorización (JWT)
+- Autenticación y autorización (JWT, incluye refresh token)
 - Validación de payloads entrantes
-- Generación de SAS URLs (acceso temporal a Azure Blob)
+- Generación de SAS URLs (acceso temporal a Azure Blob) para audio, descarga/streaming y avatar
 - Creación de jobs via Stored Procedures
 - Publicación de mensajes en Azure Queue
 - Exposición de endpoints de polling (estado y resultado)
-- Endpoint de retry de jobs fallidos
+- Gestión de Knowledge Packs: retry, renombrar, reprocesar un step, soft delete
+- Perfil de usuario (`/API/USER/me`, avatar)
 
 **No ejecuta procesamiento de IA. No hace DML directo en BD.**
 
-Ver [[backend-api]] para el detalle completo.
+Ver [[backend-api]] para el detalle completo (endpoint surface completo verificado contra
+`App/API/src/routes/*.js`).
 
 ---
 
@@ -183,3 +185,12 @@ register → login → init upload → PUT audio → create job
 → [queue] → function trigger → AI processing → save result
 → [polling] → get result
 ```
+
+---
+
+## Superficie de consumo — Knowledge Workspace (V1, en producción)
+
+El resultado del pipeline (transcripción, resumen, notas, mapa mental) se consume desde el
+**Knowledge Workspace** (`KnowledgeWorkspaceScreen.jsx` en Mobile) — no desde una vista Markdown
+standalone. Cerrado el 2026-08-10 (EPIC V1). Ver [[ADR-014-knowledge-workspace-versioning]],
+[[ADR-013-math-rendering-pipeline-rewrite]] y `App/Knowledge/Reference/Mobile-CLAUDE.md`.

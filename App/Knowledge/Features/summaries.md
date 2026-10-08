@@ -68,23 +68,25 @@ Campo: `summary_text` (TEXT)
 GET /AIServices/Speechv2/jobs/{job_id}/result
 ```
 
-Respuesta:
+Respuesta (`summary_text` al mismo nivel que el resto del resultado, no anidado bajo `result` — ver [[polling]]):
 ```json
 {
   "success": true,
   "data": {
     "job_id": "...",
-    "status": "completed",
-    "result": {
-      "transcription": "...",
-      "summary": "# Executive Summary\n...",
-      "notes": "...",
-      "mind_map": {}
-    }
+    "job_status": "completed",
+    "summary_text": "# Executive Summary\n...",
+    "notes_text": "...",
+    "notes_json": {},
+    "mind_map_json": {}
   },
   "error": null
 }
 ```
+
+El Knowledge Workspace pagina el Resumen por los headings `# ` (H1) reales del texto Markdown — cada
+sección corresponde a un heading del prompt de arriba (Executive Summary, Main Topics, etc.), mismo
+patrón que Notas pagina por concepto. Ver [[ADR-014-knowledge-workspace-versioning]].
 
 ---
 

@@ -103,6 +103,13 @@ flowchart TD
 
 **Próxima etapa planificada:** `transcript_cleanup` entre `transcription` y `summary` (EPIC V2 — Intelligent Study). Ver [[EPICS]].
 
+**Reprocesamiento parcial (implementado por adelantado, ver [[ADR-010-knowledge-pack-lifecycle-actions]]):**
+`generate_summary_activity`, `generate_notes_activity` y `generate_mind_map_activity` reciben un
+dict `{"transcription": str, "custom_instructions": str | None}` en vez del string de transcripción
+directo. `custom_instructions` solo trae valor cuando el job fue reencolado por
+`POST /jobs/{id}/reprocess` — únicamente la activity del step pedido lo recibe, las otras dos
+siempre reciben `None`.
+
 ---
 
 ## Smart retry — Persistencia de resultados parciales

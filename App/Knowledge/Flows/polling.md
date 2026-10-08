@@ -6,8 +6,8 @@ tags: #flow #polling #status #result
 
 ## Estado de implementación
 
-> **Ambos endpoints de polling están marcados como "Pendiente de implementación en el router"** en la documentación oficial.
-> El contrato está definido, pero los endpoints no están activos.
+> Ambos endpoints están **implementados y en producción**. Ver [[backend-api]] para el endpoint
+> surface completo verificado contra el código real.
 
 ---
 
@@ -90,18 +90,23 @@ El backend consulta la vista `vw_stt_recording_result`.
 
 ### Respuesta exitosa — 200 OK
 
+La vista `vw_stt_recording_result` expone los campos de resultado al mismo nivel que la metadata del
+recording y del job — no anidados bajo una clave `result` (ver [[views]] para la lista completa de
+columnas):
+
 ```json
 {
   "success": true,
   "data": {
     "job_id": "job_550e8400-...",
-    "status": "completed",
-    "result": {
-      "transcription": "...",
-      "summary": "...",
-      "notes": "...",
-      "mind_map": {}
-    }
+    "job_status": "completed",
+    "current_step": "mind_map",
+    "transcription_text": "...",
+    "summary_text": "...",
+    "notes_text": "...",
+    "notes_json": { "title": "...", "concepts": [] },
+    "mind_map_json": { "title": "...", "nodes": [] },
+    "generated_at": "2026-08-10T12:00:00.000Z"
   },
   "error": null
 }

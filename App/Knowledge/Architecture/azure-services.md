@@ -58,6 +58,17 @@ El path incluye el `user_id` para aislar los archivos de cada usuario y el `job_
 
 Restricción aplicada en la tabla `stt_recording` via constraint `chk_stt_recording_audio_format`.
 
+### Otros usos de SAS URL además del audio STT
+
+El mismo mecanismo (`generateUploadUrl` en `azure_storage_service.js`) se reutiliza para el avatar
+de usuario: `POST /API/USER/avatar/init` genera una SAS URL de subida directa a
+`avatars/{userId}/avatar.{ext}`, mismo patrón que el audio pero sin pasar por el pipeline de jobs.
+Ver [[backend-api]].
+
+Para descarga/streaming del audio ya subido, `generateSingleUseUrl` genera una SAS URL de **solo
+lectura** de 5 minutos (`GET /jobs/{job_id}/download` y `/stream`) — no confundir con la SAS de
+subida (`PUT`, 3600s) de `/init`.
+
 ---
 
 ## Azure Queue Storage
@@ -140,9 +151,13 @@ POST https://{SPEECH_REGION}.api.cognitive.microsoft.com
 
 ### Detalles pendientes de documentación
 
-- Modelos de Azure OpenAI utilizados
-- Prompts para generación de resumen, notas y mapa mental
 - Rate limits de Fast Transcription en la región del entorno
+
+Los prompts de generación de resumen/notas/mapa mental están versionados como archivos Markdown en
+`App/procesamiento/prompts/` y espejados en `App/Knowledge/Prompts/` (`system.md`, `summary.md`,
+`notes.md`, `notes_json.md`, `mind_map.md`) — incluyen desde esta sesión reglas de notación
+matemática (LaTeX vía `$...$`/`$$...$$`, guardia contra montos de dinero como `$100`) consumidas
+por el pipeline de renderizado del Knowledge Workspace. Ver [[ADR-013-math-rendering-pipeline-rewrite]].
 
 Ver [[known-issues]] para el registro completo de vacíos.
 

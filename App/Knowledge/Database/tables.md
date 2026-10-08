@@ -83,10 +83,20 @@ Representa un job de procesamiento. Mantiene el estado actual para acceso rápid
 | `last_error_code` | VARCHAR(100) | | Último código de error |
 | `last_error_message` | TEXT | | Último mensaje de error |
 | `last_error_retryable` | BOOLEAN | | Si el error es reintentable |
+| `is_deleted` | BOOLEAN | NOT NULL, DEFAULT false | Soft delete (agregado en migración, ver [[ADR-010-knowledge-pack-lifecycle-actions]]) |
+| `deleted_at` | TIMESTAMPTZ | | Cuándo se eliminó (agregado en migración) |
+| `pending_reprocess_step` | VARCHAR(50) | | Step pendiente de reprocesar (`summary\|notes\|mind_map`), agregado en migración |
+| `pending_reprocess_instructions` | TEXT | | Instrucciones propias del usuario para el reprocesamiento pendiente (agregado en migración) |
 | `created_at` | TIMESTAMPTZ | DEFAULT now() | |
 | `updated_at` | TIMESTAMPTZ | DEFAULT now() | (trigger) |
 
 **CHECK status:** `queued | processing | completed | failed`
+
+`is_deleted`/`deleted_at`/`pending_reprocess_step`/`pending_reprocess_instructions` vienen de
+`App/SQL/Migrations/add_soft_delete_and_reprocess_fields_to_ai_job.sql` — esa misma migración
+recrea `vw_ai_job_current_status` y `vw_stt_recording_result` (agrega `WHERE is_deleted = FALSE`) y
+`fn_get_stt_live_recording_job_context` (agrega `pending_reprocess_step`/`pending_reprocess_instructions`
+al `RETURNS TABLE`). Ver [[views]], [[functions]], [[stored-procedures]].
 
 **Índices:**
 - `idx_ai_job_status`, `idx_ai_job_flow`, `idx_ai_job_requested_by`
@@ -172,6 +182,18 @@ Resultado consolidado del procesamiento AI de un recording.
 | `updated_at` | TIMESTAMPTZ | DEFAULT now() | |
 
 **CHECK:** Al menos uno de los campos de contenido debe ser NOT NULL.
+
+---
+
+## download_locks (⚠ schema no rastreado en migraciones)
+
+Usada por `GET /jobs/{job_id}/download` (`download.repository.js`) para impedir que un enlace de
+descarga de un solo uso se consuma dos veces. Columnas usadas por el código (`user_id`, `blob_name`)
+confirmadas leyendo `download.repository.js` — no se documenta un DDL completo porque **esta tabla
+no existe en `App/SQL/Migrations/` ni en `App/docker/postgres/init.sql`**: existe y se usa en la BD
+real, pero su creación no está rastreada como migración versionada. Esto es un hallazgo de esta
+auditoría, no algo ya conocido — falta crear la migración correspondiente para que el schema sea
+reproducible desde cero. Ver [[backend-api]] para el uso del endpoint.
 
 ---
 

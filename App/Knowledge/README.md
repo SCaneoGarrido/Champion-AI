@@ -1,7 +1,11 @@
 # Champion AI — Bóveda de Conocimiento
 
 > Fuente de conocimiento derivada del proyecto. No modifica el código original.
-> Última actualización: 2026-07-13 — reorganización completa del roadmap hacia el Knowledge Workspace.
+> Última actualización: 2026-08-12 — auditoría completa (skill `sync-knowledge-vault`): Knowledge
+> Workspace V1 marcado como cerrado/en producción, índice de ADRs completado (009–014), endpoint
+> surface de la API re-verificado contra el código, carpetas `Reference/` (espejos de
+> `CLAUDE.md`/`ARCHITECTURE.md`), `Changelog/` y `Prompts/` incorporadas al índice. Antes de esa
+> fecha: 2026-07-13 — reorganización completa del roadmap hacia el Knowledge Workspace.
 
 ---
 
@@ -22,7 +26,7 @@ graph TD
     STRATEGY["🧭 Estrategia\nProduct/PRODUCT_STRATEGY"]
     ROADMAP["🚀 Roadmap V1-V5\nRoadmap/ROADMAP"]
     EPICS["📦 Epics\nRoadmap/EPICS"]
-    WORKSPACE["🧩 Knowledge Workspace\nEPIC V1"]
+    WORKSPACE["🧩 Knowledge Workspace\nEPIC V1 — CERRADO"]
     ARCH["🏗️ Arquitectura\nArchitecture/overview"]
     API["🔧 Backend API\nArchitecture/backend-api"]
     FUNC["⚡ Azure Function\nArchitecture/azure-function"]
@@ -101,6 +105,12 @@ graph TD
 - [[ADR-006-idempotent-stored-procedures]] — Idempotencia ante redelivery de queue
 - [[ADR-007-fast-transcription]] — Por qué Fast Transcription en lugar de SDK Continuous Recognition
 - [[ADR-008-knowledge-workspace]] — Por qué el Knowledge Workspace reemplaza la vista Markdown
+- [[ADR-009-mobile-navigation-manager-viewer-seam]] — Seam de navegación manager ("Mis Apuntes") ↔ viewer
+- [[ADR-010-knowledge-pack-lifecycle-actions]] — Editar (renombrar/reprocesar), Eliminar (soft delete)
+- [[ADR-011-local-job-completion-notifications]] — Notificaciones locales del SO al completar un job
+- [[ADR-012-background-upload-manager]] — Subida de audio sobreviviendo a la navegación
+- [[ADR-013-math-rendering-pipeline-rewrite]] — Reescritura de raíz del pipeline Markdown+LaTeX
+- [[ADR-014-knowledge-workspace-versioning]] — Flip a producción + convención Beta permanente
 
 ### Bugs — Problemas conocidos
 - [[known-issues]] — Vacíos, contradicciones y pendientes (incluye retiro de Gestión de Archivos y riesgo de regresión de Mermaid)
@@ -114,8 +124,17 @@ graph TD
 - [[ROADMAP]] — Versiones V1–V5, referencia maestra
 - [[EPICS]] — Cada versión desglosada en EPIC (objetivo, historias, subtareas, dependencias, criterios de aceptación, riesgos, prioridad, estimación)
 - [[BACKLOG]] — Issues listos para GitHub, labels, jerarquía epic/issue/sub-issue
-- [[MILESTONES]] — Mapeo de versiones a GitHub Milestones
-- [[SPRINT_PLANNING]] — Marco Scrum y propuesta de Sprint 1
+- [[MILESTONES]] — Mapeo de versiones a GitHub Milestones — **M1 cerrado**, M2 (Intelligent Study) es el próximo
+- [[SPRINT_PLANNING]] — Marco Scrum, Sprint 1 cerrado
+
+### Changelog — Historial de sesiones de trabajo
+- `App/Knowledge/Changelog/changelog_YYYYMMDD.md` — un archivo por sesión de trabajo significativa, con el detalle técnico completo de qué cambió y por qué. Ver el más reciente para el estado más granular.
+
+### Prompts — Espejo de los prompts de Azure OpenAI
+- `App/Knowledge/Prompts/{system,summary,notes,notes_json,mind_map}.md` — copias sincronizadas de `App/procesamiento/prompts/*.md` (fuente real que consume gpt-5-mini). Mantenidos al día por la skill `sync-knowledge-vault`.
+
+### Reference — Espejos verbatim de CLAUDE.md / ARCHITECTURE.md
+- `App/Knowledge/Reference/CLAUDE.md`, `ARCHITECTURE.md`, `API-CLAUDE.md`, `Mobile-CLAUDE.md`, `procesamiento-CLAUDE.md` — copias exactas de los archivos de contexto para Claude Code que viven fuera de la bóveda (raíz del repo y por componente). Existen para que un consumidor que solo indexa `App/Knowledge/` (p. ej. un LLM local) tenga acceso al mismo nivel de detalle que Claude Code. Mantenidos por la skill `sync-knowledge-vault` — no editar a mano, editar la fuente y re-ejecutar la skill.
 
 ---
 
@@ -128,8 +147,9 @@ graph TD
 | STT polling `/jobs/{id}/status` | Implementado |
 | STT resultado `/jobs/{id}/result` | Implementado |
 | STT retry de jobs fallidos | Implementado |
-| Knowledge Workspace (V1) | Próximo — ver [[ROADMAP]] |
-| Intelligent Study — Transcript Cleanup, Topics (V2) | Roadmap |
+| Gestión de Knowledge Packs (renombrar, soft delete, reprocesar step) | Implementado |
+| Knowledge Workspace (V1) | **Implementado — en producción desde 2026-08-10** |
+| Intelligent Study — Transcript Cleanup, Topics (V2) | Roadmap — próximo a iniciar |
 | Knowledge Enrichment (V2.5) | Roadmap |
 | AI Learning Platform — Flashcards, Quiz, Chat (V3) | Roadmap |
 | Intelligent Audio Learning — narración (V4) | Roadmap |

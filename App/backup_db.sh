@@ -23,7 +23,8 @@ if [ ! -f "$ENV_FILE" ]; then
     echo -e "${RED}Error: no se encontró .env en $SCRIPT_DIR${NC}"
     exit 1
 fi
-set -a; source "$ENV_FILE"; set +a
+# tr -d '\r': tolera .env con finales de línea CRLF (editado en Windows)
+set -a; source <(tr -d '\r' < "$ENV_FILE"); set +a
 
 DB_USER="${POSTGRES_USER:-champion_db_user}"
 DB_NAME="${POSTGRES_DB:-champion_db}"

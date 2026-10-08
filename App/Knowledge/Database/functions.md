@@ -67,6 +67,14 @@ SELECT * FROM fn_get_stt_live_recording_job_context(p_job_id VARCHAR(100))
 | `upload_status` | VARCHAR(50) | `stt_recording` |
 | `request_payload` | JSONB | `ai_job` |
 | `job_metadata` | JSONB | `ai_job.metadata` |
+| `pending_reprocess_step` | VARCHAR(50) | `ai_job.pending_reprocess_step` |
+| `pending_reprocess_instructions` | TEXT | `ai_job.pending_reprocess_instructions` |
+
+`pending_reprocess_step`/`pending_reprocess_instructions` se agregaron en la migración
+`add_soft_delete_and_reprocess_fields_to_ai_job.sql` (requirió `DROP FUNCTION` + `CREATE FUNCTION`,
+no `CREATE OR REPLACE`, porque cambia el `RETURNS TABLE`). Solo vienen con valor cuando el job fue
+reencolado por `sp_request_stt_step_reprocess_v1` — el orquestador Durable se los pasa exclusivamente
+a la activity del step que coincide.
 
 **Implementación:** JOIN entre `ai_job` y `stt_recording` usando `job_id`.
 
